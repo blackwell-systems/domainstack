@@ -13,7 +13,7 @@ categories = ["web-programming", "data-structures"]
 
 [dependencies]
 regex = { version = "1.10", optional = true }
-domainstack-derive = { version = "0.3.0", path = "../domainstack-derive", optional = true }
+domainstack-derive = { workspace = true, optional = true }
 
 [features]
 default = ["std"]

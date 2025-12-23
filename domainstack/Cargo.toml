@@ -1,3 +1,8 @@
 [workspace]
 members = ["domainstack", "domainstack-derive", "domainstack-envelope", "examples"]
 resolver = "2"
+
+[workspace.dependencies]
+domainstack = { version = "0.3.0", path = "domainstack" }
+domainstack-derive = { version = "0.3.0", path = "domainstack-derive" }
+domainstack-envelope = { version = "0.3.0", path = "domainstack-envelope" }

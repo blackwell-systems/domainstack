@@ -12,7 +12,7 @@ keywords = ["validation", "http", "api", "error", "envelope"]
 categories = ["web-programming", "web-programming::http-server"]
 
 [dependencies]
-domainstack = { version = "0.3.0", path = "../domainstack" }
+domainstack = { workspace = true }
 error-envelope = "0.2.1"
 serde_json = "1"
 
@@ -20,5 +20,5 @@ serde_json = "1"
 default = []
 
 [dev-dependencies]
-domainstack = { version = "0.3.0", path = "../domainstack", features = ["derive"] }
-domainstack-derive = { version = "0.3.0", path = "../domainstack-derive" }
+domainstack = { workspace = true, features = ["derive"] }
+domainstack-derive = { workspace = true }

@@ -2,12 +2,17 @@
 
 **Rust validation framework for domain-driven design**
 
-A complete validation solution for building domain models in Rust with derive macro support and HTTP integration.
-
+[![Blackwell Systems™](https://raw.githubusercontent.com/blackwell-systems/blackwell-docs-theme/main/badge-trademark.svg)](https://github.com/blackwell-systems)
 [![Crates.io](https://img.shields.io/crates/v/domainstack.svg)](https://crates.io/crates/domainstack)
 [![Documentation](https://docs.rs/domainstack/badge.svg)](https://docs.rs/domainstack)
+[![Rust Version](https://img.shields.io/badge/Rust-1.65%2B-CE422B?logo=rust&logoColor=white)](https://www.rust-lang.org/)
+[![Version](https://img.shields.io/github/v/release/blackwell-systems/domainstack)](https://github.com/blackwell-systems/domainstack/releases)
+
+[![Claude Code](https://img.shields.io/badge/Built_with-Claude_Code-8A2BE2?logo=anthropic)](https://claude.ai/code)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Rust](https://img.shields.io/badge/rust-1.65%2B-orange.svg)](https://www.rust-lang.org/)
+[![Sponsor](https://img.shields.io/badge/Sponsor-Buy%20Me%20a%20Coffee-yellow?logo=buy-me-a-coffee&logoColor=white)](https://buymeacoffee.com/blackwellsystems)
+
+> **Domain validation framework** • Built with Claude Code • Derive macro support • HTTP integration • Made with Rust
 
 ## Features
 

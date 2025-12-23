@@ -8,6 +8,8 @@ license = "Apache-2.0"
 description = "Derive macro for domainstack validation framework"
 repository = "https://github.com/blackwell-systems/domainstack"
 documentation = "https://docs.rs/domainstack-derive"
+keywords = ["validation", "derive", "macro", "ddd", "domain"]
+categories = ["development-tools::procedural-macro-helpers", "data-structures"]
 
 [lib]
 proc-macro = true

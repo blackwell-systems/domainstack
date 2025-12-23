@@ -82,36 +82,36 @@ mod tests {
     #[test]
     fn test_email_valid() {
         let rule = email();
-        assert!(rule.apply(&"user@example.com").is_empty());
-        assert!(rule.apply(&"test.user@domain.co.uk").is_empty());
+        assert!(rule.apply("user@example.com").is_empty());
+        assert!(rule.apply("test.user@domain.co.uk").is_empty());
     }
 
     #[test]
     fn test_email_invalid() {
         let rule = email();
 
-        let result = rule.apply(&"not-an-email");
+        let result = rule.apply("not-an-email");
         assert!(!result.is_empty());
         assert_eq!(result.violations[0].code, "invalid_email");
 
-        let result = rule.apply(&"missing-domain@");
+        let result = rule.apply("missing-domain@");
         assert!(!result.is_empty());
 
-        let result = rule.apply(&"@missing-user.com");
+        let result = rule.apply("@missing-user.com");
         assert!(!result.is_empty());
     }
 
     #[test]
     fn test_non_empty_valid() {
         let rule = non_empty();
-        assert!(rule.apply(&"hello").is_empty());
-        assert!(rule.apply(&" ").is_empty());
+        assert!(rule.apply("hello").is_empty());
+        assert!(rule.apply(" ").is_empty());
     }
 
     #[test]
     fn test_non_empty_invalid() {
         let rule = non_empty();
-        let result = rule.apply(&"");
+        let result = rule.apply("");
         assert!(!result.is_empty());
         assert_eq!(result.violations[0].code, "non_empty");
     }
@@ -119,14 +119,14 @@ mod tests {
     #[test]
     fn test_min_len_valid() {
         let rule = min_len(5);
-        assert!(rule.apply(&"hello").is_empty());
-        assert!(rule.apply(&"hello world").is_empty());
+        assert!(rule.apply("hello").is_empty());
+        assert!(rule.apply("hello world").is_empty());
     }
 
     #[test]
     fn test_min_len_invalid() {
         let rule = min_len(5);
-        let result = rule.apply(&"hi");
+        let result = rule.apply("hi");
         assert!(!result.is_empty());
         assert_eq!(result.violations[0].code, "min_length");
         assert_eq!(result.violations[0].meta.get("min"), Some("5"));
@@ -135,14 +135,14 @@ mod tests {
     #[test]
     fn test_max_len_valid() {
         let rule = max_len(10);
-        assert!(rule.apply(&"hello").is_empty());
-        assert!(rule.apply(&"").is_empty());
+        assert!(rule.apply("hello").is_empty());
+        assert!(rule.apply("").is_empty());
     }
 
     #[test]
     fn test_max_len_invalid() {
         let rule = max_len(5);
-        let result = rule.apply(&"hello world");
+        let result = rule.apply("hello world");
         assert!(!result.is_empty());
         assert_eq!(result.violations[0].code, "max_length");
         assert_eq!(result.violations[0].meta.get("max"), Some("5"));
@@ -151,14 +151,14 @@ mod tests {
     #[test]
     fn test_length_valid() {
         let rule = length(3, 10);
-        assert!(rule.apply(&"hello").is_empty());
-        assert!(rule.apply(&"hi!").is_empty());
+        assert!(rule.apply("hello").is_empty());
+        assert!(rule.apply("hi!").is_empty());
     }
 
     #[test]
     fn test_length_too_short() {
         let rule = length(3, 10);
-        let result = rule.apply(&"hi");
+        let result = rule.apply("hi");
         assert!(!result.is_empty());
         assert_eq!(result.violations[0].code, "min_length");
     }
@@ -166,7 +166,7 @@ mod tests {
     #[test]
     fn test_length_too_long() {
         let rule = length(3, 10);
-        let result = rule.apply(&"hello world!");
+        let result = rule.apply("hello world!");
         assert!(!result.is_empty());
         assert_eq!(result.violations[0].code, "max_length");
     }

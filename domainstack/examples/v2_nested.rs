@@ -1,4 +1,3 @@
-use domainstack::prelude::*;
 use domainstack::Validate;
 
 #[derive(Debug, Clone, Validate)]
@@ -11,7 +10,7 @@ struct Email {
 struct Guest {
     #[validate(length(min = 1, max = 50))]
     name: String,
-    
+
     #[validate(nested)]
     email: Email,
 }
@@ -20,14 +19,14 @@ struct Guest {
 struct Booking {
     #[validate(nested)]
     guest: Guest,
-    
+
     #[validate(range(min = 1, max = 10))]
     guests_count: u8,
 }
 
 fn main() {
     println!("=== Nested Validation with Path Prefixing ===\n");
-    
+
     println!("1. Valid booking:");
     let booking = Booking {
         guest: Guest {
@@ -42,7 +41,7 @@ fn main() {
         Ok(_) => println!("   ✓ Booking is valid: {:?}\n", booking),
         Err(e) => println!("   ✗ Validation errors:\n{}\n", e),
     }
-    
+
     println!("2. Invalid: email value is empty (nested error):");
     let booking = Booking {
         guest: Guest {
@@ -57,10 +56,12 @@ fn main() {
         Ok(_) => println!("   ✓ Booking is valid\n"),
         Err(e) => {
             println!("   ✗ Validation errors:\n{}", e);
-            println!("   Note: Error path is 'guest.email.value' - nested structure is preserved!\n");
+            println!(
+                "   Note: Error path is 'guest.email.value' - nested structure is preserved!\n"
+            );
         }
     }
-    
+
     println!("3. Multiple nested errors:");
     let booking = Booking {
         guest: Guest {

@@ -29,10 +29,10 @@ fn test_custom_validation_pass() {
 #[test]
 fn test_custom_validation_fail() {
     let num = EvenNumber { value: 43 };
-    
+
     let result = num.validate();
     assert!(result.is_err());
-    
+
     let err = result.unwrap_err();
     assert_eq!(err.violations.len(), 1);
     assert_eq!(err.violations[0].path.to_string(), "value");
@@ -42,10 +42,10 @@ fn test_custom_validation_fail() {
 #[test]
 fn test_custom_with_range_fail() {
     let num = EvenNumber { value: 200 };
-    
+
     let result = num.validate();
     assert!(result.is_err());
-    
+
     let err = result.unwrap_err();
     assert_eq!(err.violations.len(), 1);
     assert_eq!(err.violations[0].code, "out_of_range");
@@ -54,13 +54,13 @@ fn test_custom_with_range_fail() {
 #[test]
 fn test_both_validations_fail() {
     let num = EvenNumber { value: 101 };
-    
+
     let result = num.validate();
     assert!(result.is_err());
-    
+
     let err = result.unwrap_err();
     assert_eq!(err.violations.len(), 2);
-    
+
     assert_eq!(err.violations[0].code, "out_of_range");
     assert_eq!(err.violations[1].code, "not_even");
 }

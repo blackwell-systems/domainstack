@@ -25,19 +25,27 @@ fn validate_positive_balance(value: &i32) -> Result<(), ValidationError> {
     }
 }
 
-fn validate_strong_password(value: &String) -> Result<(), ValidationError> {
+fn validate_strong_password(value: &str) -> Result<(), ValidationError> {
     let mut errors = ValidationError::new();
-    
+
     if !value.chars().any(|c| c.is_uppercase()) {
-        errors.push(Path::root(), "no_uppercase", "Must contain uppercase letter");
+        errors.push(
+            Path::root(),
+            "no_uppercase",
+            "Must contain uppercase letter",
+        );
     }
     if !value.chars().any(|c| c.is_lowercase()) {
-        errors.push(Path::root(), "no_lowercase", "Must contain lowercase letter");
+        errors.push(
+            Path::root(),
+            "no_lowercase",
+            "Must contain lowercase letter",
+        );
     }
     if !value.chars().any(|c| c.is_numeric()) {
         errors.push(Path::root(), "no_digit", "Must contain digit");
     }
-    
+
     if errors.is_empty() {
         Ok(())
     } else {
@@ -56,7 +64,7 @@ struct EvenNumber {
 struct BankAccount {
     #[validate(length(min = 1, max = 50))]
     account_holder: String,
-    
+
     #[validate(custom = "validate_positive_balance")]
     balance: i32,
 }
@@ -65,7 +73,7 @@ struct BankAccount {
 struct UserAccount {
     #[validate(length(min = 3, max = 20))]
     username: String,
-    
+
     #[validate(length(min = 8, max = 128))]
     #[validate(custom = "validate_strong_password")]
     password: String,
@@ -73,14 +81,14 @@ struct UserAccount {
 
 fn main() {
     println!("=== Custom Validation Functions ===\n");
-    
+
     println!("1. Valid even number:");
     let num = EvenNumber { value: 42 };
     match num.validate() {
         Ok(_) => println!("   ✓ Number is valid: {:?}\n", num),
         Err(e) => println!("   ✗ Validation errors:\n{}\n", e),
     }
-    
+
     println!("2. Invalid: odd number (custom validation fails):");
     let num = EvenNumber { value: 43 };
     match num.validate() {
@@ -90,7 +98,7 @@ fn main() {
             println!("   Note: Custom function 'validate_even' checked parity\n");
         }
     }
-    
+
     println!("3. Invalid: both range and custom fail:");
     let num = EvenNumber { value: 101 };
     match num.validate() {
@@ -100,7 +108,7 @@ fn main() {
             println!("   Note: Both range (>100) and custom (odd) violations reported\n");
         }
     }
-    
+
     println!("4. Valid bank account:");
     let account = BankAccount {
         account_holder: "Alice Johnson".to_string(),
@@ -110,7 +118,7 @@ fn main() {
         Ok(_) => println!("   ✓ Account is valid: {:?}\n", account),
         Err(e) => println!("   ✗ Validation errors:\n{}\n", e),
     }
-    
+
     println!("5. Invalid: negative balance (custom validation):");
     let account = BankAccount {
         account_holder: "Bob Smith".to_string(),
@@ -123,7 +131,7 @@ fn main() {
             println!("   Note: Custom validation caught negative balance\n");
         }
     }
-    
+
     println!("6. Valid user with strong password:");
     let user = UserAccount {
         username: "alice99".to_string(),
@@ -133,7 +141,7 @@ fn main() {
         Ok(_) => println!("   ✓ User is valid: {:?}\n", user),
         Err(e) => println!("   ✗ Validation errors:\n{}\n", e),
     }
-    
+
     println!("7. Invalid: weak password (multiple custom violations):");
     let user = UserAccount {
         username: "bob42".to_string(),

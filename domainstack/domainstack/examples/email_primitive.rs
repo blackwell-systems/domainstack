@@ -7,11 +7,7 @@ impl Email {
     pub fn new(raw: impl Into<String>) -> Result<Self, ValidationError> {
         let raw = raw.into();
         let rule = rules::email().and(rules::max_len(255));
-        validate(
-            "email",
-            raw.as_str(),
-            &rule,
-        )?;
+        validate("email", raw.as_str(), &rule)?;
         Ok(Self(raw))
     }
 
@@ -23,11 +19,7 @@ impl Email {
 impl Validate for Email {
     fn validate(&self) -> Result<(), ValidationError> {
         let rule = rules::email().and(rules::max_len(255));
-        validate(
-            "email",
-            self.0.as_str(),
-            &rule,
-        )
+        validate("email", self.0.as_str(), &rule)
     }
 }
 

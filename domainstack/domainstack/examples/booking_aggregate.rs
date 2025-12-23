@@ -37,11 +37,7 @@ impl Validate for Guest {
         let mut err = ValidationError::default();
 
         let rule = rules::min_len(1).and(rules::max_len(50));
-        if let Err(e) = validate(
-            "name",
-            self.name.as_str(),
-            &rule,
-        ) {
+        if let Err(e) = validate("name", self.name.as_str(), &rule) {
             err.extend(e);
         }
 

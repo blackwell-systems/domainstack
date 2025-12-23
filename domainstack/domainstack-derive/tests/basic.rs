@@ -5,7 +5,7 @@ use domainstack_derive::Validate;
 struct User {
     #[validate(length(min = 1, max = 50))]
     name: String,
-    
+
     #[validate(range(min = 18, max = 120))]
     age: u8,
 }
@@ -16,7 +16,7 @@ fn test_valid_user() {
         name: "John Doe".to_string(),
         age: 25,
     };
-    
+
     assert!(user.validate().is_ok());
 }
 
@@ -26,10 +26,10 @@ fn test_invalid_name_too_short() {
         name: "".to_string(),
         age: 25,
     };
-    
+
     let result = user.validate();
     assert!(result.is_err());
-    
+
     let err = result.unwrap_err();
     assert_eq!(err.violations.len(), 1);
     assert_eq!(err.violations[0].path.to_string(), "name");
@@ -42,10 +42,10 @@ fn test_invalid_age() {
         name: "John".to_string(),
         age: 15,
     };
-    
+
     let result = user.validate();
     assert!(result.is_err());
-    
+
     let err = result.unwrap_err();
     assert_eq!(err.violations.len(), 1);
     assert_eq!(err.violations[0].path.to_string(), "age");
@@ -58,10 +58,10 @@ fn test_multiple_violations() {
         name: "".to_string(),
         age: 200,
     };
-    
+
     let result = user.validate();
     assert!(result.is_err());
-    
+
     let err = result.unwrap_err();
     assert_eq!(err.violations.len(), 2);
 }

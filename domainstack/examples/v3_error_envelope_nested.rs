@@ -1,4 +1,3 @@
-use domainstack::prelude::*;
 use domainstack::Validate;
 use domainstack_envelope::IntoEnvelopeError;
 
@@ -12,7 +11,7 @@ struct Email {
 struct Guest {
     #[validate(length(min = 1, max = 50))]
     name: String,
-    
+
     #[validate(nested)]
     email: Email,
 }
@@ -21,7 +20,7 @@ struct Guest {
 struct Room {
     #[validate(range(min = 1, max = 4))]
     adults: u8,
-    
+
     #[validate(range(min = 0, max = 3))]
     children: u8,
 }
@@ -30,17 +29,17 @@ struct Room {
 struct HotelBooking {
     #[validate(nested)]
     guest: Guest,
-    
+
     #[validate(each(nested))]
     rooms: Vec<Room>,
-    
+
     #[validate(range(min = 1, max = 30))]
     nights: u8,
 }
 
 fn main() {
     println!("=== error-envelope Integration: Nested & Collection Paths ===\n");
-    
+
     println!("1. Valid booking:");
     let booking = HotelBooking {
         guest: Guest {
@@ -50,12 +49,18 @@ fn main() {
             },
         },
         rooms: vec![
-            Room { adults: 2, children: 1 },
-            Room { adults: 1, children: 0 },
+            Room {
+                adults: 2,
+                children: 1,
+            },
+            Room {
+                adults: 1,
+                children: 0,
+            },
         ],
         nights: 3,
     };
-    
+
     match booking.validate() {
         Ok(_) => println!("   ✓ Booking is valid\n"),
         Err(e) => {
@@ -63,7 +68,7 @@ fn main() {
             println!("   ✗ Error: {}\n", envelope.message);
         }
     }
-    
+
     println!("2. Nested path error (guest.email.value):");
     let booking = HotelBooking {
         guest: Guest {
@@ -72,10 +77,13 @@ fn main() {
                 value: String::new(), // Empty email
             },
         },
-        rooms: vec![Room { adults: 2, children: 0 }],
+        rooms: vec![Room {
+            adults: 2,
+            children: 0,
+        }],
         nights: 3,
     };
-    
+
     match booking.validate() {
         Ok(_) => println!("   ✓ Booking is valid\n"),
         Err(e) => {
@@ -83,7 +91,7 @@ fn main() {
             println!("   ✗ Error envelope:");
             println!("     Status: {}", envelope.status);
             println!("     Message: {}", envelope.message);
-            
+
             if let Some(details) = &envelope.details {
                 println!("\n     Details (JSON):");
                 println!("{}", serde_json::to_string_pretty(details).unwrap());
@@ -92,7 +100,7 @@ fn main() {
             println!();
         }
     }
-    
+
     println!("3. Collection path errors with indices:");
     let booking = HotelBooking {
         guest: Guest {
@@ -102,13 +110,22 @@ fn main() {
             },
         },
         rooms: vec![
-            Room { adults: 2, children: 1 },
-            Room { adults: 5, children: 0 }, // Too many adults
-            Room { adults: 1, children: 4 }, // Too many children
+            Room {
+                adults: 2,
+                children: 1,
+            },
+            Room {
+                adults: 5,
+                children: 0,
+            }, // Too many adults
+            Room {
+                adults: 1,
+                children: 4,
+            }, // Too many children
         ],
         nights: 3,
     };
-    
+
     match booking.validate() {
         Ok(_) => println!("   ✓ Booking is valid\n"),
         Err(e) => {
@@ -116,7 +133,7 @@ fn main() {
             println!("   ✗ Error envelope:");
             println!("     Status: {}", envelope.status);
             println!("     Message: {}", envelope.message);
-            
+
             if let Some(details) = &envelope.details {
                 println!("\n     Details (JSON):");
                 println!("{}", serde_json::to_string_pretty(details).unwrap());
@@ -127,7 +144,7 @@ fn main() {
             println!();
         }
     }
-    
+
     println!("4. Multiple errors across nested and collection fields:");
     let booking = HotelBooking {
         guest: Guest {
@@ -137,12 +154,18 @@ fn main() {
             },
         },
         rooms: vec![
-            Room { adults: 0, children: 0 }, // No guests
-            Room { adults: 5, children: 4 }, // Both out of range
+            Room {
+                adults: 0,
+                children: 0,
+            }, // No guests
+            Room {
+                adults: 5,
+                children: 4,
+            }, // Both out of range
         ],
         nights: 50, // Too many nights
     };
-    
+
     match booking.validate() {
         Ok(_) => println!("   ✓ Booking is valid\n"),
         Err(e) => {
@@ -150,11 +173,11 @@ fn main() {
             println!("   ✗ Error envelope:");
             println!("     Status: {}", envelope.status);
             println!("     Message: {}", envelope.message);
-            
+
             if let Some(details) = &envelope.details {
                 println!("\n     Details (JSON):");
                 println!("{}", serde_json::to_string_pretty(details).unwrap());
-                
+
                 println!("\n     Field paths in this error:");
                 if let Some(fields) = details["fields"].as_object() {
                     for path in fields.keys() {
@@ -162,7 +185,9 @@ fn main() {
                     }
                 }
             }
-            println!("\n     All paths preserved with correct structure for client-side rendering!");
+            println!(
+                "\n     All paths preserved with correct structure for client-side rendering!"
+            );
         }
     }
 }

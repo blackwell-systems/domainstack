@@ -7,6 +7,9 @@ license = "Apache-2.0"
 authors = ["Dayna Blackwell <blackwellsystems@protonmail.com>"]
 description = "error-envelope integration for domainstack validation framework"
 repository = "https://github.com/blackwell-systems/domainstack"
+documentation = "https://docs.rs/domainstack-envelope"
+keywords = ["validation", "http", "api", "error", "envelope"]
+categories = ["web-programming", "web-programming::http-server"]
 
 [dependencies]
 domainstack = { version = "0.3.0", path = "../domainstack" }

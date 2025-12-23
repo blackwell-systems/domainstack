@@ -81,9 +81,7 @@ fn generate_validate_impl(input: &DeriveInput) -> syn::Result<proc_macro2::Token
     }
 
     // Generate validation code for each field
-    let validation_code = field_validations
-        .iter()
-        .map(generate_field_validation);
+    let validation_code = field_validations.iter().map(generate_field_validation);
 
     let expanded = quote! {
         impl #impl_generics domainstack::Validate for #name #ty_generics #where_clause {

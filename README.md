@@ -90,6 +90,56 @@ fn main() {
 }
 ```
 
+### HTTP Integration (One Line!)
+
+```rust
+use domainstack_envelope::IntoEnvelopeError;
+
+// Before: Manual error handling (lots of boilerplate)
+async fn create_team_manual(Json(team): Json<Team>) -> Result<Json<Team>, StatusCode> {
+    match team.validate() {
+        Ok(_) => Ok(Json(team)),
+        Err(e) => {
+            // 15+ lines of boilerplate to build proper JSON error response
+            let mut field_errors = std::collections::HashMap::new();
+            for violation in e.violations {
+                field_errors.entry(violation.path.to_string())
+                    .or_insert_with(Vec::new)
+                    .push(serde_json::json!({
+                        "code": violation.code,
+                        "message": violation.message
+                    }));
+            }
+            // ... more code to set status, format response, etc.
+            Err(StatusCode::BAD_REQUEST)  // Lost all error details!
+        }
+    }
+}
+
+// After: One line with error-envelope
+async fn create_team(Json(team): Json<Team>) -> Result<Json<Team>, Error> {
+    team.validate().map_err(|e| e.into_envelope_error())?;  // ← One line!
+    Ok(Json(team))
+}
+
+// Automatic error response with perfect structure:
+// {
+//   "code": "VALIDATION",
+//   "status": 400,
+//   "message": "Validation failed with 2 errors",
+//   "details": {
+//     "fields": {
+//       "members[1].name": [
+//         {"code": "min_length", "message": "Must be at least 2 characters"}
+//       ],
+//       "members[1].age": [
+//         {"code": "out_of_range", "message": "Must be between 18 and 120"}
+//       ]
+//     }
+//   }
+// }
+```
+
 ## Installation
 
 Add to your `Cargo.toml`:

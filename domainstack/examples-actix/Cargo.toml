@@ -1,0 +1,23 @@
+[package]
+name = "domainstack-examples-actix"
+version = "0.4.0"
+edition = "2021"
+rust-version = "1.76"
+publish = false
+
+[[example]]
+name = "booking"
+path = "booking.rs"
+
+[dependencies]
+domainstack = { workspace = true, features = ["derive"] }
+domainstack-actix = { workspace = true }
+domainstack-envelope = { workspace = true }
+error-envelope = { workspace = true }
+actix-web = "4"
+actix-rt = "2"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+uuid = { version = "1.0", features = ["v4", "serde"] }

@@ -1,10 +1,13 @@
 [workspace]
-members = ["domainstack", "domainstack-derive", "domainstack-envelope", "examples"]
+members = ["domainstack", "domainstack-derive", "domainstack-envelope", "domainstack-http", "domainstack-axum", "domainstack-actix", "examples", "examples-axum", "examples-actix"]
 resolver = "2"
 
 [workspace.dependencies]
 domainstack = { version = "0.3.0", path = "domainstack", default-features = false }
 domainstack-derive = { version = "0.3.0", path = "domainstack-derive" }
 domainstack-envelope = { version = "0.3.0", path = "domainstack-envelope" }
+domainstack-http = { version = "0.4.0", path = "domainstack-http" }
+domainstack-axum = { version = "0.4.0", path = "domainstack-axum" }
+domainstack-actix = { version = "0.4.0", path = "domainstack-actix" }
 error-envelope = "0.2.1"
 regex = "1.10"

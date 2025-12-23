@@ -9,7 +9,14 @@ Technical architecture of the domainstack validation framework.
 graph TB
     subgraph User["🧑‍💻 User Code"]
         Domain["Domain Types<br/>(User, Email, Team)"]
-        Handler["HTTP Handlers<br/>(Axum/Actix/etc)"]
+        DTO["DTOs<br/>(UserDto, etc)"]
+        Handler["HTTP Handlers<br/>(Axum/Actix)"]
+    end
+    
+    subgraph Adapters["🔌 Framework Adapters (v0.4)"]
+        AxumExt["domainstack-axum<br/>DomainJson extractor"]
+        ActixExt["domainstack-actix<br/>DomainJson extractor"]
+        HttpShared["domainstack-http<br/>(shared logic)"]
     end
     
     subgraph Core["📦 domainstack (Core)"]
@@ -26,18 +33,24 @@ graph TB
         Convert["IntoEnvelopeError<br/>(HTTP errors)"]
     end
     
+    DTO -->|"TryFrom"| Domain
     Domain -->|"implements"| Validate
     Domain -->|"uses"| Rules
     Macro -->|"generates"| Validate
     Validate -->|"returns"| Error
-    Handler -->|"validates"| Domain
-    Handler -->|"converts"| Convert
+    Handler -->|"extracts via"| AxumExt
+    Handler -->|"extracts via"| ActixExt
+    AxumExt -->|"uses"| HttpShared
+    ActixExt -->|"uses"| HttpShared
+    HttpShared -->|"converts"| Domain
+    HttpShared -->|"maps errors"| Convert
     Error -->|"one line"| Convert
     Convert -->|"produces"| JSON["📄 Structured JSON<br/>{fields: {...}}"]
     
     style Core fill:#1a1a2e,stroke:#16213e,stroke-width:2px,color:#eee
     style Derive fill:#0f3460,stroke:#16213e,stroke-width:2px,color:#eee
     style Envelope fill:#16213e,stroke:#16213e,stroke-width:2px,color:#eee
+    style Adapters fill:#2d4a2e,stroke:#16213e,stroke-width:2px,color:#eee
     style User fill:#533483,stroke:#16213e,stroke-width:2px,color:#eee
     style JSON fill:#e94560,stroke:#16213e,stroke-width:2px,color:#eee
 ```

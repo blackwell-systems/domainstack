@@ -62,6 +62,15 @@ jobs:
       - name: Run tests (with derive feature)
         run: cargo test -p domainstack --features derive --verbose
 
+      - name: Run tests (domainstack-http)
+        run: cargo test -p domainstack-http --verbose
+
+      - name: Run tests (domainstack-axum)
+        run: cargo test -p domainstack-axum --verbose
+
+      - name: Run tests (domainstack-actix)
+        run: cargo test -p domainstack-actix --verbose
+
       - name: Run examples
         run: |
           cargo run -p domainstack-examples --example v2_basic

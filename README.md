@@ -328,6 +328,51 @@ async fn create_team(Json(team): Json<Team>) -> Result<Json<Team>, Error> {
 // }
 ```
 
+## Framework Adapters (v0.4+)
+
+One-line DTO→Domain extraction for Axum and Actix-web.
+
+### Axum
+
+```rust
+use domainstack_axum::{DomainJson, ErrorResponse};
+use axum::{routing::post, Router, Json};
+
+type UserJson = DomainJson<User, UserDto>;
+
+async fn create_user(
+    UserJson { domain: user, .. }: UserJson
+) -> Result<Json<User>, ErrorResponse> {
+    Ok(Json(save_user(user).await?))  // user is guaranteed valid!
+}
+
+let app = Router::new().route("/users", post(create_user));
+```
+
+### Actix-web
+
+```rust
+use domainstack_actix::{DomainJson, ErrorResponse};
+use actix_web::{post, web};
+
+type UserJson = DomainJson<User, UserDto>;
+
+#[post("/users")]
+async fn create_user(
+    UserJson { domain: user, .. }: UserJson
+) -> Result<web::Json<User>, ErrorResponse> {
+    Ok(web::Json(save_user(user).await?))  // user is guaranteed valid!
+}
+```
+
+**What the adapters provide:**
+- `DomainJson<T, Dto>` extractor - Deserialize JSON → validate → convert to domain
+- `ErrorResponse` - Automatic 400 responses with structured field-level errors
+- `From` impls - `?` operator works with `ValidationError` and `error_envelope::Error`
+- **Identical APIs** - Same pattern across both frameworks
+
+See [domainstack-axum](./domainstack/domainstack-axum/) and [domainstack-actix](./domainstack/domainstack-actix/) for complete documentation.
+
 ## Installation
 
 ```toml
@@ -341,18 +386,32 @@ domainstack = { version = "0.3", features = ["derive"] }
 # With email validation (adds regex dependency)
 domainstack = { version = "0.3", features = ["derive", "email"] }
 
-# Optional: HTTP integration adapter
+# Optional: HTTP error mapping
 domainstack-envelope = "0.3"
+
+# Optional: Framework adapters (v0.4+)
+domainstack-axum = "0.4"    # For Axum web framework
+domainstack-actix = "0.4"   # For Actix-web framework
 ```
 
 ## Crates
 
-This repository contains four crates:
+This repository contains seven crates:
 
+**Core:**
 - **[domainstack](./domainstack/)** - Core validation library with composable rules
 - **[domainstack-derive](./domainstack/domainstack-derive/)** - Derive macro for `#[derive(Validate)]`
 - **[domainstack-envelope](./domainstack/domainstack-envelope/)** - error-envelope integration for HTTP APIs
-- **[examples](./domainstack/examples/)** - Comprehensive examples (v0.1-v0.3)
+
+**Framework Adapters (v0.4+):**
+- **[domainstack-http](./domainstack/domainstack-http/)** - Framework-agnostic HTTP helpers
+- **[domainstack-axum](./domainstack/domainstack-axum/)** - Axum extractor and response implementations
+- **[domainstack-actix](./domainstack/domainstack-actix/)** - Actix-web extractor and response implementations
+
+**Examples:**
+- **[examples](./domainstack/examples/)** - Core examples (v0.1-v0.3)
+- **[examples-axum](./domainstack/examples-axum/)** - Axum booking service example
+- **[examples-actix](./domainstack/examples-actix/)** - Actix-web booking service example
 
 ## Documentation
 
@@ -490,7 +549,8 @@ cargo test -p domainstack-envelope
 
 ## Version History
 
-- **v0.3.0** (current) - error-envelope integration, HTTP API support
+- **v0.4.0** (current) - Framework adapters for Axum and Actix-web
+- **v0.3.0** - error-envelope integration, HTTP API support
 - **v0.2.0** - Derive macro with 5 attributes, workspace structure
 - **v0.1.0** - Core validation library with manual Validate trait
 

@@ -28,24 +28,64 @@
 use domainstack::prelude::*;
 use domainstack_derive::Validate;
 
+// Email with custom validation
+#[derive(Debug, Clone, Validate)]
+struct Email {
+    #[validate(length(min = 5, max = 255))]
+    value: String,
+}
+
+// Nested validation with automatic path prefixing
 #[derive(Debug, Validate)]
 struct User {
-    #[validate(length(min = 1, max = 50))]
+    #[validate(length(min = 2, max = 50))]
     name: String,
     
     #[validate(range(min = 18, max = 120))]
     age: u8,
+    
+    #[validate(nested)]  // Validates email, errors appear as "email.value"
+    email: Email,
+}
+
+// Collection validation with array indices
+#[derive(Debug, Validate)]
+struct Team {
+    #[validate(length(min = 1, max = 50))]
+    team_name: String,
+    
+    #[validate(each(nested))]  // Validates each member, errors like "members[0].name"
+    members: Vec<User>,
 }
 
 fn main() {
-    let user = User {
-        name: "Alice".to_string(),
-        age: 30,
+    let team = Team {
+        team_name: "Engineering".to_string(),
+        members: vec![
+            User {
+                name: "Alice".to_string(),
+                age: 30,
+                email: Email { value: "alice@example.com".to_string() },
+            },
+            User {
+                name: "".to_string(),  // Invalid!
+                age: 200,               // Invalid!
+                email: Email { value: "bob@example.com".to_string() },
+            },
+        ],
     };
     
-    match user.validate() {
-        Ok(_) => println!("Valid user!"),
-        Err(e) => println!("Validation errors: {}", e),
+    match team.validate() {
+        Ok(_) => println!("✓ Team is valid"),
+        Err(e) => {
+            println!("✗ Validation failed with {} errors:", e.violations.len());
+            for v in &e.violations {
+                println!("  [{}] {} - {}", v.path, v.code, v.message);
+            }
+            // Output:
+            //   [members[1].name] min_length - Must be at least 2 characters
+            //   [members[1].age] out_of_range - Must be between 18 and 120
+        }
     }
 }
 ```

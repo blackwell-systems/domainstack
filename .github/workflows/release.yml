@@ -50,14 +50,14 @@ jobs:
             exit 1
           fi
 
-      - name: Publish domainstack (core)
-        run: cargo publish --token ${{ secrets.CARGO_TOKEN }} --manifest-path domainstack/domainstack/Cargo.toml
+      - name: Publish domainstack-derive
+        run: cargo publish --token ${{ secrets.CARGO_TOKEN }} --manifest-path domainstack/domainstack-derive/Cargo.toml
 
       - name: Wait for crates.io to update
         run: sleep 30
 
-      - name: Publish domainstack-derive
-        run: cargo publish --token ${{ secrets.CARGO_TOKEN }} --manifest-path domainstack/domainstack-derive/Cargo.toml
+      - name: Publish domainstack (core)
+        run: cargo publish --token ${{ secrets.CARGO_TOKEN }} --manifest-path domainstack/domainstack/Cargo.toml
 
       - name: Wait for crates.io to update
         run: sleep 30

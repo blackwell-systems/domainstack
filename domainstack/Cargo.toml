@@ -3,6 +3,8 @@ members = ["domainstack", "domainstack-derive", "domainstack-envelope", "example
 resolver = "2"
 
 [workspace.dependencies]
-domainstack = { version = "0.3.0", path = "domainstack" }
+domainstack = { version = "0.3.0", path = "domainstack", default-features = false }
 domainstack-derive = { version = "0.3.0", path = "domainstack-derive" }
 domainstack-envelope = { version = "0.3.0", path = "domainstack-envelope" }
+error-envelope = "0.2.1"
+regex = "1.10"

@@ -12,7 +12,7 @@ keywords = ["validation", "domain", "ddd", "api", "web"]
 categories = ["web-programming", "data-structures"]
 
 [dependencies]
-regex = { version = "1.10", optional = true }
+regex = { workspace = true, optional = true }
 domainstack-derive = { workspace = true, optional = true }
 
 [features]

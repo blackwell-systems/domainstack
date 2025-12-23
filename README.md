@@ -1,6 +1,6 @@
 # domainstack
 
-**Rust validation framework for domain-driven design**
+**Turn untrusted input into valid domain objects—with structured, field-level errors**
 
 [![Blackwell Systems™](https://raw.githubusercontent.com/blackwell-systems/blackwell-docs-theme/main/badge-trademark.svg)](https://github.com/blackwell-systems)
 [![Crates.io](https://img.shields.io/crates/v/domainstack.svg)](https://crates.io/crates/domainstack)
@@ -13,16 +13,26 @@
 [![codecov](https://codecov.io/gh/blackwell-systems/domainstack/branch/main/graph/badge.svg)](https://codecov.io/gh/blackwell-systems/domainstack)
 [![Sponsor](https://img.shields.io/badge/Sponsor-Buy%20Me%20a%20Coffee-yellow?logo=buy-me-a-coffee&logoColor=white)](https://buymeacoffee.com/blackwellsystems)
 
-> **Domain validation framework** • Derive macro support • HTTP integration • Made with Rust
+## What is domainstack?
 
-## Features
+**The 10-second pitch:**  
+domainstack helps you turn untrusted input into valid domain objects—then report failures back to clients with structured, field-level errors.
 
-- **Valid-by-construction types** - Invalid states can't exist
-- **Derive macro support** - `#[derive(Validate)]` with 5 attributes
-- **HTTP integration** - One-line conversion to error-envelope format
-- **Composable rules** - Combine validation logic with `and`, `or`, `when`
-- **Structured error paths** - Field-level error reporting (e.g., `guest.email.value`, `rooms[1].adults`)
-- **Zero dependencies** - Core crate uses only std (regex optional for email validation)
+It's built around a service-oriented reality:
+
+**Outside world (HTTP/JSON/etc.) → DTOs → Domain (valid-by-construction) → Business logic**
+
+### The core idea
+
+Most validation crates answer: **"Is this DTO valid?"**  
+domainstack answers: **"How do I *safely construct domain models* from untrusted input, and return a stable error contract?"**
+
+That means:
+- **Domain-first modeling** - Invalid states are unrepresentable
+- **Composable rules** - Rules are reusable values, not just attributes
+- **Structured error paths** - `rooms[0].adults`, `guest.email.value`
+- **Clean boundary mapping** - Optional error-envelope integration for APIs
+- **Async checks** (planned) - Uniqueness/existence checks with context
 
 ## Quick Start
 
@@ -91,6 +101,104 @@ fn main() {
     }
 }
 ```
+
+## Mental Model: DTOs → Domain → Business Logic
+
+### 1) DTO at the boundary (untrusted)
+```rust
+#[derive(Deserialize)]
+pub struct BookingDto {
+    pub name: String,
+    pub email: String,
+    pub guests: u8,
+}
+```
+
+### 2) Domain inside (trusted)
+```rust
+pub struct Email(String);
+
+impl Email {
+    pub fn new(raw: String) -> Result<Self, ValidationError> {
+        validate("email", raw.as_str(), &rules::email().and(rules::max_len(255)))?;
+        Ok(Self(raw))
+    }
+}
+
+pub struct BookingRequest {
+    name: String,      // Private!
+    email: Email,
+    guests: u8,
+}
+
+impl TryFrom<BookingDto> for BookingRequest {
+    type Error = ValidationError;
+
+    fn try_from(dto: BookingDto) -> Result<Self, Self::Error> {
+        let email = Email::new(dto.email)
+            .map_err(|e| e.prefixed("email"))?;
+        
+        validate("name", dto.name.as_str(), 
+                 &rules::min_len(1).and(rules::max_len(50)))?;
+        validate("guests", &dto.guests, &rules::range(1, 10))?;
+        
+        Ok(Self { name: dto.name, email, guests: dto.guests })
+    }
+}
+```
+
+### 3) API response mapping (optional)
+```rust
+use domainstack_envelope::IntoEnvelopeError;
+
+async fn create_booking(Json(dto): Json<BookingDto>) -> Result<Json<Booking>, Error> {
+    let domain: BookingRequest = dto.try_into()
+        .map_err(|e: ValidationError| e.into_envelope_error())?;
+    
+    // domain is GUARANTEED valid here - use with confidence!
+    Ok(Json(save_booking(domain).await?))
+}
+```
+
+## How domainstack is Different
+
+### What domainstack is NOT
+
+- **Not "yet another derive macro for DTO validation"** - It's a domain modeling foundation
+- **Not a web framework** - It's framework-agnostic validation primitives
+- **Not a replacement for thiserror/anyhow** - It complements them for domain boundaries
+
+### What domainstack IS
+
+- **Valid-by-construction foundation** - Domain types created through smart constructors
+- **Rules as values** - Build reusable, testable rule libraries
+- **Error paths as first-class** - Designed for APIs and UIs from the ground up
+- **Boundary adapters** - Optional crates map domain validation to HTTP errors
+
+### Comparison Matrix
+
+| Capability / Focus | domainstack | validator / garde / validify | nutype |
+|-------------------|-------------|------------------------------|--------|
+| Primary focus | Domain-first + boundary | DTO-first validation | Validated primitives |
+| Valid-by-construction aggregates | Yes (core goal) | No (not primary) | No |
+| Composable rule algebra (and/or/when) | Yes (core feature) | No / limited | Partial (predicate-based) |
+| Structured error paths for APIs | Yes | Partial (varies) | No |
+| Async validation w/ context | Planned | No | No |
+| Error envelope integration | Yes (optional) | No | No |
+
+### When to use domainstack
+
+**Use domainstack if you want:**
+- Clean DTO → Domain conversion
+- Domain objects that can't exist in invalid states
+- Reusable validation rules shared across services
+- Consistent field-level errors that map to forms/clients
+- Async validation with database/API context (coming soon)
+
+**You might not need domainstack if:**
+- You're validating only DTOs and your domain is basically DTO-shaped
+- You don't care about structured field paths/codes across services
+- You're happy with ad-hoc handler-level error mapping
 
 ## Valid-by-Construction Pattern
 
@@ -248,12 +356,38 @@ This repository contains four crates:
 
 ## Documentation
 
+### Multi-README Structure
+
+This project has **multiple README files** for different audiences:
+
+1. **[README.md](./README.md)** (this file) - **GitHub visitors**
+   - Quick pitch and positioning
+   - Comparison with alternatives
+   - Quick start and mental models
+   - Use as the project landing page
+
+2. **[domainstack/README.md](./domainstack/README.md)** - **Cargo/crates.io users**
+   - Technical reference for the workspace
+   - All derive attributes documented
+   - Rule composition patterns
+   - Test and build instructions
+
+3. **Individual crate READMEs** - **Library implementers**
+   - Core library deep-dive
+   - Derive macro internals
+   - HTTP integration specifics
+
+**Why multiple READMEs?** Different entry points serve different needs. GitHub visitors want positioning and examples. Cargo users want technical details. Docs.rs readers want API specifics. We accept some duplication to optimize each experience.
+
+### Additional Documentation
+
 - **[API Guide](./docs/api-guide.md)** - Complete API documentation
 - **[Rules Reference](./docs/rules.md)** - All validation rules
 - **[Architecture](./docs/architecture.md)** - System design and data flow
-- **[Workspace README](./domainstack/README.md)** - Detailed technical docs
 - **[Examples](./domainstack/examples/)** - 9 runnable examples
 - **[API Documentation](https://docs.rs/domainstack)** - Generated API reference
+- **[Publishing Guide](./PUBLISHING.md)** - How to publish to crates.io
+- **[Coverage Guide](./COVERAGE.md)** - Running coverage locally
 
 ## Examples
 

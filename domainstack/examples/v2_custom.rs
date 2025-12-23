@@ -2,7 +2,7 @@ use domainstack::prelude::*;
 use domainstack::Validate;
 
 fn validate_even(value: &u8) -> Result<(), ValidationError> {
-    if *value % 2 == 0 {
+    if value.is_multiple_of(2) {
         Ok(())
     } else {
         Err(ValidationError::single(

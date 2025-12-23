@@ -28,6 +28,14 @@ impl Meta {
             .find(|(k, _)| *k == key)
             .map(|(_, v)| v.as_str())
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.fields.is_empty()
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (&'static str, &str)> {
+        self.fields.iter().map(|(k, v)| (*k, v.as_str()))
+    }
 }
 
 #[cfg(test)]

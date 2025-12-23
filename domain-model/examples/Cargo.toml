@@ -1,12 +1,14 @@
 [package]
 name = "domain-model-examples"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 publish = false
 
 [dependencies]
 domain-model = { path = "../domain-model", features = ["derive"] }
 domain-model-derive = { path = "../domain-model-derive" }
+domain-model-error-envelope = { path = "../domain-model-error-envelope" }
+serde_json = "1"
 
 [[example]]
 name = "v2_basic"
@@ -23,3 +25,11 @@ path = "v2_collections.rs"
 [[example]]
 name = "v2_custom"
 path = "v2_custom.rs"
+
+[[example]]
+name = "v3_error_envelope_basic"
+path = "v3_error_envelope_basic.rs"
+
+[[example]]
+name = "v3_error_envelope_nested"
+path = "v3_error_envelope_nested.rs"

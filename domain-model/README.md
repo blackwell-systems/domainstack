@@ -4,16 +4,18 @@ A Rust validation framework for domain-driven design with derive macro support.
 
 ## Overview
 
-This workspace provides a complete validation solution for building domain models in Rust. It consists of three crates:
+This workspace provides a complete validation solution for building domain models in Rust. It consists of four crates:
 
 - **[domain-model](./domain-model/)** - Core validation library
 - **[domain-model-derive](./domain-model-derive/)** - Derive macro for `#[derive(Validate)]`
-- **[examples](./examples/)** - Comprehensive examples demonstrating both manual and derive-based validation
+- **[domain-model-error-envelope](./domain-model-error-envelope/)** - error-envelope integration (v0.3)
+- **[examples](./examples/)** - Comprehensive examples
 
 ## Features
 
 - **Valid-by-construction types** - Invalid states can't exist
 - **Derive macro support** - `#[derive(Validate)]` with 5 attributes
+- **HTTP integration** - One-line conversion to error-envelope format (v0.3)
 - **Composable rules** - Combine validation logic with `and`, `or`, `when`
 - **Structured error paths** - Field-level error reporting (e.g., `guest.email.value`, `rooms[1].adults`)
 - **Zero dependencies** - Core crate uses only std (regex optional for email validation)
@@ -68,13 +70,19 @@ Add to your `Cargo.toml`:
 ```toml
 [dependencies]
 # Core library only
-domain-model = "0.2"
+domain-model = "0.3"
 
 # With derive macro support
-domain-model = { version = "0.2", features = ["derive"] }
+domain-model = { version = "0.3", features = ["derive"] }
+domain-model-derive = "0.3"
+
+# With error-envelope integration for HTTP APIs (v0.3)
+domain-model = { version = "0.3", features = ["derive"] }
+domain-model-derive = "0.3"
+domain-model-error-envelope = "0.3"
 
 # Optional: enable regex-based email validation
-domain-model = { version = "0.2", features = ["derive", "email"] }
+domain-model = { version = "0.3", features = ["derive", "email"] }
 ```
 
 ## Derive Attributes
@@ -163,6 +171,10 @@ cargo run --example v2_basic
 cargo run --example v2_nested
 cargo run --example v2_collections
 cargo run --example v2_custom
+
+# v0.3 examples (error-envelope integration)
+cargo run --example v3_error_envelope_basic
+cargo run --example v3_error_envelope_nested
 ```
 
 ## Testing
@@ -181,6 +193,8 @@ cargo test -p domain-model-derive
 
 ## Error Handling
 
+### Basic Error Handling
+
 ```rust
 match user.validate() {
     Ok(_) => println!("Valid!"),
@@ -198,6 +212,51 @@ match user.validate() {
 }
 ```
 
+### HTTP API Integration (v0.3)
+
+Convert validation errors to error-envelope format with one line:
+
+```rust
+use domain_model_error_envelope::IntoEnvelopeError;
+
+async fn create_user(Json(user): Json<User>) -> Result<Json<User>, Error> {
+    user.validate()
+        .map_err(|e| e.into_envelope_error())?;
+    
+    // ... save user ...
+    Ok(Json(user))
+}
+```
+
+The error response includes field-level details with preserved paths:
+
+```json
+{
+  "code": "VALIDATION",
+  "message": "Validation failed with 2 errors",
+  "status": 400,
+  "retryable": false,
+  "details": {
+    "fields": {
+      "guest.email.value": [
+        {
+          "code": "invalid_email",
+          "message": "Invalid email format",
+          "meta": {"max": 255}
+        }
+      ],
+      "rooms[1].adults": [
+        {
+          "code": "out_of_range",
+          "message": "Must be between 1 and 4",
+          "meta": {"min": 1, "max": 4}
+        }
+      ]
+    }
+  }
+}
+```
+
 ## Documentation
 
 - [Core Library Documentation](./domain-model/README.md) - Detailed API documentation
@@ -208,22 +267,26 @@ match user.validate() {
 
 ```
 domain-model/
-├── domain-model/           # Core validation library
+├── domain-model/                 # Core validation library
 │   ├── src/
-│   │   ├── error.rs       # ValidationError
-│   │   ├── path.rs        # Structured error paths
-│   │   ├── rule.rs        # Rule<T> and composition
-│   │   ├── rules/         # Built-in validation rules
-│   │   └── validate.rs    # Validate trait
-│   └── examples/          # v0.1 manual validation examples
-├── domain-model-derive/    # Derive macro implementation
-│   ├── src/lib.rs         # #[derive(Validate)] proc macro
-│   └── tests/             # Macro integration tests
-└── examples/               # v0.2 derive macro examples
+│   │   ├── error.rs             # ValidationError
+│   │   ├── path.rs              # Structured error paths
+│   │   ├── rule.rs              # Rule<T> and composition
+│   │   ├── rules/               # Built-in validation rules
+│   │   └── validate.rs          # Validate trait
+│   └── examples/                # v0.1 manual validation examples
+├── domain-model-derive/          # Derive macro implementation
+│   ├── src/lib.rs               # #[derive(Validate)] proc macro
+│   └── tests/                   # Macro integration tests
+├── domain-model-error-envelope/  # error-envelope integration (v0.3)
+│   ├── src/lib.rs               # IntoEnvelopeError trait
+│   └── tests/                   # Conversion tests
+└── examples/                     # Runnable examples (v0.1-v0.3)
 ```
 
 ## Version History
 
+- **v0.3.0** - error-envelope integration, HTTP API support
 - **v0.2.0** - Derive macro with 5 attributes, workspace structure
 - **v0.1.0** - Core validation library with manual Validate trait
 

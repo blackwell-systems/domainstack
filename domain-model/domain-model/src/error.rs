@@ -56,6 +56,16 @@ impl ValidationError {
         map
     }
 
+    pub fn field_violations_map(&self) -> BTreeMap<String, Vec<&Violation>> {
+        let mut map = BTreeMap::new();
+        for violation in &self.violations {
+            map.entry(violation.path.to_string())
+                .or_insert_with(Vec::new)
+                .push(violation);
+        }
+        map
+    }
+
     pub fn prefixed(self, prefix: impl Into<Path>) -> Self {
         let prefix = prefix.into();
         let violations = self

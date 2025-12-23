@@ -1,0 +1,21 @@
+[package]
+name = "domain-model-error-envelope"
+version = "0.3.0"
+edition = "2021"
+rust-version = "1.65"
+license = "MIT"
+authors = ["Dayna Blackwell <blackwellsystems@protonmail.com>"]
+description = "error-envelope integration for domain-model validation framework"
+repository = "https://github.com/blackwell-systems/domainstack"
+
+[dependencies]
+domain-model = { version = "0.2.0", path = "../domain-model" }
+error-envelope = "0.2.1"
+serde_json = "1"
+
+[features]
+default = []
+
+[dev-dependencies]
+domain-model = { version = "0.2.0", path = "../domain-model", features = ["derive"] }
+domain-model-derive = { version = "0.2.0", path = "../domain-model-derive" }

@@ -20,7 +20,7 @@ impl Email {
     pub fn new(raw: String) -> Result<Self, ValidationError> {
         let rule = rules::min_len(5).and(rules::max_len(255));
         validate("value", raw.as_str(), &rule)?;
-        
+
         if !raw.contains('@') {
             return Err(ValidationError::single(
                 Path::from("value"),
@@ -28,7 +28,7 @@ impl Email {
                 "Must be a valid email address",
             ));
         }
-        
+
         Ok(Self(raw))
     }
 
@@ -120,6 +120,12 @@ pub struct BookingService {
     bookings: Arc<Mutex<Vec<Booking>>>,
 }
 
+impl Default for BookingService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl BookingService {
     pub fn new() -> Self {
         Self {
@@ -170,8 +176,7 @@ async fn health() -> &'static str {
 async fn main() -> std::io::Result<()> {
     tracing_subscriber::fmt()
         .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "info".into()),
+            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()),
         )
         .init();
 

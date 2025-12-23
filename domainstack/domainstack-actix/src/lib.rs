@@ -126,7 +126,9 @@ mod tests {
         }
     }
 
-    async fn create_user(DomainJson { domain: user, .. }: DomainJson<User, UserDto>) -> web::Json<User> {
+    async fn create_user(
+        DomainJson { domain: user, .. }: DomainJson<User, UserDto>,
+    ) -> web::Json<User> {
         web::Json(user)
     }
 
@@ -144,13 +146,11 @@ mod tests {
 
     #[actix_rt::test]
     async fn test_domain_json_valid() {
-        let app = test::init_service(
-            App::new().route("/", web::post().to(create_user))
-        ).await;
+        let app = test::init_service(App::new().route("/", web::post().to(create_user))).await;
 
         let req = test::TestRequest::post()
             .uri("/")
-            .set_json(&serde_json::json!({"name": "Alice", "age": 30}))
+            .set_json(serde_json::json!({"name": "Alice", "age": 30}))
             .to_request();
 
         let resp = test::call_service(&app, req).await;
@@ -159,13 +159,11 @@ mod tests {
 
     #[actix_rt::test]
     async fn test_domain_json_invalid() {
-        let app = test::init_service(
-            App::new().route("/", web::post().to(create_user))
-        ).await;
+        let app = test::init_service(App::new().route("/", web::post().to(create_user))).await;
 
         let req = test::TestRequest::post()
             .uri("/")
-            .set_json(&serde_json::json!({"name": "A", "age": 200}))
+            .set_json(serde_json::json!({"name": "A", "age": 200}))
             .to_request();
 
         let resp = test::call_service(&app, req).await;
@@ -173,7 +171,10 @@ mod tests {
 
         let body: serde_json::Value = test::read_body_json(resp).await;
         assert!(body["details"].is_object());
-        assert_eq!(body["message"].as_str().unwrap(), "Validation failed with 2 errors");
+        assert_eq!(
+            body["message"].as_str().unwrap(),
+            "Validation failed with 2 errors"
+        );
 
         let details = body["details"].as_object().unwrap();
         let fields = details["fields"].as_object().unwrap();
@@ -184,9 +185,7 @@ mod tests {
 
     #[actix_rt::test]
     async fn test_domain_json_malformed_json() {
-        let app = test::init_service(
-            App::new().route("/", web::post().to(create_user))
-        ).await;
+        let app = test::init_service(App::new().route("/", web::post().to(create_user))).await;
 
         let req = test::TestRequest::post()
             .uri("/")
@@ -200,13 +199,11 @@ mod tests {
 
     #[actix_rt::test]
     async fn test_domain_json_missing_fields() {
-        let app = test::init_service(
-            App::new().route("/", web::post().to(create_user))
-        ).await;
+        let app = test::init_service(App::new().route("/", web::post().to(create_user))).await;
 
         let req = test::TestRequest::post()
             .uri("/")
-            .set_json(&serde_json::json!({"name": "Alice"}))
+            .set_json(serde_json::json!({"name": "Alice"}))
             .to_request();
 
         let resp = test::call_service(&app, req).await;
@@ -215,13 +212,12 @@ mod tests {
 
     #[actix_rt::test]
     async fn test_type_alias_pattern() {
-        let app = test::init_service(
-            App::new().route("/", web::post().to(create_user_with_alias))
-        ).await;
+        let app =
+            test::init_service(App::new().route("/", web::post().to(create_user_with_alias))).await;
 
         let req = test::TestRequest::post()
             .uri("/")
-            .set_json(&serde_json::json!({"name": "Alice", "age": 30}))
+            .set_json(serde_json::json!({"name": "Alice", "age": 30}))
             .to_request();
 
         let resp = test::call_service(&app, req).await;
@@ -230,13 +226,13 @@ mod tests {
 
     #[actix_rt::test]
     async fn test_result_style_handler() {
-        let app = test::init_service(
-            App::new().route("/", web::post().to(create_user_result_style))
-        ).await;
+        let app =
+            test::init_service(App::new().route("/", web::post().to(create_user_result_style)))
+                .await;
 
         let req = test::TestRequest::post()
             .uri("/")
-            .set_json(&serde_json::json!({"name": "Alice", "age": 30}))
+            .set_json(serde_json::json!({"name": "Alice", "age": 30}))
             .to_request();
 
         let resp = test::call_service(&app, req).await;

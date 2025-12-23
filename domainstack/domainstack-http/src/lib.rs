@@ -1,6 +1,7 @@
 use domainstack::{Validate, ValidationError};
 use domainstack_envelope::IntoEnvelopeError;
 
+#[allow(clippy::result_large_err)]
 pub fn into_domain<T, Dto>(dto: Dto) -> Result<T, error_envelope::Error>
 where
     T: TryFrom<Dto, Error = ValidationError>,
@@ -8,6 +9,7 @@ where
     T::try_from(dto).map_err(|e| e.into_envelope_error())
 }
 
+#[allow(clippy::result_large_err)]
 pub fn validate_dto<Dto>(dto: Dto) -> Result<Dto, error_envelope::Error>
 where
     Dto: Validate,
@@ -30,7 +32,7 @@ mod tests {
     }
 
     #[derive(Debug, Clone)]
-    struct Email(String);
+    struct Email(#[allow(dead_code)] String);
 
     impl Email {
         pub fn new(raw: String) -> Result<Self, ValidationError> {
@@ -121,6 +123,7 @@ mod tests {
     }
 
     #[derive(Debug)]
+    #[allow(dead_code)]
     struct User {
         name: String,
         age: u8,

@@ -45,9 +45,12 @@ where
     type Rejection = ErrorResponse;
 
     async fn from_request(req: Request, state: &S) -> Result<Self, Self::Rejection> {
-        let Json(dto) = Json::<Dto>::from_request(req, state)
-            .await
-            .map_err(|e| ErrorResponse(error_envelope::Error::bad_request(format!("Invalid JSON: {}", e))))?;
+        let Json(dto) = Json::<Dto>::from_request(req, state).await.map_err(|e| {
+            ErrorResponse(error_envelope::Error::bad_request(format!(
+                "Invalid JSON: {}",
+                e
+            )))
+        })?;
 
         let domain = domainstack_http::into_domain(dto).map_err(ErrorResponse)?;
 
@@ -160,9 +163,12 @@ mod tests {
         response.assert_status_bad_request();
 
         let body: serde_json::Value = response.json();
-        
+
         assert!(body["details"].is_object());
-        assert_eq!(body["message"].as_str().unwrap(), "Validation failed with 2 errors");
+        assert_eq!(
+            body["message"].as_str().unwrap(),
+            "Validation failed with 2 errors"
+        );
 
         let details = body["details"].as_object().unwrap();
         let fields = details["fields"].as_object().unwrap();

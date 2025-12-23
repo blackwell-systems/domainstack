@@ -174,7 +174,7 @@ cargo test --all-features  # Test with email feature enabled
 
 ## License
 
-MIT
+Apache 2.0
 
 ## Author
 

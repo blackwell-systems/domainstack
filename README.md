@@ -13,6 +13,46 @@
 
 > **Domain validation framework** • Derive macro support • HTTP integration • Made with Rust
 
+## Architecture
+
+```mermaid
+%%{init: {'theme':'dark'}}%%
+graph TB
+    subgraph User["🧑‍💻 User Code"]
+        Domain["Domain Types<br/>(User, Email, Team)"]
+        Handler["HTTP Handlers<br/>(Axum/Actix/etc)"]
+    end
+    
+    subgraph Core["📦 domainstack (Core)"]
+        Validate["Validate Trait"]
+        Rules["Built-in Rules<br/>(email, length, range)"]
+        Error["ValidationError<br/>(structured paths)"]
+    end
+    
+    subgraph Derive["🔧 domainstack-derive"]
+        Macro["#[derive(Validate)]<br/>Proc Macro"]
+    end
+    
+    subgraph Envelope["🌐 domainstack-envelope"]
+        Convert["IntoEnvelopeError<br/>(HTTP errors)"]
+    end
+    
+    Domain -->|"implements"| Validate
+    Domain -->|"uses"| Rules
+    Macro -->|"generates"| Validate
+    Validate -->|"returns"| Error
+    Handler -->|"validates"| Domain
+    Handler -->|"converts"| Convert
+    Error -->|"one line"| Convert
+    Convert -->|"produces"| JSON["📄 Structured JSON<br/>{fields: {...}}"]
+    
+    style Core fill:#1a1a2e,stroke:#16213e,stroke-width:2px,color:#eee
+    style Derive fill:#0f3460,stroke:#16213e,stroke-width:2px,color:#eee
+    style Envelope fill:#16213e,stroke:#16213e,stroke-width:2px,color:#eee
+    style User fill:#533483,stroke:#16213e,stroke-width:2px,color:#eee
+    style JSON fill:#e94560,stroke:#16213e,stroke-width:2px,color:#eee
+```
+
 ## Features
 
 - **Valid-by-construction types** - Invalid states can't exist

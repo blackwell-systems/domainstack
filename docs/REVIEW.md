@@ -472,7 +472,7 @@ To:
 ```
 **Type:** Rust Library (Workspace with 4 crates)
 **MSRV:** 1.65+ (GATs required)
-**License:** MIT (tentative)
+**License:** Apache 2.0 (tentative)
 ```
 
 ---

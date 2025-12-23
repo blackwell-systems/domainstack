@@ -1,0 +1,5 @@
+
+# Coverage
+target/llvm-cov/
+lcov.info
+coverage.json

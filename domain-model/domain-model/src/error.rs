@@ -55,6 +55,22 @@ impl ValidationError {
         }
         map
     }
+
+    pub fn prefixed(self, prefix: impl Into<Path>) -> Self {
+        let prefix = prefix.into();
+        let violations = self
+            .violations
+            .into_iter()
+            .map(|mut v| {
+                let mut segments = prefix.0.clone();
+                segments.extend(v.path.0);
+                v.path = Path(segments);
+                v
+            })
+            .collect();
+
+        Self { violations }
+    }
 }
 
 impl std::fmt::Display for ValidationError {

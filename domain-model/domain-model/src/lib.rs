@@ -11,7 +11,8 @@
 //!
 //! impl Email {
 //!     pub fn new(raw: String) -> Result<Self, ValidationError> {
-//!         validate("email", raw.as_str(), rules::email())?;
+//!         let rule = rules::email();
+//!         validate("email", raw.as_str(), &rule)?;
 //!         Ok(Self(raw))
 //!     }
 //! }

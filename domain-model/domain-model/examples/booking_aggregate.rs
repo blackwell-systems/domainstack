@@ -5,14 +5,16 @@ pub struct Email(String);
 
 impl Email {
     pub fn new(raw: String) -> Result<Self, ValidationError> {
-        validate("email", raw.as_str(), rules::email())?;
+        let rule = rules::email();
+        validate("email", raw.as_str(), &rule)?;
         Ok(Self(raw))
     }
 }
 
 impl Validate for Email {
     fn validate(&self) -> Result<(), ValidationError> {
-        validate("email", self.0.as_str(), rules::email())
+        let rule = rules::email();
+        validate("email", self.0.as_str(), &rule)
     }
 }
 
@@ -34,10 +36,11 @@ impl Validate for Guest {
     fn validate(&self) -> Result<(), ValidationError> {
         let mut err = ValidationError::default();
 
+        let rule = rules::min_len(1).and(rules::max_len(50));
         if let Err(e) = validate(
             "name",
             self.name.as_str(),
-            rules::min_len(1).and(rules::max_len(50)),
+            &rule,
         ) {
             err.extend(e);
         }
@@ -75,7 +78,8 @@ impl Validate for BookingRequest {
     fn validate(&self) -> Result<(), ValidationError> {
         let mut err = ValidationError::default();
 
-        if let Err(e) = validate("guests_count", &self.guests_count, rules::range(1, 10)) {
+        let rule = rules::range(1, 10);
+        if let Err(e) = validate("guests_count", &self.guests_count, &rule) {
             err.extend(e);
         }
 

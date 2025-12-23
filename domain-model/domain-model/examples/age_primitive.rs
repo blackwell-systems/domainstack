@@ -5,7 +5,8 @@ pub struct Age(u8);
 
 impl Age {
     pub fn new(value: u8) -> Result<Self, ValidationError> {
-        validate("age", &value, rules::range(18, 120))?;
+        let rule = rules::range(18, 120);
+        validate("age", &value, &rule)?;
         Ok(Self(value))
     }
 
@@ -16,7 +17,8 @@ impl Age {
 
 impl Validate for Age {
     fn validate(&self) -> Result<(), ValidationError> {
-        validate("age", &self.0, rules::range(18, 120))
+        let rule = rules::range(18, 120);
+        validate("age", &self.0, &rule)
     }
 }
 

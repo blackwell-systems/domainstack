@@ -3,7 +3,7 @@ use crate::{Path, Rule, ValidationError};
 pub fn validate<T: ?Sized + 'static>(
     path: impl Into<Path>,
     value: &T,
-    rule: Rule<T>,
+    rule: &Rule<T>,
 ) -> Result<(), ValidationError> {
     let err = rule.apply(value);
 
@@ -32,13 +32,13 @@ mod tests {
 
     #[test]
     fn test_validate_ok() {
-        let result = validate("value", &5, positive_rule());
+        let result = validate("value", &5, &positive_rule());
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_validate_err() {
-        let result = validate("value", &-5, positive_rule());
+        let result = validate("value", &-5, &positive_rule());
         assert!(result.is_err());
 
         let err = result.unwrap_err();
@@ -52,7 +52,7 @@ mod tests {
         let result = validate(
             Path::root().field("guest").field("age"),
             &-5,
-            positive_rule(),
+            &positive_rule(),
         );
 
         assert!(result.is_err());

@@ -1,0 +1,25 @@
+[package]
+name = "domain-model-examples"
+version = "0.2.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+domain-model = { path = "../domain-model", features = ["derive"] }
+domain-model-derive = { path = "../domain-model-derive" }
+
+[[example]]
+name = "v2_basic"
+path = "v2_basic.rs"
+
+[[example]]
+name = "v2_nested"
+path = "v2_nested.rs"
+
+[[example]]
+name = "v2_collections"
+path = "v2_collections.rs"
+
+[[example]]
+name = "v2_custom"
+path = "v2_custom.rs"

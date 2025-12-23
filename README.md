@@ -1,7 +1,5 @@
 # domainstack
 
-**Turn untrusted input into valid domain objects—with structured, field-level errors**
-
 [![Blackwell Systems™](https://raw.githubusercontent.com/blackwell-systems/blackwell-docs-theme/main/badge-trademark.svg)](https://github.com/blackwell-systems)
 [![Crates.io](https://img.shields.io/crates/v/domainstack.svg)](https://crates.io/crates/domainstack)
 [![Documentation](https://docs.rs/domainstack/badge.svg)](https://docs.rs/domainstack)
@@ -13,9 +11,10 @@
 [![codecov](https://codecov.io/gh/blackwell-systems/domainstack/branch/main/graph/badge.svg)](https://codecov.io/gh/blackwell-systems/domainstack)
 [![Sponsor](https://img.shields.io/badge/Sponsor-Buy%20Me%20a%20Coffee-yellow?logo=buy-me-a-coffee&logoColor=white)](https://buymeacoffee.com/blackwellsystems)
 
+**Turn untrusted input into valid domain objects—with structured, field-level errors**
+
 ## What is domainstack?
 
-**The 10-second pitch:**  
 domainstack helps you turn untrusted input into valid domain objects—then report failures back to clients with structured, field-level errors.
 
 It's built around a service-oriented reality:
@@ -419,24 +418,9 @@ This repository contains seven crates:
 
 This project has **multiple README files** for different audiences:
 
-1. **[README.md](./README.md)** (this file) - **GitHub visitors**
-   - Quick pitch and positioning
-   - Comparison with alternatives
-   - Quick start and mental models
-   - Use as the project landing page
-
-2. **[domainstack/README.md](./domainstack/README.md)** - **Cargo/crates.io users**
-   - Technical reference for the workspace
-   - All derive attributes documented
-   - Rule composition patterns
-   - Test and build instructions
-
-3. **Individual crate READMEs** - **Library implementers**
-   - Core library deep-dive
-   - Derive macro internals
-   - HTTP integration specifics
-
-**Why multiple READMEs?** Different entry points serve different needs. GitHub visitors want positioning and examples. Cargo users want technical details. Docs.rs readers want API specifics. We accept some duplication to optimize each experience.
+1. **[README.md](./README.md)** (this file) - GitHub visitors
+2. **[domainstack/README.md](./domainstack/README.md)** - Cargo/crates.io users
+3. **Individual crate READMEs** - Library implementers
 
 ### Additional Documentation
 

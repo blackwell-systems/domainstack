@@ -1,0 +1,3 @@
+[workspace]
+members = ["domainstack", "domainstack-derive", "domainstack-envelope", "examples"]
+resolver = "2"

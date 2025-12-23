@@ -1,0 +1,24 @@
+[package]
+name = "domainstack"
+version = "0.3.0"
+edition = "2021"
+rust-version = "1.65"
+authors = ["Dayna Blackwell <blackwellsystems@protonmail.com>"]
+license = "MIT"
+description = "Domain validation framework for Rust services"
+repository = "https://github.com/blackwell-systems/domainstack"
+documentation = "https://docs.rs/domainstack"
+keywords = ["validation", "domain", "ddd", "api", "web"]
+categories = ["web-programming", "data-structures"]
+
+[dependencies]
+regex = { version = "1.10", optional = true }
+domainstack-derive = { version = "0.3.0", path = "../domainstack-derive", optional = true }
+
+[features]
+default = ["std"]
+std = []
+email = ["regex"]
+derive = ["domainstack-derive"]
+
+[dev-dependencies]

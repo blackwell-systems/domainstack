@@ -1,8 +1,10 @@
 use domainstack::prelude::*;
 use domainstack::Validate;
 
+#[allow(unknown_lints)]
+#[allow(clippy::manual_is_multiple_of)]
 fn validate_even(value: &u8) -> Result<(), ValidationError> {
-    if value.is_multiple_of(2) {
+    if value % 2 == 0 {
         Ok(())
     } else {
         Err(ValidationError::single(

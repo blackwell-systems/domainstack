@@ -2,7 +2,7 @@
 name = "domainstack-derive"
 version = "0.3.0"
 edition = "2021"
-rust-version = "1.65"
+rust-version = "1.68"
 authors = ["Dayna Blackwell <blackwellsystems@protonmail.com>"]
 license = "Apache-2.0"
 description = "Derive macro for domainstack validation framework"

@@ -24,4 +24,4 @@ tokio = { version = "1", features = ["macros", "rt"] }
 [dev-dependencies]
 domainstack = { workspace = true, features = ["derive"] }
 domainstack-derive = { workspace = true }
-axum-test = "15"
+axum-test = "14"

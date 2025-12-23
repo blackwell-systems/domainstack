@@ -1,5 +1,5 @@
 use domainstack::prelude::*;
-use domainstack_derive::Validate;
+use domainstack::Validate;
 use domainstack_envelope::IntoEnvelopeError;
 
 #[derive(Debug, Validate)]

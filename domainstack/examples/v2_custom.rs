@@ -1,5 +1,5 @@
 use domainstack::prelude::*;
-use domainstack_derive::Validate;
+use domainstack::Validate;
 
 fn validate_even(value: &u8) -> Result<(), ValidationError> {
     if *value % 2 == 0 {

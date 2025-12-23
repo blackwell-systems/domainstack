@@ -26,7 +26,7 @@
 
 ```rust
 use domainstack::prelude::*;
-use domainstack_derive::Validate;
+use domainstack::Validate;
 
 // Email with custom validation
 #[derive(Debug, Clone, Validate)]
@@ -90,7 +90,85 @@ fn main() {
 }
 ```
 
-### HTTP Integration (One Line!)
+## Valid-by-Construction Pattern
+
+The recommended approach enforces validation at domain boundaries:
+
+```rust
+use domainstack::prelude::*;
+use serde::Deserialize;
+
+// DTO - Public, for deserialization
+#[derive(Deserialize)]
+pub struct UserDto {
+    pub name: String,
+    pub age: u8,
+    pub email: String,
+}
+
+// Domain - Private fields, enforced validity
+pub struct User {
+    name: String,     // Private!
+    age: u8,
+    email: Email,
+}
+
+impl User {
+    // Smart constructor - validation enforced here
+    pub fn new(name: String, age: u8, email: String) -> Result<Self, ValidationError> {
+        let mut err = ValidationError::new();
+        
+        let name_rule = rules::min_len(2).and(rules::max_len(50));
+        if let Err(e) = validate("name", name.as_str(), &name_rule) {
+            err.extend(e);
+        }
+        
+        let age_rule = rules::range(18, 120);
+        if let Err(e) = validate("age", &age, &age_rule) {
+            err.extend(e);
+        }
+        
+        let email = Email::new(email).map_err(|e| e.prefixed("email"))?;
+        
+        if !err.is_empty() {
+            return Err(err);
+        }
+        
+        Ok(Self { name, age, email })
+    }
+    
+    // Getters only - no setters
+    pub fn name(&self) -> &str { &self.name }
+    pub fn age(&self) -> u8 { self.age }
+    pub fn email(&self) -> &Email { &self.email }
+}
+
+// Conversion at boundary
+impl TryFrom<UserDto> for User {
+    type Error = ValidationError;
+    
+    fn try_from(dto: UserDto) -> Result<Self, Self::Error> {
+        User::new(dto.name, dto.age, dto.email)
+    }
+}
+
+// HTTP handler
+async fn create_user(Json(dto): Json<UserDto>) -> Result<Json<User>, Error> {
+    let user = User::try_from(dto)
+        .map_err(|e| e.into_envelope_error())?;
+    // user is GUARANTEED valid here - no need to check!
+    Ok(Json(user))
+}
+```
+
+**Key Points**:
+- DTOs are public for deserialization
+- Domain types have private fields
+- Validation happens in constructors
+- `TryFrom` enforces validation at boundary
+- Invalid domain objects cannot exist
+
+### HTTP Integration (Optional Adapter)
 
 ```rust
 use domainstack_envelope::IntoEnvelopeError;
@@ -142,20 +220,18 @@ async fn create_team(Json(team): Json<Team>) -> Result<Json<Team>, Error> {
 
 ## Installation
 
-Add to your `Cargo.toml`:
-
 ```toml
 [dependencies]
-domainstack = { version = "0.3", features = ["derive"] }
-domainstack-derive = "0.3"
-```
+# Core library only
+domainstack = "0.3"
 
-For HTTP API integration:
-
-```toml
-[dependencies]
+# With derive macro (recommended)
 domainstack = { version = "0.3", features = ["derive"] }
-domainstack-derive = "0.3"
+
+# With email validation (adds regex dependency)
+domainstack = { version = "0.3", features = ["derive", "email"] }
+
+# Optional: HTTP integration adapter
 domainstack-envelope = "0.3"
 ```
 

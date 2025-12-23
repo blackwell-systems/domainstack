@@ -45,3 +45,6 @@ pub use path::{Path, PathSegment};
 pub use rule::Rule;
 pub use validate::Validate;
 pub use violation::{Meta, Violation};
+
+#[cfg(feature = "derive")]
+pub use domainstack_derive::Validate;

@@ -425,7 +425,7 @@ This project has **multiple README files** for different audiences:
 ### Additional Documentation
 
 - **[API Guide](./docs/api-guide.md)** - Complete API documentation
-- **[Rules Reference](./docs/rules.md)** - All validation rules
+- **[Rules Reference](./docs/RULES.md)** - All validation rules
 - **[Architecture](./docs/architecture.md)** - System design and data flow
 - **[Examples](./domainstack/examples/)** - 9 runnable examples
 - **[API Documentation](https://docs.rs/domainstack)** - Generated API reference

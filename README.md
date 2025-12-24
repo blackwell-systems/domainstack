@@ -540,13 +540,6 @@ cargo test -p domainstack-derive
 cargo test -p domainstack-envelope
 ```
 
-## Version History
-
-- **v0.4.0** (current) - Framework adapters for Axum and Actix-web
-- **v0.3.0** - error-envelope integration, HTTP API support
-- **v0.2.0** - Derive macro with 5 attributes, workspace structure
-- **v0.1.0** - Core validation library with manual Validate trait
-
 ## License
 
 Apache 2.0

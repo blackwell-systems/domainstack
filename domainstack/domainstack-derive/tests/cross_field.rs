@@ -2,7 +2,11 @@ use domainstack::prelude::*;
 use domainstack_derive::Validate;
 
 #[derive(Debug, Validate)]
-#[validate(check = "self.password == self.password_confirmation", code = "passwords_mismatch", message = "Passwords must match")]
+#[validate(
+    check = "self.password == self.password_confirmation",
+    code = "passwords_mismatch",
+    message = "Passwords must match"
+)]
 struct RegisterForm {
     #[validate(length(min = 8))]
     password: String,
@@ -56,7 +60,11 @@ fn test_field_and_cross_field_validation() {
 }
 
 #[derive(Debug, Validate)]
-#[validate(check = "self.end_date > self.start_date", code = "invalid_date_range", message = "End date must be after start date")]
+#[validate(
+    check = "self.end_date > self.start_date",
+    code = "invalid_date_range",
+    message = "End date must be after start date"
+)]
 struct DateRange {
     start_date: u32,
     end_date: u32,

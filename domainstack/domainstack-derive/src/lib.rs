@@ -539,8 +539,14 @@ fn generate_custom_validation(
 
 fn generate_struct_validation(sv: &StructValidation) -> proc_macro2::TokenStream {
     let check_expr: proc_macro2::TokenStream = sv.check.parse().unwrap();
-    let code = sv.code.as_deref().unwrap_or("cross_field_validation_failed");
-    let message = sv.message.as_deref().unwrap_or("Cross-field validation failed");
+    let code = sv
+        .code
+        .as_deref()
+        .unwrap_or("cross_field_validation_failed");
+    let message = sv
+        .message
+        .as_deref()
+        .unwrap_or("Cross-field validation failed");
 
     let validation_code = quote! {
         if !(#check_expr) {

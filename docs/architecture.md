@@ -420,6 +420,6 @@ Will add `domainstack-schema` crate:
 ## See Also
 
 - [API Guide](./api-guide.md) - Complete usage documentation
-- [Rules Reference](./rules.md) - All validation rules
-- [CONCEPT.md](./CONCEPT.md) - Design philosophy
+- [Rules Reference](./RULES.md) - All validation rules
+- [BREAKING_CHANGES_ANALYSIS.md](./BREAKING_CHANGES_ANALYSIS.md) - Roadmap and design strategy
 - [Source Code](../domainstack/) - Implementation

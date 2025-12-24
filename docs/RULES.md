@@ -1,6 +1,6 @@
-# Validation Rules Reference (v0.4.0)
+# Validation Rules Reference (v0.5.0 Unreleased)
 
-**Complete reference for all 18 built-in validation rules in domainstack.**
+**Complete reference for all 31 built-in validation rules in domainstack.**
 
 ---
 
@@ -8,13 +8,15 @@
 
 | Category | Count | Rules |
 |----------|-------|-------|
-| **String** | 12 | `email`, `non_empty`, `min_len`, `max_len`, `length`, `url`*, `alphanumeric`*, `alpha_only`*, `numeric_string`*, `contains`*, `starts_with`*, `ends_with`*, `matches_regex`** |
-| **Numeric** | 6 | `range`, `min`, `max`, `positive`*, `negative`*, `multiple_of`* |
-| **Total** | **18** | *New in v0.4 | **Requires `regex` feature |
+| **String** | 17 | `email`†, `non_empty`, `min_len`, `max_len`, `length`, `url`†, `alphanumeric`, `alpha_only`, `numeric_string`, `contains`, `starts_with`, `ends_with`, `matches_regex`†, `non_blank`‡, `no_whitespace`‡, `ascii`‡, `len_chars`‡ |
+| **Numeric** | 8 | `range`, `min`, `max`, `positive`, `negative`, `multiple_of`, `finite`‡, `non_zero`‡ |
+| **Choice** | 3 | `equals`‡, `not_equals`‡, `one_of`‡ |
+| **Collection** | 3 | `min_items`‡, `max_items`‡, `unique`‡ |
+| **Total** | **31** | †Requires `regex` feature \| ‡New in v0.5 (unreleased) |
 
 ---
 
-## String Rules (12 rules)
+## String Rules (17 rules)
 
 ### Core String Rules
 
@@ -227,7 +229,74 @@ Validates that a string matches the specified regex pattern.
 
 ---
 
-## Numeric Rules (6 rules)
+### String Semantics (NEW in v0.5)
+
+#### `non_blank()` 🆕
+Validates that a string is not empty after trimming whitespace.
+
+```rust
+let rule = rules::non_blank();
+assert!(rule.apply("  hello  ").is_empty());  // has content
+assert!(!rule.apply("   ").is_empty());       // only whitespace
+assert!(!rule.apply("").is_empty());           // empty
+```
+
+- **Error Code:** `blank_string`
+- **Message:** `"Must not be blank (whitespace only)"`
+- **Use Cases:** Catching inputs like "   " that pass non_empty() but have no actual content
+
+---
+
+#### `no_whitespace()` 🆕
+Validates that a string contains no whitespace characters.
+
+```rust
+let rule = rules::no_whitespace();
+assert!(rule.apply("username").is_empty());
+assert!(rule.apply("user_name").is_empty());
+assert!(!rule.apply("user name").is_empty());  // contains space
+```
+
+- **Error Code:** `contains_whitespace`
+- **Message:** `"Must not contain whitespace"`
+- **Use Cases:** Usernames, slugs, identifiers
+
+---
+
+#### `ascii()` 🆕
+Validates that all characters are ASCII (0-127).
+
+```rust
+let rule = rules::ascii();
+assert!(rule.apply("Hello123").is_empty());
+assert!(!rule.apply("Héllo").is_empty());     // contains é
+assert!(!rule.apply("Hello🚀").is_empty());   // contains emoji
+```
+
+- **Error Code:** `non_ascii`
+- **Message:** `"Must contain only ASCII characters"`
+- **Use Cases:** Legacy systems, ASCII-only fields
+
+---
+
+#### `len_chars(min: usize, max: usize)` 🆕
+Validates character count (not byte count) - handles Unicode correctly.
+
+```rust
+let rule = rules::len_chars(3, 10);
+assert!(rule.apply("🚀🚀🚀").is_empty());    // 3 chars, not 12 bytes
+assert!(rule.apply("hello").is_empty());
+assert!(!rule.apply("hi").is_empty());        // too few
+```
+
+- **Error Codes:** `min_chars` or `max_chars`
+- **Message:** `"Must be at least {min} characters"` or `"Must be at most {max} characters"`
+- **Meta:** `{"min": "3", "max": "10", "actual": "2"}`
+- **Use Cases:** Unicode text validation where byte length differs from character count
+
+---
+
+## Numeric Rules (8 rules)
 
 ### Range Validation
 
@@ -334,6 +403,150 @@ assert!(!rule.apply(&7).is_empty());
 - **Message:** `"Must be a multiple of {divisor}"`
 - **Meta:** `{"divisor": "5"}`
 - **Use Cases:** Quantity validation (e.g., "packs of 6"), step values
+
+---
+
+### Special Numeric Validation (NEW in v0.5)
+
+#### `finite<T>()` 🆕
+Validates that a floating-point value is finite (not NaN or infinity).
+
+```rust
+let rule = rules::finite();
+assert!(rule.apply(&42.0_f64).is_empty());
+assert!(rule.apply(&0.0).is_empty());
+assert!(!rule.apply(&f64::NAN).is_empty());
+assert!(!rule.apply(&f64::INFINITY).is_empty());
+```
+
+- **Error Code:** `not_finite`
+- **Message:** `"Must be a finite number (not NaN or infinity)"`
+- **Use Cases:** Catching NaN/infinity before range checks (NaN slips through PartialOrd comparisons)
+- **Important:** Always combine with `range()` for float validation
+
+---
+
+#### `non_zero<T>()` 🆕
+Validates that a value is not zero (uses `!= T::default()`).
+
+```rust
+let rule = rules::non_zero();
+assert!(rule.apply(&42).is_empty());
+assert!(rule.apply(&-5).is_empty());
+assert!(!rule.apply(&0).is_empty());
+```
+
+- **Error Code:** `zero_value`
+- **Message:** `"Must be non-zero"`
+- **Use Cases:** Division inputs, non-zero quantities
+
+---
+
+## Choice/Membership Rules (3 rules) 🆕
+
+### `equals<T>(expected: T)`
+Validates that a value equals the specified value.
+
+```rust
+let rule = rules::equals("active");
+assert!(rule.apply(&"active").is_empty());
+assert!(!rule.apply(&"inactive").is_empty());
+
+// Works with numbers too
+let rule = rules::equals(42);
+assert!(rule.apply(&42).is_empty());
+```
+
+- **Error Code:** `not_equal`
+- **Message:** `"Must equal '{expected}'"`
+- **Meta:** `{"expected": "value"}`
+- **Use Cases:** Fixed value validation, status checks
+
+---
+
+### `not_equals<T>(forbidden: T)`
+Validates that a value does NOT equal the specified value.
+
+```rust
+let rule = rules::not_equals("banned");
+assert!(rule.apply(&"active").is_empty());
+assert!(!rule.apply(&"banned").is_empty());
+```
+
+- **Error Code:** `forbidden_value`
+- **Message:** `"Must not equal '{forbidden}'"`
+- **Meta:** `{"forbidden": "value"}`
+- **Use Cases:** Blacklist validation, reserved values
+
+---
+
+### `one_of<T>(allowed: &[T])`
+Validates that a value is in the allowed set.
+
+```rust
+let rule = rules::one_of(&["active", "pending", "inactive"]);
+assert!(rule.apply(&"active").is_empty());
+assert!(rule.apply(&"pending").is_empty());
+assert!(!rule.apply(&"banned").is_empty());
+```
+
+- **Error Code:** `not_in_set`
+- **Message:** `"Must be one of: {allowed}"`
+- **Meta:** `{"allowed": "[value1, value2, ...]"}`
+- **Use Cases:** Enum validation, status codes, role checks
+
+---
+
+## Collection Rules (3 rules) 🆕
+
+### `min_items<T>(min: usize)`
+Validates that a collection has at least the minimum number of items.
+
+```rust
+let rule = rules::min_items(2);
+assert!(rule.apply(&[1, 2, 3]).is_empty());
+assert!(rule.apply(&[1, 2]).is_empty());     // exactly min
+assert!(!rule.apply(&[1]).is_empty());        // too few
+```
+
+- **Error Code:** `too_few_items`
+- **Message:** `"Must have at least {min} items"`
+- **Meta:** `{"min": "2", "actual": "1"}`
+- **Use Cases:** Required list items, minimum selections
+
+---
+
+### `max_items<T>(max: usize)`
+Validates that a collection has at most the maximum number of items.
+
+```rust
+let rule = rules::max_items(3);
+assert!(rule.apply(&[1, 2]).is_empty());
+assert!(rule.apply(&[1, 2, 3]).is_empty());  // exactly max
+assert!(!rule.apply(&[1, 2, 3, 4]).is_empty()); // too many
+```
+
+- **Error Code:** `too_many_items`
+- **Message:** `"Must have at most {max} items"`
+- **Meta:** `{"max": "3", "actual": "4"}`
+- **Use Cases:** Limit selections, capacity constraints
+
+---
+
+### `unique<T>()`
+Validates that all items in a collection are unique (no duplicates).
+
+```rust
+let rule = rules::unique();
+assert!(rule.apply(&[1, 2, 3]).is_empty());
+assert!(!rule.apply(&[1, 2, 2, 3]).is_empty()); // duplicate 2
+```
+
+- **Error Code:** `duplicate_items`
+- **Message:** `"All items must be unique (found {count} duplicates)"`
+- **Meta:** `{"duplicates": "1"}`
+- **Use Cases:** Unique tags, no duplicate selections
+- **Performance:** Uses HashSet for O(n) duplicate detection
 
 ---
 

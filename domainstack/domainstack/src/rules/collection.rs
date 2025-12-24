@@ -12,9 +12,9 @@ use std::hash::Hash;
 /// use domainstack::prelude::*;
 ///
 /// let rule = rules::min_items(2);
-/// assert!(rule.apply(&vec![1, 2, 3]).is_empty());
-/// assert!(rule.apply(&vec![1, 2]).is_empty());   // exactly min
-/// assert!(!rule.apply(&vec![1]).is_empty());     // too few
+/// assert!(rule.apply(&[1, 2, 3]).is_empty());
+/// assert!(rule.apply(&[1, 2]).is_empty());   // exactly min
+/// assert!(!rule.apply(&[1]).is_empty());     // too few
 /// assert!(!rule.apply(&Vec::<i32>::new()).is_empty()); // empty
 /// ```
 ///
@@ -32,9 +32,7 @@ pub fn min_items<T: 'static>(min: usize) -> Rule<[T]> {
                 format!("Must have at least {} items", min),
             );
             err.violations[0].meta.insert("min", min.to_string());
-            err.violations[0]
-                .meta
-                .insert("actual", count.to_string());
+            err.violations[0].meta.insert("actual", count.to_string());
             err
         } else {
             ValidationError::default()
@@ -52,9 +50,9 @@ pub fn min_items<T: 'static>(min: usize) -> Rule<[T]> {
 /// use domainstack::prelude::*;
 ///
 /// let rule = rules::max_items(3);
-/// assert!(rule.apply(&vec![1, 2]).is_empty());
-/// assert!(rule.apply(&vec![1, 2, 3]).is_empty()); // exactly max
-/// assert!(!rule.apply(&vec![1, 2, 3, 4]).is_empty()); // too many
+/// assert!(rule.apply(&[1, 2]).is_empty());
+/// assert!(rule.apply(&[1, 2, 3]).is_empty()); // exactly max
+/// assert!(!rule.apply(&[1, 2, 3, 4]).is_empty()); // too many
 /// ```
 ///
 /// # Error Code
@@ -71,9 +69,7 @@ pub fn max_items<T: 'static>(max: usize) -> Rule<[T]> {
                 format!("Must have at most {} items", max),
             );
             err.violations[0].meta.insert("max", max.to_string());
-            err.violations[0]
-                .meta
-                .insert("actual", count.to_string());
+            err.violations[0].meta.insert("actual", count.to_string());
             err
         } else {
             ValidationError::default()
@@ -91,10 +87,10 @@ pub fn max_items<T: 'static>(max: usize) -> Rule<[T]> {
 /// use domainstack::prelude::*;
 ///
 /// let rule = rules::unique();
-/// assert!(rule.apply(&vec![1, 2, 3]).is_empty());
-/// assert!(rule.apply(&vec!["a", "b", "c"]).is_empty());
-/// assert!(!rule.apply(&vec![1, 2, 2, 3]).is_empty()); // duplicate 2
-/// assert!(!rule.apply(&vec!["a", "b", "a"]).is_empty()); // duplicate "a"
+/// assert!(rule.apply(&[1, 2, 3]).is_empty());
+/// assert!(rule.apply(&["a", "b", "c"]).is_empty());
+/// assert!(!rule.apply(&[1, 2, 2, 3]).is_empty()); // duplicate 2
+/// assert!(!rule.apply(&["a", "b", "a"]).is_empty()); // duplicate "a"
 /// ```
 ///
 /// # Error Code
@@ -119,7 +115,10 @@ where
             let mut err = ValidationError::single(
                 ctx.full_path(),
                 "duplicate_items",
-                format!("All items must be unique (found {} duplicates)", duplicate_count),
+                format!(
+                    "All items must be unique (found {} duplicates)",
+                    duplicate_count
+                ),
             );
             err.violations[0]
                 .meta
@@ -138,18 +137,18 @@ mod tests {
     #[test]
     fn test_min_items_valid() {
         let rule: Rule<[i32]> = min_items(2);
-        assert!(rule.apply(&vec![1, 2, 3]).is_empty());
-        assert!(rule.apply(&vec![1, 2]).is_empty()); // exactly min
+        assert!(rule.apply(&[1, 2, 3]).is_empty());
+        assert!(rule.apply(&[1, 2]).is_empty()); // exactly min
 
         let rule_str: Rule<[&str]> = min_items(2);
-        assert!(rule_str.apply(&vec!["a", "b", "c"]).is_empty());
+        assert!(rule_str.apply(&["a", "b", "c"]).is_empty());
     }
 
     #[test]
     fn test_min_items_invalid() {
         let rule = min_items(2);
 
-        let result = rule.apply(&vec![1]);
+        let result = rule.apply(&[1]);
         assert!(!result.is_empty());
         assert_eq!(result.violations[0].code, "too_few_items");
         assert_eq!(result.violations[0].meta.get("min"), Some("2"));
@@ -163,8 +162,8 @@ mod tests {
     #[test]
     fn test_max_items_valid() {
         let rule = max_items(3);
-        assert!(rule.apply(&vec![1, 2]).is_empty());
-        assert!(rule.apply(&vec![1, 2, 3]).is_empty()); // exactly max
+        assert!(rule.apply(&[1, 2]).is_empty());
+        assert!(rule.apply(&[1, 2, 3]).is_empty()); // exactly max
         assert!(rule.apply(&Vec::<i32>::new()).is_empty()); // empty is ok
     }
 
@@ -172,13 +171,13 @@ mod tests {
     fn test_max_items_invalid() {
         let rule = max_items(3);
 
-        let result = rule.apply(&vec![1, 2, 3, 4]);
+        let result = rule.apply(&[1, 2, 3, 4]);
         assert!(!result.is_empty());
         assert_eq!(result.violations[0].code, "too_many_items");
         assert_eq!(result.violations[0].meta.get("max"), Some("3"));
         assert_eq!(result.violations[0].meta.get("actual"), Some("4"));
 
-        let result = rule.apply(&vec![1, 2, 3, 4, 5]);
+        let result = rule.apply(&[1, 2, 3, 4, 5]);
         assert!(!result.is_empty());
         assert_eq!(result.violations[0].meta.get("actual"), Some("5"));
     }
@@ -188,15 +187,15 @@ mod tests {
         // Combine min and max for range validation
         let rule = min_items(2).and(max_items(4));
 
-        assert!(rule.apply(&vec![1, 2]).is_empty()); // min boundary
-        assert!(rule.apply(&vec![1, 2, 3]).is_empty()); // middle
-        assert!(rule.apply(&vec![1, 2, 3, 4]).is_empty()); // max boundary
+        assert!(rule.apply(&[1, 2]).is_empty()); // min boundary
+        assert!(rule.apply(&[1, 2, 3]).is_empty()); // middle
+        assert!(rule.apply(&[1, 2, 3, 4]).is_empty()); // max boundary
 
-        let result = rule.apply(&vec![1]);
+        let result = rule.apply(&[1]);
         assert!(!result.is_empty());
         assert_eq!(result.violations[0].code, "too_few_items");
 
-        let result = rule.apply(&vec![1, 2, 3, 4, 5]);
+        let result = rule.apply(&[1, 2, 3, 4, 5]);
         assert!(!result.is_empty());
         assert_eq!(result.violations[0].code, "too_many_items");
     }
@@ -204,24 +203,24 @@ mod tests {
     #[test]
     fn test_unique_valid() {
         let rule: Rule<[i32]> = unique();
-        assert!(rule.apply(&vec![1, 2, 3, 4]).is_empty());
+        assert!(rule.apply(&[1, 2, 3, 4]).is_empty());
         assert!(rule.apply(&Vec::<i32>::new()).is_empty()); // empty is unique
-        assert!(rule.apply(&vec![42]).is_empty()); // single item is unique
+        assert!(rule.apply(&[42]).is_empty()); // single item is unique
 
         let rule_str: Rule<[&str]> = unique();
-        assert!(rule_str.apply(&vec!["a", "b", "c"]).is_empty());
+        assert!(rule_str.apply(&["a", "b", "c"]).is_empty());
     }
 
     #[test]
     fn test_unique_invalid_numbers() {
         let rule = unique();
 
-        let result = rule.apply(&vec![1, 2, 2, 3]);
+        let result = rule.apply(&[1, 2, 2, 3]);
         assert!(!result.is_empty());
         assert_eq!(result.violations[0].code, "duplicate_items");
         assert_eq!(result.violations[0].meta.get("duplicates"), Some("1"));
 
-        let result = rule.apply(&vec![1, 1, 2, 2, 3, 3]);
+        let result = rule.apply(&[1, 1, 2, 2, 3, 3]);
         assert!(!result.is_empty());
         assert_eq!(result.violations[0].meta.get("duplicates"), Some("3"));
     }
@@ -230,7 +229,7 @@ mod tests {
     fn test_unique_invalid_strings() {
         let rule = unique();
 
-        let result = rule.apply(&vec!["a", "b", "a", "c"]);
+        let result = rule.apply(&["a", "b", "a", "c"]);
         assert!(!result.is_empty());
         assert_eq!(result.violations[0].code, "duplicate_items");
     }
@@ -239,7 +238,7 @@ mod tests {
     fn test_unique_all_duplicates() {
         let rule = unique();
 
-        let result = rule.apply(&vec![1, 1, 1, 1]);
+        let result = rule.apply(&[1, 1, 1, 1]);
         assert!(!result.is_empty());
         assert_eq!(result.violations[0].meta.get("duplicates"), Some("3"));
     }
@@ -249,13 +248,13 @@ mod tests {
         // Realistic example: tags must have at least 1 item and be unique
         let rule = min_items(1).and(unique());
 
-        assert!(rule.apply(&vec!["rust", "validation"]).is_empty());
+        assert!(rule.apply(&["rust", "validation"]).is_empty());
 
         let result = rule.apply(&Vec::<&str>::new());
         assert!(!result.is_empty());
         assert_eq!(result.violations[0].code, "too_few_items");
 
-        let result = rule.apply(&vec!["rust", "rust"]);
+        let result = rule.apply(&["rust", "rust"]);
         assert!(!result.is_empty());
         assert_eq!(result.violations[0].code, "duplicate_items");
     }

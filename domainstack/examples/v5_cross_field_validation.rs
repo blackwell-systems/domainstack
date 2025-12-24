@@ -39,9 +39,9 @@ struct RegisterForm {
     password_confirmation: String,
 }
 
-fn validate_email(email: &String) -> Result<(), ValidationError> {
+fn validate_email(email: &str) -> Result<(), ValidationError> {
     let rule = rules::email();
-    validate("email", email.as_str(), &rule)
+    validate("email", email, &rule)
 }
 
 /// Date range with cross-field validation
@@ -90,6 +90,7 @@ struct Order {
 
 /// Account update form with conditional validation
 #[derive(Debug, Validate)]
+#[allow(clippy::duplicated_attributes)]
 #[validate(
     check = "self.new_password == self.confirm_password",
     code = "password_mismatch",
@@ -249,7 +250,9 @@ fn main() {
     }
 
     println!("=== Key Takeaways ===");
-    println!("1. Use #[validate(check = \"...\", code = \"...\", message = \"...\")] at struct level");
+    println!(
+        "1. Use #[validate(check = \"...\", code = \"...\", message = \"...\")] at struct level"
+    );
     println!("2. Access fields via self.field_name in check expressions");
     println!("3. Add 'when' parameter for conditional cross-field validation");
     println!("4. Combine with field-level validation for comprehensive checks");

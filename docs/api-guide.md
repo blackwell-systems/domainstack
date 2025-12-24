@@ -497,6 +497,6 @@ impl User {
 
 ## See Also
 
-- [Rules Reference](./rules.md) - Complete list of built-in rules
+- [Rules Reference](./RULES.md) - Complete list of built-in rules
 - [Examples](../domainstack/examples/) - Runnable code examples
 - [API Documentation](https://docs.rs/domainstack) - Full API reference

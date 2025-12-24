@@ -32,7 +32,7 @@ That means:
 - **Structured error paths** - `rooms[0].adults`, `guest.email.value`
 - **Clean boundary mapping** - Optional error-envelope integration for APIs
 - **Async validation** - Database uniqueness checks with context passing
-- **Type-state tracking** - Compile-time guarantees with phantom types (v0.6+)
+- **Type-state tracking** - Compile-time guarantees with phantom types
 
 ## Quick Start
 
@@ -183,8 +183,8 @@ async fn create_booking(Json(dto): Json<BookingDto>) -> Result<Json<Booking>, Er
 | Valid-by-construction aggregates | Yes (core goal) | No (not primary) | No |
 | Composable rule algebra (and/or/when) | Yes (core feature) | No / limited | Partial (predicate-based) |
 | Structured error paths for APIs | Yes | Partial (varies) | No |
-| Async validation w/ context | ✅ Yes (v0.5+) | No | No |
-| Type-state validation tracking | ✅ Yes (v0.6+) | No | Partial |
+| Async validation w/ context | ✅ Yes | No | No |
+| Type-state validation tracking | ✅ Yes | No | Partial |
 | Error envelope integration | Yes (optional) | No | No |
 
 ### When to use domainstack
@@ -194,8 +194,8 @@ async fn create_booking(Json(dto): Json<BookingDto>) -> Result<Json<Booking>, Er
 - Domain objects that can't exist in invalid states
 - Reusable validation rules shared across services
 - Consistent field-level errors that map to forms/clients
-- Async validation with database/API context (v0.5+)
-- Compile-time guarantees that data was validated (phantom types, v0.6+)
+- Async validation with database/API context
+- Compile-time guarantees that data was validated (phantom types)
 
 **You might not need domainstack if:**
 - You're validating only DTOs and your domain is basically DTO-shaped
@@ -330,7 +330,7 @@ async fn create_team(Json(team): Json<Team>) -> Result<Json<Team>, Error> {
 // }
 ```
 
-## Framework Adapters (v0.4+)
+## Framework Adapters
 
 One-line DTO→Domain extraction for Axum and Actix-web.
 
@@ -397,7 +397,7 @@ domainstack = { version = "0.4", features = ["derive", "regex", "async"] }
 # Optional: HTTP error mapping
 domainstack-envelope = "0.4"
 
-# Optional: Framework adapters (v0.4+)
+# Optional: Framework adapters
 domainstack-axum = "0.4"    # For Axum web framework
 domainstack-actix = "0.4"   # For Actix-web framework
 ```
@@ -411,7 +411,7 @@ This repository contains nine crates:
 - **[domainstack-derive](./domainstack/domainstack-derive/)** - Derive macro for `#[derive(Validate)]`
 - **[domainstack-envelope](./domainstack/domainstack-envelope/)** - error-envelope integration for HTTP APIs
 
-**Framework Adapters (v0.4+):**
+**Framework Adapters:**
 - **[domainstack-http](./domainstack/domainstack-http/)** - Framework-agnostic HTTP helpers
 - **[domainstack-axum](./domainstack/domainstack-axum/)** - Axum extractor and response implementations
 - **[domainstack-actix](./domainstack/domainstack-actix/)** - Actix-web extractor and response implementations
@@ -443,7 +443,7 @@ This project has **multiple README files** for different audiences:
 
 ## Key Features
 
-### 🎯 Core Capabilities
+### Core Capabilities
 
 - **31 Validation Rules** - String, numeric, collection validation out of the box
 - **Composable Rules** - Combine with `.and()`, `.or()`, `.when()` for complex logic
@@ -451,7 +451,7 @@ This project has **multiple README files** for different audiences:
 - **Collection Validation** - Array indices in error paths (`items[0].field`)
 - **Builder Customization** - Customize error codes, messages, and metadata
 
-### 🔥 Advanced Features (v0.5+)
+### Advanced Features
 
 #### Async Validation
 
@@ -501,7 +501,7 @@ struct RegisterForm {
 
 **Use cases:** Password confirmation, date ranges, mutually exclusive fields, conditional business rules.
 
-#### Type-State Validation (v0.6+)
+#### Type-State Validation
 
 Compile-time guarantees with phantom types:
 
@@ -529,7 +529,7 @@ fn send_email(email: Email<Validated>) {
 
 **Benefits:** Zero runtime cost, compile-time safety, self-documenting APIs.
 
-### 📚 31 Built-in Validation Rules
+### 31 Built-in Validation Rules
 
 **String Rules (15):**
 - Length: `non_empty()`, `min_len()`, `max_len()`, `length()`, `len_chars()`

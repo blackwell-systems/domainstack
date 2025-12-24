@@ -11,7 +11,7 @@ This workspace provides a complete validation solution for building domain model
 - **[domainstack-derive](./domainstack-derive/)** - Derive macro for `#[derive(Validate)]`
 - **[domainstack-envelope](./domainstack-envelope/)** - error-envelope integration for HTTP APIs
 
-**Framework Adapters (v0.4+):**
+**Framework Adapters:**
 - **[domainstack-http](./domainstack-http/)** - Framework-agnostic HTTP helpers
 - **[domainstack-axum](./domainstack-axum/)** - Axum web framework integration
 - **[domainstack-actix](./domainstack-actix/)** - Actix-web framework integration
@@ -95,7 +95,7 @@ domainstack = { version = "0.4", features = ["derive", "regex"] }
 # With error-envelope integration for HTTP APIs
 domainstack-envelope = "0.4"
 
-# Framework adapters (v0.4+)
+# Framework adapters
 domainstack-axum = "0.4"    # For Axum
 domainstack-actix = "0.4"   # For Actix-web
 ```
@@ -168,7 +168,7 @@ cargo run --example age_primitive
 cargo run --example email_primitive --features regex
 cargo run --example booking_aggregate --features regex
 
-# Package examples (v0.2+)
+# Package examples
 cargo run -p domainstack-examples --example v2_basic
 cargo run -p domainstack-examples --example v2_nested
 cargo run -p domainstack-examples --example v2_collections
@@ -220,7 +220,7 @@ match user.validate() {
 }
 ```
 
-### HTTP API Integration (v0.3+)
+### HTTP API Integration
 
 Convert validation errors to error-envelope format:
 
@@ -236,7 +236,7 @@ async fn create_user(Json(user): Json<User>) -> Result<Json<User>, Error> {
 }
 ```
 
-### Framework Adapters (v0.4+)
+### Framework Adapters
 
 Axum and Actix-web get one-line integration:
 
@@ -309,27 +309,19 @@ domainstack/
 ├── domainstack-derive/          # Derive macro implementation
 │   ├── src/lib.rs               # #[derive(Validate)] proc macro
 │   └── tests/                   # Macro integration tests
-├── domainstack-envelope/        # error-envelope integration (v0.3+)
+├── domainstack-envelope/        # error-envelope integration
 │   ├── src/lib.rs               # IntoEnvelopeError trait
 │   └── tests/                   # Conversion tests
-├── domainstack-http/            # Framework-agnostic HTTP (v0.4+)
+├── domainstack-http/            # Framework-agnostic HTTP
 │   └── src/lib.rs               # Common HTTP error handling
-├── domainstack-axum/            # Axum framework adapter (v0.4+)
+├── domainstack-axum/            # Axum framework adapter
 │   └── src/lib.rs               # DomainJson extractor
-├── domainstack-actix/           # Actix-web adapter (v0.4+)
+├── domainstack-actix/           # Actix-web adapter
 │   └── src/lib.rs               # DomainJson extractor
 ├── examples/                     # Core examples package
 ├── examples-axum/               # Axum booking service example
 └── examples-actix/              # Actix-web booking service example
 ```
-
-## Version History
-
-- **v0.5.0** (unreleased) - Extended rule library (31 rules total)
-- **v0.4.0** - Framework adapters for Axum and Actix-web
-- **v0.3.0** - error-envelope integration, HTTP API support
-- **v0.2.0** - Derive macro with 5 attributes, workspace structure
-- **v0.1.0** - Core validation library with manual Validate trait
 
 ## License
 

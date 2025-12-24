@@ -29,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-#### Phantom Types for Validated State 🔥🔥
+#### Phantom Types for Validated State
 
 **New Feature: Compile-Time Validation Guarantees**
 - `typestate` module with `Validated` and `Unvalidated` marker types
@@ -118,11 +118,11 @@ Phantom types take this further by making **unvalidated states unusable in valid
 - Same size as underlying data structure
 - No runtime checks or overhead
 
-## [0.5.0] - Extended Rule Library (Completed ✅)
+## [0.5.0] - Extended Rule Library
 
 ### Added
 
-#### Async Validation Support 🔥
+#### Async Validation Support
 
 **New Feature: Asynchronous Validation**
 - `AsyncValidate` trait for types requiring async validation (database checks, external APIs)
@@ -489,8 +489,6 @@ Initial release with core validation framework, derive macros, and framework ada
 ## Unreleased Features (Roadmap)
 
 See `docs/BREAKING_CHANGES_ANALYSIS.md` for planned features in future versions:
-- v0.5.0: ✅ Completed (async validation, path API encapsulation, extended rules, cross-field validation)
-- v0.6.0: ✅ Completed (phantom types for validated state with compile-time guarantees)
 - v0.7.0: Schema generation (OpenAPI, JSON Schema, TypeScript types)
 - v1.0.0: API stabilization, performance optimizations
 

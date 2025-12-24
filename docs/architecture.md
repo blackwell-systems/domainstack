@@ -7,29 +7,29 @@ Technical architecture of the domainstack validation framework.
 ```mermaid
 %%{init: {'theme':'dark'}}%%
 graph TB
-    subgraph User["🧑‍💻 User Code"]
+    subgraph User["User Code"]
         Domain["Domain Types<br/>(User, Email, Team)"]
         DTO["DTOs<br/>(UserDto, etc)"]
         Handler["HTTP Handlers<br/>(Axum/Actix)"]
     end
     
-    subgraph Adapters["🔌 Framework Adapters (v0.4)"]
+    subgraph Adapters["Framework Adapters"]
         AxumExt["domainstack-axum<br/>DomainJson extractor"]
         ActixExt["domainstack-actix<br/>DomainJson extractor"]
         HttpShared["domainstack-http<br/>(shared logic)"]
     end
     
-    subgraph Core["📦 domainstack (Core)"]
+    subgraph Core["domainstack (Core)"]
         Validate["Validate Trait"]
         Rules["Built-in Rules<br/>(email, length, range)"]
         Error["ValidationError<br/>(structured paths)"]
     end
     
-    subgraph Derive["🔧 domainstack-derive"]
+    subgraph Derive["domainstack-derive"]
         Macro["#[derive(Validate)]<br/>Proc Macro"]
     end
     
-    subgraph Envelope["🌐 domainstack-envelope"]
+    subgraph Envelope["domainstack-envelope"]
         Convert["IntoEnvelopeError<br/>(HTTP errors)"]
     end
     
@@ -396,23 +396,9 @@ quote! {
 
 ## Future Architecture
 
-### v0.4: Axum Integration
+### v0.7: Schema Generation
 
-Will add `domainstack-axum` crate with:
-- `ValidatedJson<T>` extractor
-- Automatic 400 responses
-- Tower middleware support
-
-### v0.5: Async Validation
-
-Will add `AsyncValidate` trait:
-- Database uniqueness checks
-- External API validation
-- Concurrent validation with tokio
-
-### v0.6+: Schema Generation
-
-Will add `domainstack-schema` crate:
+Will add schema generation capabilities:
 - OpenAPI schema from derive
 - JSON Schema generation
 - TypeScript type generation

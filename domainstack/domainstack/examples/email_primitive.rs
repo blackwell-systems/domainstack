@@ -4,6 +4,7 @@ use domainstack::prelude::*;
 pub struct Email(String);
 
 impl Email {
+    #[allow(clippy::result_large_err)]
     pub fn new(raw: impl Into<String>) -> Result<Self, ValidationError> {
         let raw = raw.into();
         let rule = rules::email().and(rules::max_len(255));

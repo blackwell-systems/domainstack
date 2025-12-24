@@ -4,6 +4,7 @@ use domainstack::prelude::*;
 pub struct Age(u8);
 
 impl Age {
+    #[allow(clippy::result_large_err)]
     pub fn new(value: u8) -> Result<Self, ValidationError> {
         let rule = rules::range(18, 120);
         validate("age", &value, &rule)?;

@@ -91,13 +91,10 @@ where
         let json_fut = web::Json::<Dto>::from_request(req, payload);
 
         ready(match futures::executor::block_on(json_fut) {
-            Ok(web::Json(dto)) => dto
-                .validate()
-                .map(|_| ValidatedJson(dto))
-                .map_err(|e| {
-                    use domainstack_envelope::IntoEnvelopeError;
-                    ErrorResponse(e.into_envelope_error())
-                }),
+            Ok(web::Json(dto)) => dto.validate().map(|_| ValidatedJson(dto)).map_err(|e| {
+                use domainstack_envelope::IntoEnvelopeError;
+                ErrorResponse(e.into_envelope_error())
+            }),
             Err(e) => Err(ErrorResponse(error_envelope::Error::bad_request(format!(
                 "Invalid JSON: {}",
                 e
@@ -284,8 +281,8 @@ mod tests {
 
     #[actix_rt::test]
     async fn test_validated_json_valid() {
-        let app = test::init_service(App::new().route("/", web::post().to(accept_validated_dto)))
-            .await;
+        let app =
+            test::init_service(App::new().route("/", web::post().to(accept_validated_dto))).await;
 
         let req = test::TestRequest::post()
             .uri("/")
@@ -302,8 +299,8 @@ mod tests {
 
     #[actix_rt::test]
     async fn test_validated_json_invalid() {
-        let app = test::init_service(App::new().route("/", web::post().to(accept_validated_dto)))
-            .await;
+        let app =
+            test::init_service(App::new().route("/", web::post().to(accept_validated_dto))).await;
 
         let req = test::TestRequest::post()
             .uri("/")
@@ -328,8 +325,8 @@ mod tests {
 
     #[actix_rt::test]
     async fn test_validated_json_malformed_json() {
-        let app = test::init_service(App::new().route("/", web::post().to(accept_validated_dto)))
-            .await;
+        let app =
+            test::init_service(App::new().route("/", web::post().to(accept_validated_dto))).await;
 
         let req = test::TestRequest::post()
             .uri("/")

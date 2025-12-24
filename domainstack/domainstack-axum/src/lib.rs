@@ -89,12 +89,10 @@ where
             )))
         })?;
 
-        dto.validate()
-            .map(|_| ValidatedJson(dto))
-            .map_err(|e| {
-                use domainstack_envelope::IntoEnvelopeError;
-                ErrorResponse(e.into_envelope_error())
-            })
+        dto.validate().map(|_| ValidatedJson(dto)).map_err(|e| {
+            use domainstack_envelope::IntoEnvelopeError;
+            ErrorResponse(e.into_envelope_error())
+        })
     }
 }
 

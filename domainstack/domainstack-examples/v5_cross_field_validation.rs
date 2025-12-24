@@ -39,6 +39,7 @@ struct RegisterForm {
     password_confirmation: String,
 }
 
+#[allow(clippy::result_large_err)]
 fn validate_email(email: &str) -> Result<(), ValidationError> {
     let rule = rules::email();
     validate("email", email, &rule)

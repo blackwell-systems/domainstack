@@ -22,4 +22,12 @@ std = []
 regex = ["dep:regex", "dep:once_cell"]
 derive = ["domainstack-derive"]
 
+[[example]]
+name = "booking_aggregate"
+required-features = ["regex"]
+
+[[example]]
+name = "email_primitive"
+required-features = ["regex"]
+
 [dev-dependencies]

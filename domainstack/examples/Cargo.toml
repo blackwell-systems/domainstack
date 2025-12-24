@@ -5,7 +5,7 @@ edition = "2021"
 publish = false
 
 [dependencies]
-domainstack = { path = "../domainstack", features = ["derive"] }
+domainstack = { path = "../domainstack", features = ["derive", "regex"] }
 domainstack-derive = { path = "../domainstack-derive" }
 domainstack-envelope = { path = "../domainstack-envelope" }
 serde_json = "1"

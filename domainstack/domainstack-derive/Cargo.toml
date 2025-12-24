@@ -19,6 +19,10 @@ syn = { version = "2.0", features = ["full", "extra-traits"] }
 quote = "1.0"
 proc-macro2 = "1.0"
 
+[features]
+schema = []
+
 [dev-dependencies]
 trybuild = "1.0"
 domainstack = { workspace = true }
+domainstack-schema = { workspace = true }

@@ -33,40 +33,41 @@ That means:
 - **Clean boundary mapping** - Optional error-envelope integration for APIs
 - **Async validation** - Database uniqueness checks with context passing
 - **Type-state tracking** - Compile-time guarantees with phantom types
-- **OpenAPI schema generation** - Auto-generate API documentation from your types
+- **Auto-derived OpenAPI schemas** - Write validation rules once, get OpenAPI 3.0 schemas automatically (zero duplication)
 
 ## Quick Start
 
 ```rust
 use domainstack::prelude::*;
 use domainstack::Validate;
+use domainstack_derive::ToSchema;
 
 // Email with custom validation
-#[derive(Debug, Clone, Validate)]
+#[derive(Debug, Clone, Validate, ToSchema)]
 struct Email {
     #[validate(length(min = 5, max = 255))]
     value: String,
 }
 
 // Nested validation with automatic path prefixing
-#[derive(Debug, Validate)]
+#[derive(Debug, Validate, ToSchema)]
 struct User {
     #[validate(length(min = 2, max = 50))]
     name: String,
-    
+
     #[validate(range(min = 18, max = 120))]
     age: u8,
-    
+
     #[validate(nested)]  // Validates email, errors appear as "email.value"
     email: Email,
 }
 
 // Collection validation with array indices
-#[derive(Debug, Validate)]
+#[derive(Debug, Validate, ToSchema)]
 struct Team {
     #[validate(length(min = 1, max = 50))]
     team_name: String,
-    
+
     #[validate(each(nested))]  // Validates each member, errors like "members[0].name"
     members: Vec<User>,
 }
@@ -87,7 +88,7 @@ fn main() {
             },
         ],
     };
-    
+
     match team.validate() {
         Ok(_) => println!("✓ Team is valid"),
         Err(e) => {
@@ -100,6 +101,12 @@ fn main() {
             //   [members[1].age] out_of_range - Must be between 18 and 120
         }
     }
+
+    // Auto-generate OpenAPI schema from validation rules (zero duplication!)
+    let user_schema = User::schema();
+    // → name: { type: "string", minLength: 2, maxLength: 50 }
+    // → age: { type: "integer", minimum: 18, maximum: 120 }
+    // → email: { $ref: "#/components/schemas/Email" }
 }
 ```
 
@@ -241,23 +248,28 @@ impl User {
     // Smart constructor - validation enforced here
     pub fn new(name: String, age: u8, email: String) -> Result<Self, ValidationError> {
         let mut err = ValidationError::new();
-        
-        let name_rule = rules::min_len(2).and(rules::max_len(50));
+
+        let name_rule = rules::min_len(2)
+            .and(rules::max_len(50))
+            .code("invalid_name")
+            .message("Name must be between 2 and 50 characters");
         if let Err(e) = validate("name", name.as_str(), &name_rule) {
             err.extend(e);
         }
-        
-        let age_rule = rules::range(18, 120);
+
+        let age_rule = rules::range(18, 120)
+            .code("invalid_age")
+            .message("Age must be between 18 and 120");
         if let Err(e) = validate("age", &age, &age_rule) {
             err.extend(e);
         }
-        
+
         let email = Email::new(email).map_err(|e| e.prefixed("email"))?;
-        
+
         if !err.is_empty() {
             return Err(err);
         }
-        
+
         Ok(Self { name, age, email })
     }
     
@@ -385,7 +397,7 @@ async fn create_user(
 - `From` impls - `?` operator works with `ValidationError` and `error_envelope::Error`
 - **Identical APIs** - Same pattern across both frameworks
 
-See [domainstack-axum](./domainstack/domainstack-axum/) and [domainstack-actix](./domainstack/domainstack-actix/) for complete documentation.
+See [domainstack-axum](https://docs.rs/domainstack-axum) and [domainstack-actix](https://docs.rs/domainstack-actix) for complete documentation.
 
 ## Installation
 
@@ -419,42 +431,34 @@ domainstack-actix = "1.0"   # For Actix-web framework
 This repository contains **12 workspace members** (8 publishable crates, 4 example crates):
 
 **Core (Publishable):**
-- **[domainstack](./domainstack/)** - Core validation library with composable rules
-- **[domainstack-derive](./domainstack/domainstack-derive/)** - Derive macro for `#[derive(Validate)]`
-- **[domainstack-envelope](./domainstack/domainstack-envelope/)** - error-envelope integration for HTTP APIs
-- **[domainstack-schema](./domainstack/domainstack-schema/)** - OpenAPI 3.0 schema generation
+- **[domainstack](https://crates.io/crates/domainstack)** - Core validation library with composable rules
+- **[domainstack-derive](https://crates.io/crates/domainstack-derive)** - Derive macro for `#[derive(Validate)]`
+- **[domainstack-envelope](https://crates.io/crates/domainstack-envelope)** - error-envelope integration for HTTP APIs
+- **[domainstack-schema](https://crates.io/crates/domainstack-schema)** - OpenAPI 3.0 schema generation
 
 **Framework Adapters (Publishable):**
-- **[domainstack-http](./domainstack/domainstack-http/)** - Framework-agnostic HTTP helpers
-- **[domainstack-axum](./domainstack/domainstack-axum/)** - Axum extractor and response implementations
-- **[domainstack-actix](./domainstack/domainstack-actix/)** - Actix-web extractor and response implementations
-- **[domainstack-rocket](./domainstack/domainstack-rocket/)** - Rocket request guard and response implementations
+- **[domainstack-http](https://crates.io/crates/domainstack-http)** - Framework-agnostic HTTP helpers
+- **[domainstack-axum](https://crates.io/crates/domainstack-axum)** - Axum extractor and response implementations
+- **[domainstack-actix](https://crates.io/crates/domainstack-actix)** - Actix-web extractor and response implementations
+- **[domainstack-rocket](https://crates.io/crates/domainstack-rocket)** - Rocket request guard and response implementations
 
 **Examples (Not Published):**
-- **[domainstack-examples](./domainstack/domainstack-examples/)** - Core validation examples
-- **[examples-axum](./domainstack/examples-axum/)** - Axum booking service example
-- **[examples-actix](./domainstack/examples-actix/)** - Actix-web booking service example
-- **[examples-rocket](./domainstack/examples-rocket/)** - Rocket booking service example
+- **[domainstack-examples](https://github.com/blackwell-systems/domainstack/tree/main/domainstack/domainstack-examples)** - Core validation examples
+- **[examples-axum](https://github.com/blackwell-systems/domainstack/tree/main/domainstack/examples-axum)** - Axum booking service example
+- **[examples-actix](https://github.com/blackwell-systems/domainstack/tree/main/domainstack/examples-actix)** - Actix-web booking service example
+- **[examples-rocket](https://github.com/blackwell-systems/domainstack/tree/main/domainstack/examples-rocket)** - Rocket booking service example
 
 ## Documentation
 
-### Multi-README Structure
-
-This project has **multiple README files** for different audiences:
-
-1. **[README.md](./README.md)** (this file) - GitHub visitors
-2. **[domainstack/README.md](./domainstack/README.md)** - Cargo/crates.io users
-3. **Individual crate READMEs** - Library implementers
-
 ### Additional Documentation
 
-- **[API Guide](./docs/api-guide.md)** - Complete API documentation
-- **[Rules Reference](./docs/RULES.md)** - All validation rules
-- **[Architecture](./docs/architecture.md)** - System design and data flow
-- **[Examples](./domainstack/domainstack-examples/)** - 9 runnable examples
+- **[API Guide](https://github.com/blackwell-systems/domainstack/blob/main/docs/api-guide.md)** - Complete API documentation
+- **[Rules Reference](https://github.com/blackwell-systems/domainstack/blob/main/docs/RULES.md)** - All validation rules
+- **[Architecture](https://github.com/blackwell-systems/domainstack/blob/main/docs/architecture.md)** - System design and data flow
+- **[Examples](https://github.com/blackwell-systems/domainstack/tree/main/domainstack/domainstack-examples)** - 9 runnable examples
 - **[API Documentation](https://docs.rs/domainstack)** - Generated API reference
-- **[Publishing Guide](./PUBLISHING.md)** - How to publish to crates.io
-- **[Coverage Guide](./COVERAGE.md)** - Running coverage locally
+- **[Publishing Guide](https://github.com/blackwell-systems/domainstack/blob/main/PUBLISHING.md)** - How to publish to crates.io
+- **[Coverage Guide](https://github.com/blackwell-systems/domainstack/blob/main/COVERAGE.md)** - Running coverage locally
 
 ## Key Features
 
@@ -546,44 +550,67 @@ fn send_email(email: Email<Validated>) {
 
 #### OpenAPI Schema Generation
 
-Auto-generate OpenAPI 3.0 documentation from your domain types:
+**NEW**: Auto-generate OpenAPI 3.0 schemas directly from your validation rules—**zero duplication**:
 
 ```rust
-use domainstack_schema::{OpenApiBuilder, Schema, ToSchema};
-use serde_json::json;
+use domainstack_derive::{Validate, ToSchema};
+use domainstack_schema::OpenApiBuilder;
 
+// Write validation rules ONCE, get BOTH runtime validation AND OpenAPI schemas!
+#[derive(Validate, ToSchema)]
+#[schema(description = "User in the system")]
 struct User {
+    #[validate(email)]
+    #[validate(max_len = 255)]
+    #[schema(description = "User's email", example = "user@example.com")]
     email: String,
+
+    #[validate(range(min = 18, max = 120))]
+    #[schema(description = "User's age")]
     age: u8,
+
+    #[validate(min_len = 1)]
+    #[validate(max_len = 100)]
     name: String,
+
+    // Optional fields automatically excluded from required array
+    #[validate(min_len = 1)]
+    nickname: Option<String>,
 }
 
-impl ToSchema for User {
-    fn schema_name() -> &'static str { "User" }
-
-    fn schema() -> Schema {
-        Schema::object()
-            .property("email", Schema::string()
-                .format("email")
-                .example(json!("user@example.com")))
-            .property("age", Schema::integer()
-                .minimum(18)
-                .maximum(120))
-            .property("name", Schema::string()
-                .min_length(1)
-                .max_length(100))
-            .required(&["email", "age", "name"])
-    }
-}
-
-// Generate OpenAPI spec
+// Generate OpenAPI spec with automatic constraint mapping
 let spec = OpenApiBuilder::new("User API", "1.0.0")
-    .description("User management API")
     .register::<User>()
     .build();
 
-println!("{}", spec.to_json().unwrap());
-// → Complete OpenAPI 3.0 JSON with schemas, constraints, examples
+// → email: { type: "string", format: "email", maxLength: 255, ... }
+// → age: { type: "integer", minimum: 18, maximum: 120 }
+// → name: { type: "string", minLength: 1, maxLength: 100 }
+// → required: ["email", "age", "name"]  (nickname excluded)
+```
+
+**Automatic Rule → Schema Mapping:**
+- `email()` → `format: "email"`
+- `url()` → `format: "uri"`
+- `min_len(n)` / `max_len(n)` → `minLength` / `maxLength`
+- `range(min, max)` → `minimum` / `maximum`
+- `min_items(n)` / `max_items(n)` → `minItems` / `maxItems`
+- `alphanumeric()` → `pattern: "^[a-zA-Z0-9]*$"`
+- `ascii()` → `pattern: "^[\x00-\x7F]*$"`
+- `Option<T>` → excluded from `required` array
+- `#[validate(nested)]` → `$ref: "#/components/schemas/TypeName"`
+- `Vec<T>` with `each_nested` → `type: "array"` with `$ref` items
+
+**Manual implementation** still supported for complex cases:
+
+```rust
+impl ToSchema for CustomType {
+    fn schema() -> Schema {
+        Schema::object()
+            .property("field", Schema::string().pattern("custom"))
+            .required(&["field"])
+    }
+}
 ```
 
 **What you get:**
@@ -600,7 +627,7 @@ println!("{}", spec.to_json().unwrap());
 - Vendor extensions for non-mappable validations
 - Type-safe fluent API
 
-See [domainstack-schema/OPENAPI_CAPABILITIES.md](./domainstack/domainstack-schema/OPENAPI_CAPABILITIES.md) for complete documentation.
+See [domainstack-schema/OPENAPI_CAPABILITIES.md](https://github.com/blackwell-systems/domainstack/blob/main/domainstack/domainstack-schema/OPENAPI_CAPABILITIES.md) for complete documentation.
 
 ### 37 Built-in Validation Rules
 
@@ -609,6 +636,23 @@ See [domainstack-schema/OPENAPI_CAPABILITIES.md](./domainstack/domainstack-schem
 - Format: `email()`, `url()`, `matches_regex()`
 - Content: `alpha_only()`, `alphanumeric()`, `numeric_string()`, `ascii()`
 - Patterns: `contains()`, `starts_with()`, `ends_with()`, `non_blank()`, `no_whitespace()`
+
+**All rules work with `each(rule)` for collection validation:**
+
+```rust
+#[derive(Validate)]
+struct BlogPost {
+    #[validate(each(email))]        // Validate each email in list
+    author_emails: Vec<String>,
+
+    #[validate(each(url))]           // Validate each URL
+    related_links: Vec<String>,
+
+    #[validate(each(length(min = 1, max = 50)))]  // Validate tag length
+    tags: Vec<String>,
+}
+// Errors include array indices: tags[0], author_emails[1], etc.
+```
 
 **Numeric Rules (8):**
 - Comparison: `min()`, `max()`, `range()`
@@ -631,7 +675,7 @@ See [domainstack-schema/OPENAPI_CAPABILITIES.md](./domainstack/domainstack-schem
 - `.when()` - Conditional validation
 - `.code()`, `.message()`, `.meta()` - Customize errors
 
-See [Rules Reference](./docs/RULES.md) for complete documentation and examples.
+See [Rules Reference](https://github.com/blackwell-systems/domainstack/blob/main/docs/RULES.md) for complete documentation and examples.
 
 ## Examples
 
@@ -667,40 +711,46 @@ struct Booking {
 }
 ```
 
-### HTTP Integration
+### Collection Item Validation
+
+Validate each item in a collection with any validation rule:
 
 ```rust
-use domainstack_envelope::IntoEnvelopeError;
+#[derive(Debug, Validate)]
+struct BlogPost {
+    #[validate(min_len = 1)]
+    #[validate(max_len = 200)]
+    title: String,
 
-async fn create_user(Json(user): Json<User>) -> Result<Json<User>, Error> {
-    user.validate()
-        .map_err(|e| e.into_envelope_error())?;  // One line!
+    // Validate each email in the list
+    #[validate(each(email))]
+    #[validate(min_items = 1)]
+    #[validate(max_items = 5)]
+    author_emails: Vec<String>,
 
-    // ... save user ...
-    Ok(Json(user))
+    // Validate each tag's length
+    #[validate(each(length(min = 1, max = 50)))]
+    tags: Vec<String>,
+
+    // Validate each URL format
+    #[validate(each(url))]
+    related_links: Vec<String>,
+
+    // Validate each keyword is alphanumeric
+    #[validate(each(alphanumeric))]
+    keywords: Vec<String>,
 }
 ```
 
-Error response with field-level details:
-
-```json
-{
-  "code": "VALIDATION",
-  "status": 400,
-  "details": {
-    "fields": {
-      "guest.email.value": [
-        {"code": "invalid_email", "message": "Invalid email format"}
-      ],
-      "rooms[1].adults": [
-        {"code": "out_of_range", "message": "Must be between 1 and 4"}
-      ]
-    }
-  }
-}
-```
+Error paths include array indices for precise error tracking:
+- `author_emails[0]` - "Invalid email format"
+- `tags[2]` - "Must be at most 50 characters"
+- `related_links[1]` - "Invalid URL format"
 
 ## Running Examples
+
+<details>
+<summary>Click to expand example commands</summary>
 
 ```bash
 cd domainstack
@@ -741,9 +791,15 @@ cargo run --example v08_features
 # Framework examples
 cd examples-axum && cargo run    # Axum booking service
 cd examples-actix && cargo run   # Actix-web booking service
+cd examples-rocket && cargo run  # Rocket booking service
 ```
 
+</details>
+
 ## Testing
+
+<details>
+<summary>Click to expand testing commands</summary>
 
 ```bash
 cd domainstack
@@ -759,6 +815,8 @@ cargo test -p domainstack-envelope
 # Run with coverage
 cargo llvm-cov --all-features --workspace --html
 ```
+
+</details>
 
 ## License
 

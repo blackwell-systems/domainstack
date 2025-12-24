@@ -607,7 +607,7 @@ dependencies = [
 
 [[package]]
 name = "domainstack"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "domainstack-derive",
  "regex",
@@ -648,7 +648,7 @@ dependencies = [
 
 [[package]]
 name = "domainstack-derive"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "domainstack",
  "proc-macro2",
@@ -659,7 +659,7 @@ dependencies = [
 
 [[package]]
 name = "domainstack-envelope"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "domainstack",
  "domainstack-derive",
@@ -669,7 +669,7 @@ dependencies = [
 
 [[package]]
 name = "domainstack-examples"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "domainstack",
  "domainstack-derive",

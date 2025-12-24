@@ -5,10 +5,10 @@ edition = "2021"
 rust-version = "1.76"
 license = "Apache-2.0"
 authors = ["Dayna Blackwell <blackwellsystems@protonmail.com>"]
-description = "Framework-agnostic HTTP helpers for domainstack validation framework"
+description = "Framework-agnostic HTTP helpers for domainstack: boundary validation for web APIs"
 repository = "https://github.com/blackwell-systems/domainstack"
 documentation = "https://docs.rs/domainstack-http"
-keywords = ["validation", "http", "domain", "boundary", "ddd"]
+keywords = ["validation", "http", "api", "boundary", "ddd"]
 categories = ["web-programming", "web-programming::http-server"]
 
 [dependencies]

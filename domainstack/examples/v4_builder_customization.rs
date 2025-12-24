@@ -38,8 +38,8 @@ fn main() {
     } else {
         for v in &err.violations {
             println!("  ✗ {}", v.message);
-            println!("     Hint: {}", v.meta.get("hint").unwrap_or(&"N/A".to_string()));
-            println!("     Field Type: {}", v.meta.get("field_type").unwrap_or(&"N/A".to_string()));
+            println!("     Hint: {}", v.meta.get("hint").map_or("N/A", |s| s));
+            println!("     Field Type: {}", v.meta.get("field_type").map_or("N/A", |s| s));
         }
     }
 
@@ -58,8 +58,8 @@ fn main() {
         for v in &err.violations {
             println!("  ✗ Code: {}", v.code);
             println!("     Message: {}", v.message);
-            println!("     Hint: {}", v.meta.get("hint").unwrap_or(&"N/A".to_string()));
-            println!("     Required: {}", v.meta.get("required").unwrap_or(&"N/A".to_string()));
+            println!("     Hint: {}", v.meta.get("hint").map_or("N/A", |s| s));
+            println!("     Required: {}", v.meta.get("required").map_or("N/A", |s| s));
         }
     }
 

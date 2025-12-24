@@ -5,10 +5,10 @@ edition = "2021"
 rust-version = "1.76"
 license = "Apache-2.0"
 authors = ["Dayna Blackwell <blackwellsystems@protonmail.com>"]
-description = "Actix-web extractors and response implementations for domainstack validation framework"
+description = "Actix-web extractors for domainstack: DomainJson<T> with automatic validation and RFC 9457 error responses"
 repository = "https://github.com/blackwell-systems/domainstack"
 documentation = "https://docs.rs/domainstack-actix"
-keywords = ["validation", "actix", "http", "domain", "ddd"]
+keywords = ["validation", "actix", "extractor", "api", "ddd"]
 categories = ["web-programming", "web-programming::http-server"]
 
 [dependencies]

@@ -610,6 +610,7 @@ name = "domainstack"
 version = "0.4.0"
 dependencies = [
  "domainstack-derive",
+ "once_cell",
  "regex",
 ]
 

@@ -111,7 +111,44 @@ where
     })
 }
 
+/// Validates that a numeric value is non-zero.
+///
+/// Works with any numeric type (signed or unsigned). For unsigned types,
+/// this simply checks the value is not zero. For signed types, this allows
+/// both positive and negative values.
+///
+/// # Examples
+///
+/// ```
+/// use domainstack::prelude::*;
+///
+/// let rule = rules::non_zero();
+/// assert!(rule.apply(&1).is_empty());
+/// assert!(rule.apply(&-1).is_empty());
+/// assert!(!rule.apply(&0).is_empty());
+/// ```
+///
+/// # Error Code
+/// - Code: `zero_value`
+/// - Message: `"Must be non-zero"`
+pub fn non_zero<T>() -> Rule<T>
+where
+    T: PartialEq + Default + Copy + Send + Sync + 'static,
+{
+    Rule::new(move |value: &T, ctx: &RuleContext| {
+        if *value != T::default() {
+            ValidationError::default()
+        } else {
+            ValidationError::single(ctx.full_path(), "zero_value", "Must be non-zero")
+        }
+    })
+}
+
 /// Validates that a numeric value is positive (greater than zero).
+///
+/// **Note**: This rule is intended for signed numeric types (i8, i16, i32, i64, i128, f32, f64).
+/// While it compiles for unsigned types (u8, u16, etc.), using it with unsigned types
+/// is redundant - prefer `non_zero()` instead.
 ///
 /// # Examples
 ///
@@ -147,6 +184,10 @@ where
 
 /// Validates that a numeric value is negative (less than zero).
 ///
+/// **Note**: This rule is intended for signed numeric types only (i8, i16, i32, i64, i128, f32, f64).
+/// It will compile for unsigned types but will always fail validation (since unsigned
+/// types cannot be negative by definition).
+///
 /// # Examples
 ///
 /// ```
@@ -177,6 +218,81 @@ where
             )
         }
     })
+}
+
+/// Validates that a floating-point value (f32 or f64) is finite (not NaN or infinity).
+///
+/// This is crucial for float validation since `NaN` values can slip through
+/// comparison-based rules like `range()`, `min()`, and `max()` due to NaN's
+/// special comparison semantics (NaN is not less than, greater than, or equal to any value).
+///
+/// # Examples
+///
+/// ```
+/// use domainstack::prelude::*;
+///
+/// // Works with f64
+/// let rule_f64 = rules::finite();
+/// assert!(rule_f64.apply(&1.0f64).is_empty());
+/// assert!(rule_f64.apply(&-100.5).is_empty());
+/// assert!(rule_f64.apply(&0.0).is_empty());
+/// assert!(!rule_f64.apply(&f64::NAN).is_empty());
+/// assert!(!rule_f64.apply(&f64::INFINITY).is_empty());
+///
+/// // Works with f32
+/// let rule_f32: domainstack::Rule<f32> = rules::finite();
+/// assert!(rule_f32.apply(&1.0f32).is_empty());
+/// assert!(!rule_f32.apply(&f32::NAN).is_empty());
+/// ```
+///
+/// # Error Code
+/// - Code: `not_finite`
+/// - Message: `"Must be a finite number (not NaN or infinity)"`
+///
+/// # Recommended Usage
+///
+/// Always combine `finite()` with range/min/max checks for robust float validation:
+///
+/// ```
+/// use domainstack::prelude::*;
+///
+/// let rule = rules::finite().and(rules::range(0.0, 1.0));
+/// assert!(rule.apply(&0.5).is_empty());
+/// assert!(!rule.apply(&f64::NAN).is_empty());
+/// assert!(!rule.apply(&1.5).is_empty()); // out of range
+/// ```
+pub fn finite<T>() -> Rule<T>
+where
+    T: FiniteCheck + Copy + Send + Sync + 'static,
+{
+    Rule::new(move |value: &T, ctx: &RuleContext| {
+        if value.is_finite_value() {
+            ValidationError::default()
+        } else {
+            ValidationError::single(
+                ctx.full_path(),
+                "not_finite",
+                "Must be a finite number (not NaN or infinity)",
+            )
+        }
+    })
+}
+
+/// Helper trait for checking if a value is finite
+pub trait FiniteCheck {
+    fn is_finite_value(&self) -> bool;
+}
+
+impl FiniteCheck for f32 {
+    fn is_finite_value(&self) -> bool {
+        self.is_finite()
+    }
+}
+
+impl FiniteCheck for f64 {
+    fn is_finite_value(&self) -> bool {
+        self.is_finite()
+    }
 }
 
 /// Validates that a numeric value is a multiple of the specified number.
@@ -387,5 +503,104 @@ mod tests {
 
         let result = rule.apply(&3);
         assert!(!result.is_empty());
+    }
+
+    #[test]
+    fn test_non_zero_valid_signed() {
+        let rule = non_zero();
+        assert!(rule.apply(&1i32).is_empty());
+        assert!(rule.apply(&-1i32).is_empty());
+        assert!(rule.apply(&100i32).is_empty());
+    }
+
+    #[test]
+    fn test_non_zero_valid_unsigned() {
+        let rule = non_zero();
+        assert!(rule.apply(&1u8).is_empty());
+        assert!(rule.apply(&100u8).is_empty());
+    }
+
+    #[test]
+    fn test_non_zero_invalid() {
+        let rule = non_zero();
+
+        let result = rule.apply(&0i32);
+        assert!(!result.is_empty());
+        assert_eq!(result.violations[0].code, "zero_value");
+    }
+
+    #[test]
+    fn test_non_zero_invalid_unsigned() {
+        let rule = non_zero();
+
+        let result = rule.apply(&0u8);
+        assert!(!result.is_empty());
+        assert_eq!(result.violations[0].code, "zero_value");
+    }
+
+    #[test]
+    fn test_finite_f64_valid() {
+        let rule = finite();
+        assert!(rule.apply(&0.0f64).is_empty());
+        assert!(rule.apply(&1.5).is_empty());
+        assert!(rule.apply(&-100.5).is_empty());
+        assert!(rule.apply(&f64::MIN).is_empty());
+        assert!(rule.apply(&f64::MAX).is_empty());
+    }
+
+    #[test]
+    fn test_finite_f64_invalid() {
+        let rule = finite();
+
+        let result = rule.apply(&f64::NAN);
+        assert!(!result.is_empty());
+        assert_eq!(result.violations[0].code, "not_finite");
+
+        let result = rule.apply(&f64::INFINITY);
+        assert!(!result.is_empty());
+
+        let result = rule.apply(&f64::NEG_INFINITY);
+        assert!(!result.is_empty());
+    }
+
+    #[test]
+    fn test_finite_f32_valid() {
+        let rule: Rule<f32> = finite();
+        assert!(rule.apply(&0.0f32).is_empty());
+        assert!(rule.apply(&1.5f32).is_empty());
+        assert!(rule.apply(&-100.5f32).is_empty());
+    }
+
+    #[test]
+    fn test_finite_f32_invalid() {
+        let rule: Rule<f32> = finite();
+
+        let result = rule.apply(&f32::NAN);
+        assert!(!result.is_empty());
+        assert_eq!(result.violations[0].code, "not_finite");
+
+        let result = rule.apply(&f32::INFINITY);
+        assert!(!result.is_empty());
+    }
+
+    #[test]
+    fn test_finite_with_range() {
+        // This demonstrates the proper way to validate floats
+        let rule = finite().and(range(0.0, 1.0));
+
+        // Valid values
+        assert!(rule.apply(&0.5).is_empty());
+        assert!(rule.apply(&0.0).is_empty());
+        assert!(rule.apply(&1.0).is_empty());
+
+        // NaN should fail finite check
+        let result = rule.apply(&f64::NAN);
+        assert_eq!(result.violations.len(), 1);
+        assert_eq!(result.violations[0].code, "not_finite");
+
+        // Out of range should fail range check
+        let result = rule.apply(&1.5);
+        assert_eq!(result.violations.len(), 1);
+        assert_eq!(result.violations[0].code, "out_of_range");
     }
 }

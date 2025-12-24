@@ -11,3 +11,4 @@ domainstack-axum = { version = "0.4.0", path = "domainstack-axum" }
 domainstack-actix = { version = "0.4.0", path = "domainstack-actix" }
 error-envelope = "0.2.1"
 regex = "1.10"
+once_cell = "1.20"

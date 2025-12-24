@@ -13,12 +13,13 @@ categories = ["web-programming", "data-structures"]
 
 [dependencies]
 regex = { workspace = true, optional = true }
+once_cell = { workspace = true, optional = true }
 domainstack-derive = { workspace = true, optional = true }
 
 [features]
 default = ["std"]
 std = []
-email = ["regex"]
+regex = ["dep:regex", "dep:once_cell"]
 derive = ["domainstack-derive"]
 
 [dev-dependencies]

@@ -1,9 +1,24 @@
 use crate::{Rule, RuleContext, ValidationError};
 
+#[cfg(feature = "regex")]
+use once_cell::sync::Lazy;
+
+#[cfg(feature = "regex")]
+static EMAIL_REGEX: Lazy<regex::Regex> =
+    Lazy::new(|| regex::Regex::new(r"^[^@\s]+@[^@\s]+\.[^@\s]+$").unwrap());
+
+#[cfg(feature = "regex")]
+static URL_REGEX: Lazy<regex::Regex> = Lazy::new(|| {
+    regex::Regex::new(
+        r"^https?://[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*(/.*)?$"
+    ).unwrap()
+});
+
 /// Validates that a string is a valid email address.
 ///
-/// With the `email` feature enabled, uses a regex pattern for RFC-compliant validation.
+/// With the `regex` feature enabled, uses a cached regex pattern for RFC-compliant validation.
 /// Without the feature, performs basic structural validation (checks for @ and domain).
+///
 ///
 /// # Examples
 ///
@@ -18,20 +33,22 @@ use crate::{Rule, RuleContext, ValidationError};
 /// # Error Code
 /// - Code: `invalid_email`
 /// - Message: `"Invalid email format"`
+///
+/// # Performance
+/// The regex pattern is compiled once and cached for the lifetime of the program,
+/// making subsequent validations very efficient.
 pub fn email() -> Rule<str> {
     Rule::new(|value: &str, ctx: &RuleContext| {
-        #[cfg(feature = "email")]
+        #[cfg(feature = "regex")]
         {
-            let re = regex::Regex::new(r"^[^@\s]+@[^@\s]+\.[^@\s]+$").unwrap();
-
-            if re.is_match(value) {
+            if EMAIL_REGEX.is_match(value) {
                 ValidationError::default()
             } else {
                 ValidationError::single(ctx.full_path(), "invalid_email", "Invalid email format")
             }
         }
 
-        #[cfg(not(feature = "email"))]
+        #[cfg(not(feature = "regex"))]
         {
             let parts: Vec<&str> = value.split('@').collect();
             if parts.len() == 2
@@ -181,15 +198,15 @@ pub fn length(min: usize, max: usize) -> Rule<str> {
 /// # Error Code
 /// - Code: `invalid_url`
 /// - Message: `"Invalid URL format"`
+///
+/// # Performance
+/// The regex pattern is compiled once and cached for the lifetime of the program,
+/// making subsequent validations very efficient.
 pub fn url() -> Rule<str> {
     Rule::new(|value: &str, ctx: &RuleContext| {
         #[cfg(feature = "regex")]
         {
-            let re = regex::Regex::new(
-                r"^https?://[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*(/.*)?$"
-            ).unwrap();
-
-            if re.is_match(value) {
+            if URL_REGEX.is_match(value) {
                 ValidationError::default()
             } else {
                 ValidationError::single(ctx.full_path(), "invalid_url", "Invalid URL format")
@@ -408,6 +425,9 @@ pub fn ends_with(suffix: &'static str) -> Rule<str> {
 ///
 /// Requires the `regex` feature to be enabled.
 ///
+/// The regex pattern is compiled once when the rule is created, not on every validation.
+/// This makes repeated validations with the same pattern very efficient.
+///
 /// # Examples
 ///
 /// ```
@@ -427,11 +447,17 @@ pub fn ends_with(suffix: &'static str) -> Rule<str> {
 /// - Meta: `{"pattern": "regex"}`
 ///
 /// # Panics
-/// Panics if the regex pattern is invalid.
+/// Panics if the regex pattern is invalid at rule creation time.
+///
+/// # Performance
+/// The regex is compiled once at rule creation and reused for all validations,
+/// making this very efficient for repeated use.
 #[cfg(feature = "regex")]
 pub fn matches_regex(pattern: &'static str) -> Rule<str> {
+    // Compile regex once at rule creation time
+    let re = regex::Regex::new(pattern).expect("Invalid regex pattern");
+
     Rule::new(move |value: &str, ctx: &RuleContext| {
-        let re = regex::Regex::new(pattern).expect("Invalid regex pattern");
         if re.is_match(value) {
             ValidationError::default()
         } else {

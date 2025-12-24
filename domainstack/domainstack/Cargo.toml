@@ -45,5 +45,6 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
 # Disable default features to avoid pulling in unnecessary database drivers (mysql, postgres)
 # which have vulnerable transitive dependencies (rsa crate in mysql driver)
 sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "sqlite"] }
-# Pin home to avoid edition2024 requirement
-home = "=0.5.9"
+# Pin dependencies to maintain MSRV compatibility (Rust 1.76)
+home = "=0.5.9"     # v0.5.12+ requires edition2024
+crc = "=3.2.1"      # v3.4.0+ requires Rust 1.83+

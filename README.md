@@ -248,23 +248,28 @@ impl User {
     // Smart constructor - validation enforced here
     pub fn new(name: String, age: u8, email: String) -> Result<Self, ValidationError> {
         let mut err = ValidationError::new();
-        
-        let name_rule = rules::min_len(2).and(rules::max_len(50));
+
+        let name_rule = rules::min_len(2)
+            .and(rules::max_len(50))
+            .code("invalid_name")
+            .message("Name must be between 2 and 50 characters");
         if let Err(e) = validate("name", name.as_str(), &name_rule) {
             err.extend(e);
         }
-        
-        let age_rule = rules::range(18, 120);
+
+        let age_rule = rules::range(18, 120)
+            .code("invalid_age")
+            .message("Age must be between 18 and 120");
         if let Err(e) = validate("age", &age, &age_rule) {
             err.extend(e);
         }
-        
+
         let email = Email::new(email).map_err(|e| e.prefixed("email"))?;
-        
+
         if !err.is_empty() {
             return Err(err);
         }
-        
+
         Ok(Self { name, age, email })
     }
     

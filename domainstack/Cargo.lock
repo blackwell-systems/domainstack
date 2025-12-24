@@ -718,6 +718,7 @@ name = "domainstack-derive"
 version = "0.4.0"
 dependencies = [
  "domainstack",
+ "domainstack-schema",
  "proc-macro2",
  "quote",
  "syn",

@@ -31,8 +31,8 @@
 //!     type Error = domainstack::ValidationError;
 //!
 //!     fn try_from(dto: CreateUserDto) -> Result<Self, Self::Error> {
-//!         validate("name", &dto.name, &rules::min_len(2).and(rules::max_len(50)))?;
-//!         validate("email", &dto.email, &rules::email())?;
+//!         validate("name", dto.name.as_str(), &rules::min_len(2).and(rules::max_len(50)))?;
+//!         validate("email", dto.email.as_str(), &rules::email())?;
 //!         validate("age", &dto.age, &rules::range(18, 120))?;
 //!         Ok(Self { name: dto.name, email: dto.email, age: dto.age })
 //!     }
@@ -75,13 +75,32 @@ use std::marker::PhantomData;
 /// # Example
 ///
 /// ```rust,no_run
+/// use domainstack::prelude::*;
 /// use domainstack_rocket::DomainJson;
-/// use rocket::post;
+/// use rocket::{post, serde::json::Json};
+/// use serde::Deserialize;
+///
+/// #[derive(Deserialize)]
+/// struct CreateUserDto {
+///     name: String,
+/// }
+///
+/// struct User {
+///     name: String,
+/// }
+///
+/// impl TryFrom<CreateUserDto> for User {
+///     type Error = domainstack::ValidationError;
+///     fn try_from(dto: CreateUserDto) -> Result<Self, Self::Error> {
+///         validate("name", dto.name.as_str(), &rules::min_len(2))?;
+///         Ok(Self { name: dto.name })
+///     }
+/// }
 ///
 /// #[post("/users", data = "<user>")]
-/// fn create_user(user: DomainJson<User, CreateUserDto>) {
+/// fn create_user(user: DomainJson<User, CreateUserDto>) -> Json<String> {
 ///     let domain = user.domain; // Guaranteed valid!
-///     // ...
+///     Json(domain.name)
 /// }
 /// ```
 pub struct DomainJson<T, Dto = ()> {
@@ -148,18 +167,19 @@ where
 /// ```rust,no_run
 /// use domainstack::Validate;
 /// use domainstack_rocket::ValidatedJson;
-/// use rocket::post;
+/// use rocket::{post, serde::json::Json};
+/// use serde::Deserialize;
 ///
-/// #[derive(Validate)]
+/// #[derive(Deserialize, Validate)]
 /// struct UpdateUserDto {
 ///     #[validate(length(min = 2, max = 50))]
 ///     name: String,
 /// }
 ///
 /// #[post("/users/<id>", data = "<dto>")]
-/// fn update_user(id: u64, dto: ValidatedJson<UpdateUserDto>) {
+/// fn update_user(id: u64, dto: ValidatedJson<UpdateUserDto>) -> Json<String> {
 ///     let validated = dto.0; // Guaranteed valid!
-///     // ...
+///     Json(validated.name)
 /// }
 /// ```
 pub struct ValidatedJson<Dto>(pub Dto);
@@ -207,13 +227,32 @@ where
 /// # Example
 ///
 /// ```rust,no_run
-/// use domainstack_rocket::ErrorResponse;
-/// use rocket::post;
+/// use domainstack::prelude::*;
+/// use domainstack_rocket::{DomainJson, ErrorResponse};
+/// use rocket::{post, serde::json::Json};
+/// use serde::Deserialize;
+///
+/// #[derive(Deserialize)]
+/// struct CreateUserDto {
+///     name: String,
+/// }
+///
+/// struct User {
+///     name: String,
+/// }
+///
+/// impl TryFrom<CreateUserDto> for User {
+///     type Error = domainstack::ValidationError;
+///     fn try_from(dto: CreateUserDto) -> Result<Self, Self::Error> {
+///         validate("name", dto.name.as_str(), &rules::min_len(2))?;
+///         Ok(Self { name: dto.name })
+///     }
+/// }
 ///
 /// #[post("/users", data = "<user>")]
-/// fn create_user(user: DomainJson<User, CreateUserDto>) -> Result<Json<User>, ErrorResponse> {
+/// fn create_user(user: DomainJson<User, CreateUserDto>) -> Result<Json<String>, ErrorResponse> {
 ///     // ErrorResponse is automatically returned on validation failure
-///     Ok(Json(user.domain))
+///     Ok(Json(user.domain.name))
 /// }
 /// ```
 #[derive(Debug, Clone)]

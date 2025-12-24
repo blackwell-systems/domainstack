@@ -1,6 +1,38 @@
 use crate::{Meta, Path, Violation};
 use std::collections::BTreeMap;
 
+/// Represents a collection of validation violations.
+///
+/// This type aggregates all validation errors that occur during validation of a domain object.
+/// It supports merging errors from multiple fields and nested structures.
+///
+/// # Examples
+///
+/// ```
+/// use domainstack::{ValidationError, Path};
+///
+/// let mut err = ValidationError::new();
+/// err.push("email", "invalid_email", "Invalid email format");
+/// err.push("age", "out_of_range", "Must be between 18 and 120");
+///
+/// assert_eq!(err.violations.len(), 2);
+/// assert!(!err.is_empty());
+/// ```
+///
+/// ## Nested Errors
+///
+/// ```
+/// use domainstack::{ValidationError, Path};
+///
+/// let mut child_err = ValidationError::new();
+/// child_err.push("value", "invalid_email", "Invalid email format");
+///
+/// let mut parent_err = ValidationError::new();
+/// parent_err.merge_prefixed("email", child_err);
+///
+/// // Error path becomes "email.value"
+/// assert_eq!(parent_err.violations[0].path.to_string(), "email.value");
+/// ```
 #[derive(Debug, Clone, Default)]
 pub struct ValidationError {
     pub violations: Vec<Violation>,

@@ -1,6 +1,60 @@
 use crate::{Path, ValidationError};
 use std::sync::Arc;
 
+/// A composable validation rule for values of type `T`.
+///
+/// Rules are the building blocks of domainstack's validation system. They can be composed
+/// using `and()`, `or()`, `not()`, and `when()` to create complex validation logic.
+///
+/// # Examples
+///
+/// ## Basic Rule
+///
+/// ```
+/// use domainstack::prelude::*;
+///
+/// let rule = rules::email();
+/// assert!(rule.apply("user@example.com").is_empty());
+/// assert!(!rule.apply("invalid").is_empty());
+/// ```
+///
+/// ## Composing Rules
+///
+/// ```
+/// use domainstack::prelude::*;
+///
+/// // Email must be 5-255 characters
+/// let rule = rules::min_len(5)
+///     .and(rules::max_len(255))
+///     .and(rules::email());
+///
+/// assert!(rule.apply("user@example.com").is_empty());
+/// assert!(!rule.apply("a@b").is_empty());  // too short
+/// ```
+///
+/// ## Custom Rules
+///
+/// ```
+/// use domainstack::{Rule, ValidationError, Path};
+///
+/// fn lowercase_only() -> Rule<str> {
+///     Rule::new(|value: &str| {
+///         if value.chars().all(|c| c.is_lowercase() || !c.is_alphabetic()) {
+///             ValidationError::default()
+///         } else {
+///             ValidationError::single(
+///                 Path::root(),
+///                 "not_lowercase",
+///                 "Must contain only lowercase letters"
+///             )
+///         }
+///     })
+/// }
+///
+/// let rule = lowercase_only();
+/// assert!(rule.apply("hello").is_empty());
+/// assert!(!rule.apply("Hello").is_empty());
+/// ```
 pub struct Rule<T: ?Sized> {
     inner: Arc<dyn Fn(&T) -> ValidationError + Send + Sync>,
 }

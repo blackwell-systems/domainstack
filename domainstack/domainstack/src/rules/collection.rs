@@ -86,11 +86,13 @@ pub fn max_items<T: 'static>(max: usize) -> Rule<[T]> {
 /// ```
 /// use domainstack::prelude::*;
 ///
-/// let rule = rules::unique();
+/// let rule: Rule<[i32]> = rules::unique();
 /// assert!(rule.apply(&[1, 2, 3]).is_empty());
-/// assert!(rule.apply(&["a", "b", "c"]).is_empty());
 /// assert!(!rule.apply(&[1, 2, 2, 3]).is_empty()); // duplicate 2
-/// assert!(!rule.apply(&["a", "b", "a"]).is_empty()); // duplicate "a"
+///
+/// let rule_str: Rule<[&str]> = rules::unique();
+/// assert!(rule_str.apply(&["a", "b", "c"]).is_empty());
+/// assert!(!rule_str.apply(&["a", "b", "a"]).is_empty()); // duplicate "a"
 /// ```
 ///
 /// # Error Code

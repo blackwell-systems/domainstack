@@ -73,38 +73,46 @@ let email = Email::new("user@example.com".to_string())?;
 
 ### Category 2: Developer Experience
 
-#### 2.1 **Schema Generation** 🔥🔥
+#### 2.1 **Schema Generation** ✅ Implemented in v0.7.0
 
-**Current Limitation:**
+**Status:** Implemented via `domainstack-schema` crate
+
+**Implementation:**
 ```rust
-// No way to generate OpenAPI/JSON Schema from domain types
-```
+use domainstack_schema::{OpenApiBuilder, Schema, ToSchema};
 
-**v1.0.0 Proposal:**
-```rust
-use schemars::{JsonSchema, schema_for};
-
-#[derive(Validate, JsonSchema)]
 struct User {
-    #[validate(length(min = 5, max = 255))]
-    #[schemars(regex = "^[^@]+@[^@]+\\.[^@]+$")]
     email: String,
-
-    #[validate(range(min = 18, max = 120))]
-    #[schemars(range(min = 18, max = 120))]
     age: u8,
 }
 
-// Generate OpenAPI schema
-let schema = schema_for!(User);
+impl ToSchema for User {
+    fn schema_name() -> &'static str { "User" }
+
+    fn schema() -> Schema {
+        Schema::object()
+            .property("email", Schema::string().format("email"))
+            .property("age", Schema::integer().minimum(18).maximum(120))
+            .required(&["email", "age"])
+    }
+}
+
+// Generate OpenAPI 3.0 specification
+let spec = OpenApiBuilder::new("My API", "1.0.0")
+    .register::<User>()
+    .build();
+
+println!("{}", spec.to_json().unwrap());
 ```
 
 **Benefits:**
-- Auto-generated API documentation
-- Frontend validation rules
-- Contract-first development
+- Auto-generated OpenAPI 3.0 documentation
+- Type-safe schema generation
+- Maps validation rules to OpenAPI constraints
+- Framework agnostic
+- Zero runtime overhead
 
-**Breaking Change:** New feature, opt-in
+**Breaking Change:** None - new crate, opt-in feature
 
 ---
 
@@ -112,7 +120,7 @@ let schema = schema_for!(User);
 
 | Change | Impact | Complexity | User Demand | Priority | Status |
 |--------|--------|------------|-------------|----------|--------|
-| Schema generation | 🔥🔥 | High | Medium | **P1** | 📋 Planned |
+| Schema generation | 🔥🔥 | High | Medium | **P1** | ✅ v0.7.0 |
 | Const generics | 🔥 | Medium | Low | **P2** | 📋 Planned |
 
 ---
@@ -181,7 +189,7 @@ let schema = schema_for!(User);
 | Custom Messages | ✅ v0.4 | ⚠️ Attributes only | ⚠️ | ✅ |
 | Type-Safe State | ✅ v0.6 | ❌ | ❌ | ✅ |
 | Framework Adapters | ✅ v0.4 | ❌ | ❌ | ❌ |
-| Schema Generation | 📋 Planned | ❌ | ❌ | ❌ |
+| Schema Generation | ✅ v0.7 | ❌ | ❌ | ❌ |
 | Zero Dependencies | ✅ Core only | ❌ | ❌ | ✅ |
 
 **Note:** domainstack has already implemented most P0/P1 features (async validation, cross-field validation, Path API encapsulation in v0.5, phantom types in v0.6) without breaking changes.

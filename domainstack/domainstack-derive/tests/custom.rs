@@ -1,6 +1,7 @@
 use domainstack::prelude::*;
 use domainstack_derive::Validate;
 
+#[allow(clippy::result_large_err)]
 fn validate_even(value: &u8) -> Result<(), ValidationError> {
     if *value % 2 == 0 {
         Ok(())

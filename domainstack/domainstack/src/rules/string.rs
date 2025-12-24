@@ -436,6 +436,161 @@ pub fn matches_regex(pattern: &'static str) -> Rule<str> {
     })
 }
 
+/// Validates that a string is not blank (not empty after trimming whitespace).
+///
+/// Unlike `non_empty()` which only checks if the string length is zero,
+/// `non_blank()` trims whitespace first, so strings containing only whitespace
+/// will fail validation.
+///
+/// # Examples
+///
+/// ```
+/// use domainstack::prelude::*;
+///
+/// let rule = rules::non_blank();
+/// assert!(rule.apply("hello").is_empty());
+/// assert!(rule.apply("  hello  ").is_empty());  // has content after trim
+/// assert!(!rule.apply("").is_empty());          // empty
+/// assert!(!rule.apply("   ").is_empty());       // only whitespace
+/// assert!(!rule.apply("\t\n").is_empty());      // only whitespace
+/// ```
+///
+/// # Error Code
+/// - Code: `blank`
+/// - Message: `"Must not be blank"`
+pub fn non_blank() -> Rule<str> {
+    Rule::new(|value: &str, ctx: &RuleContext| {
+        if value.trim().is_empty() {
+            ValidationError::single(ctx.full_path(), "blank", "Must not be blank")
+        } else {
+            ValidationError::default()
+        }
+    })
+}
+
+/// Validates that a string contains no whitespace characters.
+///
+/// Checks for any Unicode whitespace characters, including spaces, tabs, newlines, etc.
+///
+/// # Examples
+///
+/// ```
+/// use domainstack::prelude::*;
+///
+/// let rule = rules::no_whitespace();
+/// assert!(rule.apply("hello").is_empty());
+/// assert!(rule.apply("HelloWorld123").is_empty());
+/// assert!(!rule.apply("hello world").is_empty());  // space
+/// assert!(!rule.apply("hello\tworld").is_empty()); // tab
+/// assert!(!rule.apply("hello\n").is_empty());      // newline
+/// ```
+///
+/// # Error Code
+/// - Code: `contains_whitespace`
+/// - Message: `"Must not contain whitespace"`
+pub fn no_whitespace() -> Rule<str> {
+    Rule::new(|value: &str, ctx: &RuleContext| {
+        if value.chars().any(|c| c.is_whitespace()) {
+            ValidationError::single(
+                ctx.full_path(),
+                "contains_whitespace",
+                "Must not contain whitespace",
+            )
+        } else {
+            ValidationError::default()
+        }
+    })
+}
+
+/// Validates that a string contains only ASCII characters.
+///
+/// # Examples
+///
+/// ```
+/// use domainstack::prelude::*;
+///
+/// let rule = rules::ascii();
+/// assert!(rule.apply("hello").is_empty());
+/// assert!(rule.apply("Hello123!").is_empty());
+/// assert!(!rule.apply("hello🚀").is_empty());   // emoji
+/// assert!(!rule.apply("café").is_empty());      // accented character
+/// ```
+///
+/// # Error Code
+/// - Code: `not_ascii`
+/// - Message: `"Must contain only ASCII characters"`
+pub fn ascii() -> Rule<str> {
+    Rule::new(|value: &str, ctx: &RuleContext| {
+        if value.is_ascii() {
+            ValidationError::default()
+        } else {
+            ValidationError::single(
+                ctx.full_path(),
+                "not_ascii",
+                "Must contain only ASCII characters",
+            )
+        }
+    })
+}
+
+/// Validates that a string's character count (not byte count) is within the specified range.
+///
+/// Unlike `length()` which counts bytes, `len_chars()` counts Unicode characters.
+/// This is important for strings with multi-byte characters (emojis, accented letters, etc.).
+///
+/// # Examples
+///
+/// ```
+/// use domainstack::prelude::*;
+///
+/// let rule = rules::len_chars(3, 10);
+///
+/// // ASCII strings - byte length == char length
+/// assert!(rule.apply("hello").is_empty());      // 5 chars
+/// assert!(!rule.apply("hi").is_empty());        // 2 chars (too short)
+///
+/// // Multi-byte strings - byte length != char length
+/// assert!(rule.apply("café").is_empty());       // 4 chars (5 bytes)
+/// assert!(rule.apply("hello🚀").is_empty());    // 6 chars (9 bytes)
+/// assert!(!rule.apply("hi").is_empty());        // 2 chars (too short)
+/// ```
+///
+/// # Error Codes
+/// - Code: `min_chars` if too few characters
+/// - Code: `max_chars` if too many characters
+/// - Meta: `{"min": "3", "max": "10", "actual": "2"}`
+pub fn len_chars(min: usize, max: usize) -> Rule<str> {
+    Rule::new(move |value: &str, ctx: &RuleContext| {
+        let char_count = value.chars().count();
+
+        if char_count < min {
+            let mut err = ValidationError::single(
+                ctx.full_path(),
+                "min_chars",
+                format!("Must be at least {} characters", min),
+            );
+            err.violations[0].meta.insert("min", min.to_string());
+            err.violations[0]
+                .meta
+                .insert("actual", char_count.to_string());
+            err
+        } else if char_count > max {
+            let mut err = ValidationError::single(
+                ctx.full_path(),
+                "max_chars",
+                format!("Must be at most {} characters", max),
+            );
+            err.violations[0].meta.insert("max", max.to_string());
+            err.violations[0]
+                .meta
+                .insert("actual", char_count.to_string());
+            err
+        } else {
+            ValidationError::default()
+        }
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -680,5 +835,132 @@ mod tests {
         let result = rule.apply("1234567");
         assert!(!result.is_empty());
         assert_eq!(result.violations[0].code, "pattern_mismatch");
+    }
+
+    #[test]
+    fn test_non_blank_valid() {
+        let rule = non_blank();
+        assert!(rule.apply("hello").is_empty());
+        assert!(rule.apply("  hello  ").is_empty()); // has content after trim
+        assert!(rule.apply("a").is_empty());
+    }
+
+    #[test]
+    fn test_non_blank_invalid() {
+        let rule = non_blank();
+
+        let result = rule.apply("");
+        assert!(!result.is_empty());
+        assert_eq!(result.violations[0].code, "blank");
+
+        let result = rule.apply("   ");
+        assert!(!result.is_empty());
+
+        let result = rule.apply("\t\n");
+        assert!(!result.is_empty());
+    }
+
+    #[test]
+    fn test_no_whitespace_valid() {
+        let rule = no_whitespace();
+        assert!(rule.apply("hello").is_empty());
+        assert!(rule.apply("HelloWorld123").is_empty());
+        assert!(rule.apply("hello-world").is_empty());
+        assert!(rule.apply("hello_world").is_empty());
+    }
+
+    #[test]
+    fn test_no_whitespace_invalid() {
+        let rule = no_whitespace();
+
+        let result = rule.apply("hello world");
+        assert!(!result.is_empty());
+        assert_eq!(result.violations[0].code, "contains_whitespace");
+
+        let result = rule.apply("hello\tworld");
+        assert!(!result.is_empty());
+
+        let result = rule.apply("hello\n");
+        assert!(!result.is_empty());
+
+        let result = rule.apply("  ");
+        assert!(!result.is_empty());
+    }
+
+    #[test]
+    fn test_ascii_valid() {
+        let rule = ascii();
+        assert!(rule.apply("hello").is_empty());
+        assert!(rule.apply("Hello123!").is_empty());
+        assert!(rule.apply("").is_empty()); // empty string is ASCII
+        assert!(rule.apply("abc-def_123").is_empty());
+    }
+
+    #[test]
+    fn test_ascii_invalid() {
+        let rule = ascii();
+
+        let result = rule.apply("hello🚀");
+        assert!(!result.is_empty());
+        assert_eq!(result.violations[0].code, "not_ascii");
+
+        let result = rule.apply("café");
+        assert!(!result.is_empty());
+
+        let result = rule.apply("hello世界");
+        assert!(!result.is_empty());
+    }
+
+    #[test]
+    fn test_len_chars_valid() {
+        let rule = len_chars(3, 10);
+
+        // ASCII strings
+        assert!(rule.apply("hello").is_empty()); // 5 chars
+        assert!(rule.apply("abc").is_empty()); // 3 chars (min)
+        assert!(rule.apply("abcdefghij").is_empty()); // 10 chars (max)
+
+        // Multi-byte strings
+        assert!(rule.apply("café").is_empty()); // 4 chars (5 bytes)
+        assert!(rule.apply("hello🚀").is_empty()); // 6 chars (9 bytes)
+    }
+
+    #[test]
+    fn test_len_chars_too_short() {
+        let rule = len_chars(3, 10);
+
+        let result = rule.apply("hi");
+        assert!(!result.is_empty());
+        assert_eq!(result.violations[0].code, "min_chars");
+        assert_eq!(result.violations[0].meta.get("min"), Some("3"));
+        assert_eq!(result.violations[0].meta.get("actual"), Some("2"));
+
+        let result = rule.apply("");
+        assert!(!result.is_empty());
+    }
+
+    #[test]
+    fn test_len_chars_too_long() {
+        let rule = len_chars(3, 10);
+
+        let result = rule.apply("hello world!");
+        assert!(!result.is_empty());
+        assert_eq!(result.violations[0].code, "max_chars");
+        assert_eq!(result.violations[0].meta.get("max"), Some("10"));
+        assert_eq!(result.violations[0].meta.get("actual"), Some("12"));
+    }
+
+    #[test]
+    fn test_len_chars_vs_length() {
+        // Demonstrate the difference between byte length and char length
+        let emoji_string = "🚀🚀🚀"; // 3 chars, 12 bytes
+
+        // len_chars counts characters
+        let char_rule = len_chars(1, 5);
+        assert!(char_rule.apply(emoji_string).is_empty()); // 3 chars - valid
+
+        // length counts bytes
+        let byte_rule = length(1, 5);
+        assert!(!byte_rule.apply(emoji_string).is_empty()); // 12 bytes - invalid
     }
 }

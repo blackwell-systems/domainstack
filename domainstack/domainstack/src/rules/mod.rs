@@ -3,8 +3,8 @@ pub mod string;
 
 pub use numeric::{finite, max, min, multiple_of, negative, non_zero, positive, range, FiniteCheck};
 pub use string::{
-    alpha_only, alphanumeric, contains, ends_with, length, max_len, min_len, non_empty,
-    numeric_string, starts_with,
+    alpha_only, alphanumeric, ascii, contains, ends_with, len_chars, length, max_len, min_len,
+    no_whitespace, non_blank, non_empty, numeric_string, starts_with,
 };
 
 #[cfg(feature = "regex")]

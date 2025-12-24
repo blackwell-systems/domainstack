@@ -393,53 +393,7 @@ save_user(user).await?;  // ✓ Compiles!
 
 ### Category 3: Performance Optimizations
 
-#### 3.1 **Remove Box::leak() from Path** 🔥🔥🔥
-
-**Current Problem:**
-```rust
-// Path::parse() uses Box::leak() for 'static lifetime
-pub fn parse(s: &str) -> Self {
-    // ...
-    segments.push(PathSegment::Field(Box::leak(current.into_boxed_str())));
-}
-```
-
-**v1.0.0 Proposal:**
-```rust
-// Use Cow<'static, str> or Arc<str> instead
-pub enum PathSegment {
-    Field(Arc<str>),  // Reference-counted, no leaks!
-    Index(usize),
-}
-
-pub fn parse(s: &str) -> Self {
-    // ...
-    segments.push(PathSegment::Field(Arc::from(current.as_str())));
-}
-```
-
-**Alternative - Lifetime Parameter:**
-```rust
-pub struct Path<'a> {
-    segments: Vec<PathSegment<'a>>,
-}
-
-pub enum PathSegment<'a> {
-    Field(&'a str),  // Borrowed
-    Index(usize),
-}
-```
-
-**Benefits:**
-- No memory leaks
-- More Rust-idiomatic
-- Better memory profile for long-running services
-
-**Breaking Change:** Yes - Path API changes significantly
-
----
-
-#### 3.2 **SmallVec for Violations** 🔥
+#### 3.1 **SmallVec for Violations** 🔥
 
 **Current Problem:**
 ```rust
@@ -879,9 +833,9 @@ let schema = schema_for!(User);
    - Collection validation: `min_items()`, `max_items()`, `unique()`
 3. **v0.6.0** - Async validation (new trait, no breaking changes)
 4. **v0.7.0** - Additional domain helpers and advanced features
-5. **v1.0.0** - Stabilize, maybe fix Box::leak() (only real breaking change needed)
+5. **v1.0.0** - Stabilize API (no breaking changes expected)
 
-**Key Insight:** Most desired features can be added without breaking changes. The architecture is more flexible than initially thought. Breaking changes should be reserved for true architectural improvements (like Box::leak removal) that can't be done compatibly.
+**Key Insight:** Most desired features can be added without breaking changes. The architecture is more flexible than initially thought. We've successfully improved memory management (Arc<str> for paths) while maintaining backward compatibility.
 
 **Achievement Unlocked:** We've added 10 high-value validation rules (string semantics, choice/membership, collection validation) in complexity order - all with zero breaking changes and comprehensive test coverage (131 unit tests + 52 doctests)!
 

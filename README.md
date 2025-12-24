@@ -31,7 +31,7 @@ That means:
 - **Composable rules** - Rules are reusable values, not just attributes
 - **Structured error paths** - `rooms[0].adults`, `guest.email.value`
 - **Clean boundary mapping** - Optional error-envelope integration for APIs
-- **Async checks** (planned) - Uniqueness/existence checks with context
+- **Async validation** - Database uniqueness checks with context passing
 
 ## Quick Start
 
@@ -182,7 +182,7 @@ async fn create_booking(Json(dto): Json<BookingDto>) -> Result<Json<Booking>, Er
 | Valid-by-construction aggregates | Yes (core goal) | No (not primary) | No |
 | Composable rule algebra (and/or/when) | Yes (core feature) | No / limited | Partial (predicate-based) |
 | Structured error paths for APIs | Yes | Partial (varies) | No |
-| Async validation w/ context | Planned | No | No |
+| Async validation w/ context | ✅ Yes (v0.5+) | No | No |
 | Error envelope integration | Yes (optional) | No | No |
 
 ### When to use domainstack
@@ -192,7 +192,7 @@ async fn create_booking(Json(dto): Json<BookingDto>) -> Result<Json<Booking>, Er
 - Domain objects that can't exist in invalid states
 - Reusable validation rules shared across services
 - Consistent field-level errors that map to forms/clients
-- Async validation with database/API context (coming soon)
+- Async validation with database/API context (v0.5+)
 
 **You might not need domainstack if:**
 - You're validating only DTOs and your domain is basically DTO-shaped
@@ -384,6 +384,12 @@ domainstack = { version = "0.4", features = ["derive"] }
 
 # With regex validation (adds regex dependency for email/URL/pattern matching)
 domainstack = { version = "0.4", features = ["derive", "regex"] }
+
+# With async validation (for database uniqueness checks, external APIs)
+domainstack = { version = "0.4", features = ["async"] }
+
+# All features
+domainstack = { version = "0.4", features = ["derive", "regex", "async"] }
 
 # Optional: HTTP error mapping
 domainstack-envelope = "0.4"

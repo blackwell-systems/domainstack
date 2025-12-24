@@ -59,49 +59,6 @@ pub struct Violation {
 
 ---
 
-#### 1.2 **Simplify Path API** 🔥
-
-**Current Problem:**
-```rust
-// Path has public Vec<PathSegment>
-pub struct Path(pub Vec<PathSegment>);
-
-// Exposes internal implementation
-let mut path = Path(Vec::new());
-path.0.push(PathSegment::Field("name"));  // Awkward!
-```
-
-**v1.0.0 Proposal:**
-```rust
-// Private implementation
-pub struct Path {
-    segments: Vec<PathSegment>,  // Private!
-}
-
-impl Path {
-    pub fn segments(&self) -> &[PathSegment] {
-        &self.segments
-    }
-
-    pub fn push_field(&mut self, name: &'static str) {
-        self.segments.push(PathSegment::Field(name));
-    }
-
-    pub fn push_index(&mut self, idx: usize) {
-        self.segments.push(PathSegment::Index(idx));
-    }
-}
-```
-
-**Benefits:**
-- Encapsulation (can change implementation later)
-- Better API ergonomics
-- More idiomatic Rust
-
-**Breaking Change:** Yes - `Path(Vec<...>)` no longer accessible
-
----
-
 ### Category 2: Type Safety Improvements
 
 #### 2.1 **Const Generics for String Length** 🔥
@@ -254,60 +211,9 @@ pub struct ValidationError {
 
 ---
 
-### Category 4: Advanced Features
+### Category 4: Developer Experience
 
-#### 4.1 **Async Validation** 🔥🔥🔥
-
-**Current Limitation:**
-```rust
-// Cannot do database checks
-pub fn validate_email_unique(email: &str) -> Result<(), ValidationError> {
-    // Can't call async fn here!
-}
-```
-
-**v1.0.0 Proposal:**
-```rust
-use async_trait::async_trait;
-
-#[async_trait]
-pub trait AsyncValidate {
-    async fn validate_async(&self, ctx: &ValidationContext) -> Result<(), ValidationError>;
-}
-
-pub struct ValidationContext {
-    db: Arc<dyn Database>,
-    cache: Arc<dyn Cache>,
-}
-
-// Example usage
-#[derive(AsyncValidate)]
-struct User {
-    #[validate(length(min = 5, max = 255))]  // Sync check
-    #[validate_async(unique = "users.email")]  // Async check
-    email: String,
-}
-
-// In handler
-async fn create_user(user: User, ctx: ValidationContext) -> Result<(), Error> {
-    user.validate_async(&ctx).await?;  // Checks DB for uniqueness
-    // ...
-}
-```
-
-**Benefits:**
-- Database uniqueness checks
-- External API validation
-- Rate limiting integration
-- Most-requested feature
-
-**Breaking Change:** New trait, optional adoption
-
----
-
-### Category 5: Developer Experience
-
-#### 5.1 **Schema Generation** 🔥🔥
+#### 4.1 **Schema Generation** 🔥🔥
 
 **Current Limitation:**
 ```rust
@@ -346,36 +252,37 @@ let schema = schema_for!(User);
 
 | Change | Impact | Complexity | User Demand | Priority | Status |
 |--------|--------|------------|-------------|----------|--------|
-| Async validation | 🔥🔥🔥 | High | Very High | **P0** | 📋 Planned |
-| Phantom types for validation state | 🔥🔥 | Low | Medium | **P2** | 📋 Planned |
-| Schema generation | 🔥🔥 | High | Medium | **P2** | 📋 Planned |
-| SmallVec optimization | 🔥 | Low | Low | **P3** | 📋 Planned |
-| Const generics | 🔥 | Medium | Low | **P3** | 📋 Planned |
+| Phantom types for validation state | 🔥🔥 | Low | Medium | **P1** | 📋 Planned |
+| Schema generation | 🔥🔥 | High | Medium | **P1** | 📋 Planned |
+| SmallVec optimization | 🔥 | Low | Low | **P2** | 📋 Planned |
+| Const generics | 🔥 | Medium | Low | **P2** | 📋 Planned |
 | HashMap for metadata | 🔥 | Low | Low | **P3** | 📋 Planned |
 
 ---
 
 ## Recommended v1.0.0 Feature Set
 
-#### Must Have (P0)
+#### High Priority (P1)
 
-1. **Async Validation**
-   - `AsyncValidate` trait
-   - Database uniqueness checks
-   - External API validation
-   - Validation context passing
-
-#### Nice to Have (P2)
-
-2. **Phantom Types**
+1. **Phantom Types**
    - Compile-time validation guarantees
    - Type-safe state tracking
    - Optional adoption
 
-3. **Schema Generation**
+2. **Schema Generation**
    - OpenAPI integration
    - JSON Schema export
    - TypeScript type generation
+
+#### Medium Priority (P2)
+
+3. **SmallVec Optimization**
+   - Stack-allocated violations for common case
+   - Performance improvements
+
+4. **Const Generics**
+   - Type-level string length constraints
+   - Better compile-time guarantees
 
 ---
 
@@ -397,19 +304,26 @@ let schema = schema_for!(User);
 
 **Recommended Approach:**
 
-#### v0.6.0 - Async Validation
-- Add `AsyncValidate` trait
-- Add validation context
-- **Breaking:** None (new feature)
+#### v0.5.0 - Completed ✅
+- ✅ Path API encapsulation
+- ✅ Async validation support
+- ✅ Extended rule library (31 rules)
+- ✅ Cross-field validation
+- **Breaking:** Path API internal structure private
 
-#### v0.7.0 - Additional domain helpers
-- Performance optimizations
-- Additional utilities
+#### v0.6.0 - Type Safety
+- Phantom types for validated state
+- Optional adoption pattern
+- **Breaking:** None (new pattern)
+
+#### v0.7.0 - Developer Experience
+- Schema generation
+- OpenAPI integration
 - **Breaking:** None (new features)
 
-#### v0.9.0 - Deprecations
+#### v0.9.0 - Optimizations & Deprecations
+- Performance optimizations (SmallVec, etc.)
 - Deprecate old APIs if needed
-- Add migration warnings
 - **Breaking:** None (warnings only)
 
 #### v1.0.0 - Stabilize
@@ -425,7 +339,7 @@ let schema = schema_for!(User);
 |---------|----------------------|-----------|-------|--------|
 | Domain-First | ✅ | ❌ | ❌ | ⚠️ |
 | Composable Rules | ✅ + Builders | ❌ | ⚠️ | ⚠️ |
-| Async Validation | 📋 Planned | ❌ | ❌ | ❌ |
+| Async Validation | ✅ v0.5 | ❌ | ❌ | ❌ |
 | Cross-Field | ✅ v0.5 | ⚠️ Limited | ❌ | ❌ |
 | Conditional Validation | ✅ v0.5 | ❌ | ❌ | ❌ |
 | Custom Messages | ✅ v0.4 | ⚠️ Attributes only | ⚠️ | ✅ |
@@ -434,7 +348,7 @@ let schema = schema_for!(User);
 | Schema Generation | 📋 Planned | ❌ | ❌ | ❌ |
 | Zero Dependencies | ✅ Core only | ❌ | ❌ | ✅ |
 
-**Note:** domainstack already implements most desired features without breaking changes.
+**Note:** domainstack has already implemented most P0 features (async validation, cross-field validation, Path API encapsulation) without breaking changes in v0.5.
 
 ---
 

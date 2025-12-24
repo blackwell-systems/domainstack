@@ -121,18 +121,14 @@ impl Path {
             match chars[i] {
                 '.' => {
                     if !current.is_empty() {
-                        segments.push(PathSegment::Field(Arc::from(
-                            current.as_str(),
-                        )));
+                        segments.push(PathSegment::Field(Arc::from(current.as_str())));
                         current.clear();
                     }
                     i += 1;
                 }
                 '[' => {
                     if !current.is_empty() {
-                        segments.push(PathSegment::Field(Arc::from(
-                            current.as_str(),
-                        )));
+                        segments.push(PathSegment::Field(Arc::from(current.as_str())));
                         current.clear();
                     }
 

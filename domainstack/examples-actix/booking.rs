@@ -19,7 +19,9 @@ pub struct Email(String);
 impl Email {
     pub fn new(raw: String) -> Result<Self, ValidationError> {
         // Use Path::root() in primitives - caller will prefix with field name
-        let rule = rules::min_len(5).and(rules::max_len(255)).and(rules::email());
+        let rule = rules::min_len(5)
+            .and(rules::max_len(255))
+            .and(rules::email());
         validate(Path::root(), raw.as_str(), &rule)?;
 
         Ok(Self(raw))

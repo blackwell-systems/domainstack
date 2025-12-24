@@ -1,6 +1,8 @@
 use crate::{Path, RuleContext, ValidationError};
 use std::sync::Arc;
 
+type RuleFn<T> = Arc<dyn Fn(&T, &RuleContext) -> ValidationError + Send + Sync>;
+
 /// A composable validation rule for values of type `T`.
 ///
 /// Rules are the building blocks of domainstack's validation system. They can be composed
@@ -61,7 +63,7 @@ use std::sync::Arc;
 /// assert!(!rule.apply_with_context("Hello", &ctx).is_empty());
 /// ```
 pub struct Rule<T: ?Sized> {
-    inner: Arc<dyn Fn(&T, &RuleContext) -> ValidationError + Send + Sync>,
+    inner: RuleFn<T>,
 }
 
 impl<T: ?Sized> Clone for Rule<T> {

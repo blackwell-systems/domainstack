@@ -1,5 +1,4 @@
 use crate::{Path, Rule, RuleContext, ValidationError};
-use std::sync::Arc;
 
 pub fn validate<T: ?Sized + 'static>(
     path: impl Into<Path>,
@@ -14,7 +13,7 @@ pub fn validate<T: ?Sized + 'static>(
     });
 
     let parent_path = if field_name.is_some() && path.0.len() > 1 {
-        Path(path.0[..path.0.len()-1].to_vec())
+        Path(path.0[..path.0.len() - 1].to_vec())
     } else if field_name.is_some() {
         Path::root()
     } else {

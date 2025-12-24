@@ -39,7 +39,10 @@ fn main() {
         for v in &err.violations {
             println!("  ✗ {}", v.message);
             println!("     Hint: {}", v.meta.get("hint").map_or("N/A", |s| s));
-            println!("     Field Type: {}", v.meta.get("field_type").map_or("N/A", |s| s));
+            println!(
+                "     Field Type: {}",
+                v.meta.get("field_type").map_or("N/A", |s| s)
+            );
         }
     }
 
@@ -59,7 +62,10 @@ fn main() {
             println!("  ✗ Code: {}", v.code);
             println!("     Message: {}", v.message);
             println!("     Hint: {}", v.meta.get("hint").map_or("N/A", |s| s));
-            println!("     Required: {}", v.meta.get("required").map_or("N/A", |s| s));
+            println!(
+                "     Required: {}",
+                v.meta.get("required").map_or("N/A", |s| s)
+            );
         }
     }
 
@@ -104,12 +110,9 @@ fn main() {
         .and(
             rules::min_len(3)
                 .message("Username must be at least 3 characters")
-                .meta("hint", "Try a longer username")
+                .meta("hint", "Try a longer username"),
         )
-        .and(
-            rules::max_len(20)
-                .message("Username must be at most 20 characters")
-        );
+        .and(rules::max_len(20).message("Username must be at most 20 characters"));
 
     if let Err(e) = validate("username", dto.username.as_str(), &username_rule) {
         errors.extend(e);
@@ -134,7 +137,10 @@ fn main() {
     }
 
     if !errors.is_empty() {
-        println!("  ✗ Validation failed with {} errors:", errors.violations.len());
+        println!(
+            "  ✗ Validation failed with {} errors:",
+            errors.violations.len()
+        );
         for v in &errors.violations {
             println!("\n     Field: {}", v.path);
             println!("     Error: {}", v.message);

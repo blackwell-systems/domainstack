@@ -440,7 +440,9 @@ pub fn matches_regex(pattern: &'static str) -> Rule<str> {
                 "pattern_mismatch",
                 "Does not match required pattern",
             );
-            err.violations[0].meta.insert("pattern", pattern.to_string());
+            err.violations[0]
+                .meta
+                .insert("pattern", pattern.to_string());
             err
         }
     })

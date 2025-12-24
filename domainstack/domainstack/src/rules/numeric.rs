@@ -199,7 +199,14 @@ where
 /// - Meta: `{"divisor": "5"}`
 pub fn multiple_of<T>(divisor: T) -> Rule<T>
 where
-    T: std::ops::Rem<Output = T> + PartialEq + Default + Copy + std::fmt::Display + Send + Sync + 'static,
+    T: std::ops::Rem<Output = T>
+        + PartialEq
+        + Default
+        + Copy
+        + std::fmt::Display
+        + Send
+        + Sync
+        + 'static,
 {
     Rule::new(move |value: &T, ctx: &RuleContext| {
         if *value % divisor == T::default() {

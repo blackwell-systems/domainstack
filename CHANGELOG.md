@@ -5,6 +5,102 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - Extended Rule Library
+
+### Added
+
+#### 10 New Validation Rules (High Value Expansions)
+
+**String Semantics (4 rules):**
+- `rules::non_blank()` - Not empty after trimming whitespace (catches "   " as invalid)
+- `rules::no_whitespace()` - Contains no whitespace characters (useful for usernames, slugs)
+- `rules::ascii()` - All characters are ASCII (for legacy systems or ASCII-only fields)
+- `rules::len_chars(min, max)` - Character count validation (not byte count, handles Unicode correctly)
+
+**Choice/Membership (3 rules):**
+- `rules::equals(value)` - Value must equal the specified value
+- `rules::not_equals(value)` - Value must NOT equal the specified value
+- `rules::one_of(&[values])` - Value must be in the allowed set (e.g., status enums, role checks)
+
+**Collection Validation (3 rules):**
+- `rules::min_items(n)` - Collection must have at least n items
+- `rules::max_items(n)` - Collection must have at most n items
+- `rules::unique()` - All items must be unique (no duplicates, uses HashSet for O(n) performance)
+
+**Examples:**
+```rust
+// String semantics
+let rule = rules::non_blank();  // "   " fails, "  hello  " passes
+let rule = rules::len_chars(3, 10);  // "🚀🚀🚀" = 3 chars, not 12 bytes
+
+// Choice/membership
+let rule = rules::one_of(&["active", "pending", "inactive"]);
+let rule = rules::equals(42);
+
+// Collections
+let tags_rule = rules::min_items(1).and(rules::unique());  // At least 1 unique tag
+let rule = rules::max_items(10);  // Limit to 10 items
+```
+
+#### Critical Bug Fixes
+
+**Float Validation (NaN Handling):**
+- Added `rules::finite()` to catch NaN and infinity values
+- NaN values were slipping through `range()`, `min()`, `max()` due to PartialOrd semantics
+- New `FiniteCheck` trait for f32/f64 validation
+- **Recommended:** Always combine `finite()` with range checks for floats
+
+**Numeric Validation:**
+- Added `rules::non_zero()` for better zero-checking
+- Documented that `positive()` and `negative()` are for signed types only
+
+**Performance:**
+- Regex patterns now compiled once and cached (uses `once_cell`)
+- `EMAIL_REGEX` and `URL_REGEX` are static `Lazy<Regex>` for one-time compilation
+- Massive performance improvement for repeated validations
+
+**Feature Flag Consistency:**
+- Unified all regex-backed validation under single `regex` feature
+- Removed `email` feature alias (was confusing)
+- Both `email()` and `url()` now require `regex` feature consistently
+
+### Changed
+
+#### Breaking Changes
+- `email()` and `url()` now require the `regex` feature (no fallback implementations)
+  - **Migration:** Add `features = ["regex"]` to enable email/url validation
+  - This ensures consistent, RFC-compliant validation
+
+### Technical Details
+
+**Test Coverage:**
+- 131 unit tests (up from 98 - added 33 new tests)
+- 52 doctests (up from 42 - added 10 new doctests)
+- 100% pass rate across all test suites
+
+**Code Quality:**
+- Zero clippy warnings
+- All new rules have comprehensive documentation
+- Added realistic examples for each rule category
+
+**Performance:**
+- Regex compilation moved to static initialization (one-time cost)
+- `unique()` uses HashSet for O(n) duplicate detection
+- No heap allocation for error metadata keys
+
+### Design Philosophy
+
+These rules were implemented in **complexity order**:
+1. **String semantics** (low complexity) - straightforward string checks
+2. **Choice/membership** (medium complexity) - generic equality checking
+3. **Collection rules** (high complexity) - working with slices and collections
+
+All rules follow the existing patterns:
+- Builder-style customization (`.with_message()`, `.with_code()`, `.with_meta()`)
+- Clear error codes and messages
+- Metadata includes actual values for debugging
+- Comprehensive test coverage
+
 ## [0.4.0] - 2025-12-24
 
 ### Added

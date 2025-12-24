@@ -20,48 +20,9 @@ In v0.4.0+, we maintain **100% backward compatibility**. This means:
 
 ## Proposed Breaking Changes for v1.0.0
 
-### Category 1: API Simplification
+### Category 1: Type Safety Improvements
 
-#### 1.1 **Unify Error Handling** 🔥
-
-**Current Problem:**
-```rust
-// Different error types across modules
-pub struct ValidationError { ... }
-pub struct Violation { ... }
-pub struct Meta { ... }
-
-// Meta is awkward - Vec<(Key, Value)>
-pub type Meta = Vec<(&'static str, String)>;
-```
-
-**v1.0.0 Proposal:**
-```rust
-// Single, unified error type
-pub struct ValidationError {
-    pub violations: Vec<Violation>,
-}
-
-pub struct Violation {
-    pub path: Path,
-    pub code: &'static str,
-    pub message: String,
-    pub metadata: HashMap<&'static str, String>,  // Use HashMap instead
-}
-```
-
-**Benefits:**
-- More idiomatic Rust (HashMap for key-value pairs)
-- Better performance for metadata lookups
-- Clearer API
-
-**Breaking Change:** Yes - `Meta` type removed, `Violation` struct changed
-
----
-
-### Category 2: Type Safety Improvements
-
-#### 2.1 **Const Generics for String Length** 🔥
+#### 1.1 **Const Generics for String Length** 🔥
 
 **Current Problem:**
 ```rust
@@ -110,80 +71,9 @@ let email = Email::new("user@example.com".to_string())?;
 
 ---
 
-#### 2.2 **Phantom Types for Validated State** 🔥🔥
+### Category 2: Performance Optimizations
 
-**Current Problem:**
-```rust
-// No type-level guarantee that validation occurred
-pub struct User {
-    name: String,
-    email: String,
-}
-
-// Did someone forget to validate?
-let user = User { name: "Alice", email: "invalid" };
-```
-
-**v1.0.0 Proposal:**
-```rust
-use std::marker::PhantomData;
-
-pub struct Validated;
-pub struct Unvalidated;
-
-pub struct User<State = Unvalidated> {
-    name: String,
-    email: String,
-    _state: PhantomData<State>,
-}
-
-impl User<Unvalidated> {
-    pub fn new(name: String, email: String) -> Self {
-        Self {
-            name,
-            email,
-            _state: PhantomData,
-        }
-    }
-
-    pub fn validate(self) -> Result<User<Validated>, ValidationError> {
-        // Perform validation...
-
-        Ok(User {
-            name: self.name,
-            email: self.email,
-            _state: PhantomData,
-        })
-    }
-}
-
-// Only validated users can be saved
-async fn save_user(user: User<Validated>) -> Result<(), Error> {
-    // Compile-time guarantee that user is validated!
-}
-
-// This won't compile:
-let user = User::new("Alice", "invalid");
-save_user(user).await?;  // ERROR: expected User<Validated>, found User<Unvalidated>
-
-// Must validate first:
-let user = User::new("Alice", "alice@example.com")
-    .validate()?;
-save_user(user).await?;  // ✓ Compiles!
-```
-
-**Benefits:**
-- Compile-time validation guarantees
-- Cannot accidentally use unvalidated data
-- Self-documenting API
-
-**Breaking Change:** Yes - all domain types need phantom parameter
-
----
-
-### Category 3: Performance Optimizations
-
-#### 3.1 **SmallVec for Violations** 🔥
+#### 2.1 **SmallVec for Violations** 🔥
 
 **Current Problem:**
 ```rust
@@ -211,9 +101,9 @@ pub struct ValidationError {
 
 ---
 
-### Category 4: Developer Experience
+### Category 3: Developer Experience
 
-#### 4.1 **Schema Generation** 🔥🔥
+#### 3.1 **Schema Generation** 🔥🔥
 
 **Current Limitation:**
 ```rust
@@ -252,11 +142,9 @@ let schema = schema_for!(User);
 
 | Change | Impact | Complexity | User Demand | Priority | Status |
 |--------|--------|------------|-------------|----------|--------|
-| Phantom types for validation state | 🔥🔥 | Low | Medium | **P1** | ✅ Completed (v0.6.0) |
 | Schema generation | 🔥🔥 | High | Medium | **P1** | 📋 Planned |
 | SmallVec optimization | 🔥 | Low | Low | **P2** | 📋 Planned |
 | Const generics | 🔥 | Medium | Low | **P2** | 📋 Planned |
-| HashMap for metadata | 🔥 | Low | Low | **P3** | 📋 Planned |
 
 ---
 
@@ -264,23 +152,18 @@ let schema = schema_for!(User);
 
 #### High Priority (P1)
 
-1. **Phantom Types**
-   - Compile-time validation guarantees
-   - Type-safe state tracking
-   - Optional adoption
-
-2. **Schema Generation**
+1. **Schema Generation**
    - OpenAPI integration
    - JSON Schema export
    - TypeScript type generation
 
 #### Medium Priority (P2)
 
-3. **SmallVec Optimization**
+2. **SmallVec Optimization**
    - Stack-allocated violations for common case
    - Performance improvements
 
-4. **Const Generics**
+3. **Const Generics**
    - Type-level string length constraints
    - Better compile-time guarantees
 
@@ -303,20 +186,6 @@ let schema = schema_for!(User);
 ### Option 2: Gradual (Recommended)
 
 **Recommended Approach:**
-
-#### v0.5.0 - Completed ✅
-- ✅ Path API encapsulation
-- ✅ Async validation support
-- ✅ Extended rule library (31 rules)
-- ✅ Cross-field validation
-- **Breaking:** Path API internal structure private
-
-#### v0.6.0 - Type Safety ✅
-- ✅ Phantom types for validated state
-- ✅ Optional adoption pattern (typestate module)
-- ✅ Zero-cost abstractions with PhantomData
-- ✅ Comprehensive documentation and examples
-- **Breaking:** None (new pattern, fully opt-in)
 
 #### v0.7.0 - Developer Experience
 - Schema generation

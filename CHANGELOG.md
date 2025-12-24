@@ -5,7 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - v0.6.0 Type-State Validation
+## [Unreleased] - v0.6.0 Type-State Validation & Performance
+
+### Changed
+
+#### Breaking Changes
+
+**Metadata Storage Optimization (HashMap):**
+- `Meta` internal storage changed from `Vec<(&'static str, String)>` to `HashMap<&'static str, String>`
+- **Benefits:**
+  - **O(1) lookup** instead of O(n) when accessing metadata with `.get()`
+  - **Prevents duplicate keys** - inserting same key twice now replaces the value
+  - **Better semantics** - HashMap clearly represents key-value mapping
+  - **Same API** - `Meta::new()`, `.insert()`, `.get()`, `.iter()` all work identically
+- **Migration:** Public API unchanged - no code changes needed
+  - `meta.insert("key", value)` works the same
+  - `meta.get("key")` works the same
+  - Only internal implementation changed
+- **Trade-offs:**
+  - Slightly higher memory overhead per entry (HashMap vs Vec)
+  - Iteration order is not guaranteed (HashMap is unordered)
+- **Impact:** Internal optimization, transparent to users
 
 ### Added
 

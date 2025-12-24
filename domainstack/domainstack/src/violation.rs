@@ -1,4 +1,5 @@
 use crate::Path;
+use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 pub struct Violation {
@@ -10,30 +11,29 @@ pub struct Violation {
 
 #[derive(Debug, Clone, Default)]
 pub struct Meta {
-    fields: Vec<(&'static str, String)>,
+    fields: HashMap<&'static str, String>,
 }
 
 impl Meta {
     pub fn new() -> Self {
-        Self { fields: Vec::new() }
+        Self {
+            fields: HashMap::new(),
+        }
     }
 
     pub fn insert(&mut self, key: &'static str, value: impl ToString) {
-        self.fields.push((key, value.to_string()));
+        self.fields.insert(key, value.to_string());
     }
 
     pub fn get(&self, key: &'static str) -> Option<&str> {
-        self.fields
-            .iter()
-            .find(|(k, _)| *k == key)
-            .map(|(_, v)| v.as_str())
+        self.fields.get(key).map(|v| v.as_str())
     }
 
     pub fn is_empty(&self) -> bool {
         self.fields.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = (&'static str, &str)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&'static str, &str)> + '_ {
         self.fields.iter().map(|(k, v)| (*k, v.as_str()))
     }
 }
@@ -45,13 +45,13 @@ mod tests {
     #[test]
     fn test_meta_new() {
         let meta = Meta::new();
-        assert!(meta.fields.is_empty());
+        assert!(meta.is_empty());
     }
 
     #[test]
     fn test_meta_default() {
         let meta = Meta::default();
-        assert!(meta.fields.is_empty());
+        assert!(meta.is_empty());
     }
 
     #[test]

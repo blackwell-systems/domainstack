@@ -49,7 +49,7 @@ fn main() {
 
 ## Schema Constraints
 
-Map validation rules to OpenAPI constraints:
+**Supports all field-level validation rules that have direct OpenAPI Schema constraint mappings:**
 
 | Validation Rule | OpenAPI Constraint | Example |
 |----------------|-------------------|---------|
@@ -60,6 +60,74 @@ Map validation rules to OpenAPI constraints:
 | `numeric_string()` | `pattern: "^[0-9]+$"` | `.pattern("^[0-9]+$")` |
 | `min_items(n)` | `minItems` | `.min_items(1)` |
 | `max_items(n)` | `maxItems` | `.max_items(10)` |
+
+**Note:** Cross-field validations, conditional rules, and business logic validations (e.g., database uniqueness) don't have direct OpenAPI equivalents. For these, use vendor extensions (see below).
+
+## v0.8 Features
+
+### Schema Composition
+
+Combine schemas using `anyOf`, `allOf`, or `oneOf`:
+
+```rust
+// Union type (anyOf): string OR integer
+let flexible = Schema::any_of(vec![
+    Schema::string(),
+    Schema::integer(),
+]);
+
+// Composition (allOf): extends base schema
+let admin_user = Schema::all_of(vec![
+    Schema::reference("User"),
+    Schema::object().property("admin", Schema::boolean()),
+]);
+
+// Discriminated union (oneOf): exactly one match
+let payment = Schema::one_of(vec![
+    Schema::object().property("type", Schema::string().enum_values(&["card"])),
+    Schema::object().property("type", Schema::string().enum_values(&["cash"])),
+]);
+```
+
+### Metadata & Documentation
+
+Add defaults, examples, and documentation:
+
+```rust
+let theme = Schema::string()
+    .enum_values(&["light", "dark", "auto"])
+    .default(json!("auto"))          // Default value
+    .example(json!("dark"))           // Single example
+    .examples(vec![                   // Multiple examples
+        json!("light"),
+        json!("dark"),
+    ])
+    .description("UI theme preference");
+```
+
+### Request/Response Modifiers
+
+Mark fields as read-only, write-only, or deprecated:
+
+```rust
+let user = Schema::object()
+    .property("id",
+        Schema::string()
+            .read_only(true)         // Response only
+            .description("Auto-generated ID")
+    )
+    .property("password",
+        Schema::string()
+            .format("password")
+            .write_only(true)        // Request only
+            .min_length(8)
+    )
+    .property("old_field",
+        Schema::string()
+            .deprecated(true)        // Mark as deprecated
+            .description("Use 'new_field' instead")
+    );
+```
 
 ## Schema Types
 
@@ -125,17 +193,72 @@ println!("{}", json);
 
 ## Examples
 
+### Basic Usage
+
 See `examples/user_api.rs` for a complete example demonstrating:
 - Multiple schema types (User, Address, Team)
 - Validation constraint mapping
 - Schema references
 - Array constraints
 
-Run the example:
-
 ```bash
 cargo run --example user_api
 ```
+
+### v0.8 Features
+
+See `examples/v08_features.rs` for advanced features:
+- Schema composition (anyOf/allOf/oneOf)
+- Metadata (default/example/examples)
+- Request/response modifiers (readOnly/writeOnly/deprecated)
+- Vendor extensions for non-mappable validations
+
+```bash
+cargo run --example v08_features
+```
+
+## Scope & Positioning
+
+**What this crate does:**
+- Generates OpenAPI 3.0 **component schemas** for domain types
+- Maps field-level validations to OpenAPI constraints
+- Provides type-safe schema builders
+- Exports to JSON/YAML
+
+**What this crate does NOT do:**
+- API paths/operations (GET /users, POST /users, etc.)
+- Request/response body definitions
+- Security schemes or authentication
+- Full API documentation generation
+
+**Positioning:** `domainstack-schema` focuses on **schema generation** for domain types. Full OpenAPI spec generation (paths, operations, security) is intentionally out of scope and may be addressed in a separate crate.
+
+## Handling Non-Mappable Validations
+
+Some validation rules don't map cleanly to OpenAPI Schema constraints:
+
+```rust
+// Cross-field validation - no OpenAPI equivalent
+#[validate(check = "self.end_date > self.start_date")]
+
+// Conditional validation - no OpenAPI equivalent
+#[validate(when = "self.requires_card", rule = "...")]
+
+// Business logic - no OpenAPI equivalent
+async fn validate_email_unique(&self, db: &Database) -> Result<()>
+```
+
+**Solution:** Use vendor extensions to preserve validation metadata:
+
+```rust
+Schema::object()
+    .property("end_date", Schema::string().format("date"))
+    .extension("x-domainstack-validations", json!({
+        "cross_field": ["end_date > start_date"]
+    }))
+```
+
+This maintains a single source of truth while acknowledging OpenAPI's expressiveness limits.
 
 ## Documentation
 

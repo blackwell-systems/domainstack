@@ -5,6 +5,106 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - v0.8.0 Schema Enhancements
+
+### Added
+
+#### Schema Composition
+
+**anyOf / allOf / oneOf Support:**
+- `Schema::any_of(schemas)` - Union types (matches any of the given schemas)
+- `Schema::all_of(schemas)` - Composition/intersection (matches all schemas)
+- `Schema::one_of(schemas)` - Discriminated unions (matches exactly one)
+
+**Use Cases:**
+- `anyOf`: Flexible types (e.g., string OR integer)
+- `allOf`: Schema inheritance/composition (e.g., AdminUser extends User)
+- `oneOf`: Discriminated unions (e.g., payment methods with different fields)
+
+**Example:**
+```rust
+// Admin user extends base User
+let admin = Schema::all_of(vec![
+    Schema::reference("User"),
+    Schema::object().property("admin", Schema::boolean()),
+]);
+```
+
+#### Metadata & Documentation
+
+**Rich Schema Metadata:**
+- `.default(value)` - Default values for fields
+- `.example(value)` - Single example value
+- `.examples(values)` - Multiple example values
+
+**Benefits:**
+- Improved API documentation
+- Better client code generation
+- Enhanced developer experience
+
+**Example:**
+```rust
+let theme = Schema::string()
+    .enum_values(&["light", "dark", "auto"])
+    .default(json!("auto"))
+    .example(json!("dark"));
+```
+
+#### Request/Response Field Modifiers
+
+**Field-Level Control:**
+- `.read_only(true)` - Field returned in responses only (e.g., auto-generated IDs)
+- `.write_only(true)` - Field accepted in requests only (e.g., passwords)
+- `.deprecated(true)` - Mark field as deprecated
+
+**Use Cases:**
+- `readOnly`: Auto-generated fields (id, createdAt, etc.)
+- `writeOnly`: Sensitive data (passwords, tokens)
+- `deprecated`: Phase out old fields gracefully
+
+**Example:**
+```rust
+Schema::object()
+    .property("id", Schema::string().read_only(true))
+    .property("password", Schema::string().write_only(true))
+    .property("oldField", Schema::string().deprecated(true))
+```
+
+#### Vendor Extensions
+
+**Support for Non-Mappable Validations:**
+- `.extension(key, value)` - Add custom vendor extensions (x-*)
+
+**Purpose:**
+Cross-field validations, conditional rules, and business logic that don't map to OpenAPI can be preserved as vendor extensions, maintaining single source of truth.
+
+**Example:**
+```rust
+Schema::object()
+    .extension("x-domainstack-validations", json!({
+        "cross_field": ["endDate > startDate"]
+    }))
+```
+
+### Technical Details
+
+**Test Coverage:**
+- 20 unit tests (12 new for v0.8 features)
+- 13 doctests covering all public APIs
+- New example: `v08_features.rs` with comprehensive demonstrations
+- 100% pass rate
+
+**Code Quality:**
+- Zero unsafe code
+- Backward compatible - all v0.7 code works unchanged
+- Clean clippy, properly formatted
+- Fully documented with examples
+
+**API Compatibility:**
+- All v0.7 APIs unchanged
+- New features are opt-in via builder methods
+- No breaking changes
+
 ## [Unreleased] - v0.7.0 OpenAPI Schema Generation
 
 ### Added

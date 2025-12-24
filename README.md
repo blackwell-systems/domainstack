@@ -33,7 +33,7 @@ That means:
 - **Clean boundary mapping** - Optional error-envelope integration for APIs
 - **Async validation** - Database uniqueness checks with context passing
 - **Type-state tracking** - Compile-time guarantees with phantom types
-- **OpenAPI schema generation** - Auto-generate API documentation from your types
+- **Auto-derived OpenAPI schemas** - Write validation rules once, get OpenAPI 3.0 schemas automatically (zero duplication)
 
 ## Quick Start
 
@@ -534,44 +534,67 @@ fn send_email(email: Email<Validated>) {
 
 #### OpenAPI Schema Generation
 
-Auto-generate OpenAPI 3.0 documentation from your domain types:
+**NEW**: Auto-generate OpenAPI 3.0 schemas directly from your validation rules—**zero duplication**:
 
 ```rust
-use domainstack_schema::{OpenApiBuilder, Schema, ToSchema};
-use serde_json::json;
+use domainstack_derive::ToSchema;
+use domainstack_schema::OpenApiBuilder;
 
+// Write validation rules ONCE, schema derives automatically
+#[derive(ToSchema)]
+#[schema(description = "User in the system")]
 struct User {
+    #[validate(email)]
+    #[validate(max_len = 255)]
+    #[schema(description = "User's email", example = "user@example.com")]
     email: String,
+
+    #[validate(range(min = 18, max = 120))]
+    #[schema(description = "User's age")]
     age: u8,
+
+    #[validate(min_len = 1)]
+    #[validate(max_len = 100)]
     name: String,
+
+    // Optional fields automatically excluded from required array
+    #[validate(min_len = 1)]
+    nickname: Option<String>,
 }
 
-impl ToSchema for User {
-    fn schema_name() -> &'static str { "User" }
-
-    fn schema() -> Schema {
-        Schema::object()
-            .property("email", Schema::string()
-                .format("email")
-                .example(json!("user@example.com")))
-            .property("age", Schema::integer()
-                .minimum(18)
-                .maximum(120))
-            .property("name", Schema::string()
-                .min_length(1)
-                .max_length(100))
-            .required(&["email", "age", "name"])
-    }
-}
-
-// Generate OpenAPI spec
+// Generate OpenAPI spec with automatic constraint mapping
 let spec = OpenApiBuilder::new("User API", "1.0.0")
-    .description("User management API")
     .register::<User>()
     .build();
 
-println!("{}", spec.to_json().unwrap());
-// → Complete OpenAPI 3.0 JSON with schemas, constraints, examples
+// → email: { type: "string", format: "email", maxLength: 255, ... }
+// → age: { type: "integer", minimum: 18, maximum: 120 }
+// → name: { type: "string", minLength: 1, maxLength: 100 }
+// → required: ["email", "age", "name"]  (nickname excluded)
+```
+
+**Automatic Rule → Schema Mapping:**
+- `email()` → `format: "email"`
+- `url()` → `format: "uri"`
+- `min_len(n)` / `max_len(n)` → `minLength` / `maxLength`
+- `range(min, max)` → `minimum` / `maximum`
+- `min_items(n)` / `max_items(n)` → `minItems` / `maxItems`
+- `alphanumeric()` → `pattern: "^[a-zA-Z0-9]*$"`
+- `ascii()` → `pattern: "^[\x00-\x7F]*$"`
+- `Option<T>` → excluded from `required` array
+- `#[validate(nested)]` → `$ref: "#/components/schemas/TypeName"`
+- `Vec<T>` with `each_nested` → `type: "array"` with `$ref` items
+
+**Manual implementation** still supported for complex cases:
+
+```rust
+impl ToSchema for CustomType {
+    fn schema() -> Schema {
+        Schema::object()
+            .property("field", Schema::string().pattern("custom"))
+            .required(&["field"])
+    }
+}
 ```
 
 **What you get:**

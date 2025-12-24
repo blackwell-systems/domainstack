@@ -29,6 +29,7 @@
 //!
 //! See examples/ directory for complete examples.
 
+mod context;
 mod error;
 mod helpers;
 mod path;
@@ -39,6 +40,7 @@ mod violation;
 pub mod prelude;
 pub mod rules;
 
+pub use context::RuleContext;
 pub use error::ValidationError;
 pub use helpers::validate;
 pub use path::{Path, PathSegment};

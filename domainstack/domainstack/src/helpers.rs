@@ -1,18 +1,39 @@
-use crate::{Path, Rule, ValidationError};
+use crate::{Path, Rule, RuleContext, ValidationError};
+use std::sync::Arc;
 
 pub fn validate<T: ?Sized + 'static>(
     path: impl Into<Path>,
     value: &T,
     rule: &Rule<T>,
 ) -> Result<(), ValidationError> {
-    let err = rule.apply(value);
+    let path = path.into();
+    // Extract field name from path if it's a simple field
+    let field_name = path.0.last().and_then(|seg| match seg {
+        crate::PathSegment::Field(name) => Some(name.clone()),
+        _ => None,
+    });
+
+    let parent_path = if field_name.is_some() && path.0.len() > 1 {
+        Path(path.0[..path.0.len()-1].to_vec())
+    } else if field_name.is_some() {
+        Path::root()
+    } else {
+        path.clone()
+    };
+
+    let ctx = RuleContext {
+        field_name,
+        parent_path,
+        value_debug: None,
+    };
+
+    let err = rule.apply_with_context(value, &ctx);
 
     if err.is_empty() {
         Ok(())
     } else {
-        let mut prefixed = ValidationError::default();
-        prefixed.merge_prefixed(path, err);
-        Err(prefixed)
+        // Errors already have the correct path from ctx.full_path(), no need to prefix
+        Err(err)
     }
 }
 
@@ -21,11 +42,11 @@ mod tests {
     use super::*;
 
     fn positive_rule() -> Rule<i32> {
-        Rule::new(|value: &i32| {
+        Rule::new(|value: &i32, ctx: &RuleContext| {
             if *value >= 0 {
                 ValidationError::default()
             } else {
-                ValidationError::single(Path::root(), "negative", "Must be positive")
+                ValidationError::single(ctx.full_path(), "negative", "Must be positive")
             }
         })
     }

@@ -1,4 +1,4 @@
-use crate::{Path, Rule, ValidationError};
+use crate::{Rule, RuleContext, ValidationError};
 
 /// Validates that a string is a valid email address.
 ///
@@ -19,7 +19,7 @@ use crate::{Path, Rule, ValidationError};
 /// - Code: `invalid_email`
 /// - Message: `"Invalid email format"`
 pub fn email() -> Rule<str> {
-    Rule::new(|value: &str| {
+    Rule::new(|value: &str, ctx: &RuleContext| {
         #[cfg(feature = "email")]
         {
             let re = regex::Regex::new(r"^[^@\s]+@[^@\s]+\.[^@\s]+$").unwrap();
@@ -27,7 +27,7 @@ pub fn email() -> Rule<str> {
             if re.is_match(value) {
                 ValidationError::default()
             } else {
-                ValidationError::single(Path::root(), "invalid_email", "Invalid email format")
+                ValidationError::single(ctx.full_path(), "invalid_email", "Invalid email format")
             }
         }
 
@@ -41,7 +41,7 @@ pub fn email() -> Rule<str> {
             {
                 ValidationError::default()
             } else {
-                ValidationError::single(Path::root(), "invalid_email", "Invalid email format")
+                ValidationError::single(ctx.full_path(), "invalid_email", "Invalid email format")
             }
         }
     })
@@ -63,9 +63,9 @@ pub fn email() -> Rule<str> {
 /// - Code: `non_empty`
 /// - Message: `"Must not be empty"`
 pub fn non_empty() -> Rule<str> {
-    Rule::new(|value: &str| {
+    Rule::new(|value: &str, ctx: &RuleContext| {
         if value.is_empty() {
-            ValidationError::single(Path::root(), "non_empty", "Must not be empty")
+            ValidationError::single(ctx.full_path(), "non_empty", "Must not be empty")
         } else {
             ValidationError::default()
         }
@@ -90,10 +90,10 @@ pub fn non_empty() -> Rule<str> {
 /// - Message: `"Must be at least {min} characters"`
 /// - Meta: `{"min": "5"}`
 pub fn min_len(min: usize) -> Rule<str> {
-    Rule::new(move |value: &str| {
+    Rule::new(move |value: &str, ctx: &RuleContext| {
         if value.len() < min {
             let mut err = ValidationError::single(
-                Path::root(),
+                ctx.full_path(),
                 "min_length",
                 format!("Must be at least {} characters", min),
             );
@@ -122,10 +122,10 @@ pub fn min_len(min: usize) -> Rule<str> {
 /// - Message: `"Must be at most {max} characters"`
 /// - Meta: `{"max": "10"}`
 pub fn max_len(max: usize) -> Rule<str> {
-    Rule::new(move |value: &str| {
+    Rule::new(move |value: &str, ctx: &RuleContext| {
         if value.len() > max {
             let mut err = ValidationError::single(
-                Path::root(),
+                ctx.full_path(),
                 "max_length",
                 format!("Must be at most {} characters", max),
             );
@@ -182,7 +182,7 @@ pub fn length(min: usize, max: usize) -> Rule<str> {
 /// - Code: `invalid_url`
 /// - Message: `"Invalid URL format"`
 pub fn url() -> Rule<str> {
-    Rule::new(|value: &str| {
+    Rule::new(|value: &str, ctx: &RuleContext| {
         #[cfg(feature = "regex")]
         {
             let re = regex::Regex::new(
@@ -192,7 +192,7 @@ pub fn url() -> Rule<str> {
             if re.is_match(value) {
                 ValidationError::default()
             } else {
-                ValidationError::single(Path::root(), "invalid_url", "Invalid URL format")
+                ValidationError::single(ctx.full_path(), "invalid_url", "Invalid URL format")
             }
         }
 
@@ -211,10 +211,10 @@ pub fn url() -> Rule<str> {
                 {
                     ValidationError::default()
                 } else {
-                    ValidationError::single(Path::root(), "invalid_url", "Invalid URL format")
+                    ValidationError::single(ctx.full_path(), "invalid_url", "Invalid URL format")
                 }
             } else {
-                ValidationError::single(Path::root(), "invalid_url", "Invalid URL format")
+                ValidationError::single(ctx.full_path(), "invalid_url", "Invalid URL format")
             }
         }
     })
@@ -238,12 +238,12 @@ pub fn url() -> Rule<str> {
 /// - Code: `not_alphanumeric`
 /// - Message: `"Must contain only letters and numbers"`
 pub fn alphanumeric() -> Rule<str> {
-    Rule::new(|value: &str| {
+    Rule::new(|value: &str, ctx: &RuleContext| {
         if value.chars().all(|c| c.is_alphanumeric()) {
             ValidationError::default()
         } else {
             ValidationError::single(
-                Path::root(),
+                ctx.full_path(),
                 "not_alphanumeric",
                 "Must contain only letters and numbers",
             )
@@ -269,11 +269,11 @@ pub fn alphanumeric() -> Rule<str> {
 /// - Code: `not_alpha`
 /// - Message: `"Must contain only letters"`
 pub fn alpha_only() -> Rule<str> {
-    Rule::new(|value: &str| {
+    Rule::new(|value: &str, ctx: &RuleContext| {
         if value.chars().all(|c| c.is_alphabetic()) {
             ValidationError::default()
         } else {
-            ValidationError::single(Path::root(), "not_alpha", "Must contain only letters")
+            ValidationError::single(ctx.full_path(), "not_alpha", "Must contain only letters")
         }
     })
 }
@@ -296,11 +296,11 @@ pub fn alpha_only() -> Rule<str> {
 /// - Code: `not_numeric`
 /// - Message: `"Must contain only numbers"`
 pub fn numeric_string() -> Rule<str> {
-    Rule::new(|value: &str| {
+    Rule::new(|value: &str, ctx: &RuleContext| {
         if value.chars().all(|c| c.is_numeric()) {
             ValidationError::default()
         } else {
-            ValidationError::single(Path::root(), "not_numeric", "Must contain only numbers")
+            ValidationError::single(ctx.full_path(), "not_numeric", "Must contain only numbers")
         }
     })
 }
@@ -323,12 +323,12 @@ pub fn numeric_string() -> Rule<str> {
 /// - Message: `"Must contain '{substring}'"`
 /// - Meta: `{"substring": "example"}`
 pub fn contains(substring: &'static str) -> Rule<str> {
-    Rule::new(move |value: &str| {
+    Rule::new(move |value: &str, ctx: &RuleContext| {
         if value.contains(substring) {
             ValidationError::default()
         } else {
             let mut err = ValidationError::single(
-                Path::root(),
+                ctx.full_path(),
                 "missing_substring",
                 format!("Must contain '{}'", substring),
             );
@@ -357,12 +357,12 @@ pub fn contains(substring: &'static str) -> Rule<str> {
 /// - Message: `"Must start with '{prefix}'"`
 /// - Meta: `{"prefix": "https://"}`
 pub fn starts_with(prefix: &'static str) -> Rule<str> {
-    Rule::new(move |value: &str| {
+    Rule::new(move |value: &str, ctx: &RuleContext| {
         if value.starts_with(prefix) {
             ValidationError::default()
         } else {
             let mut err = ValidationError::single(
-                Path::root(),
+                ctx.full_path(),
                 "invalid_prefix",
                 format!("Must start with '{}'", prefix),
             );
@@ -389,12 +389,12 @@ pub fn starts_with(prefix: &'static str) -> Rule<str> {
 /// - Message: `"Must end with '{suffix}'"`
 /// - Meta: `{"suffix": ".com"}`
 pub fn ends_with(suffix: &'static str) -> Rule<str> {
-    Rule::new(move |value: &str| {
+    Rule::new(move |value: &str, ctx: &RuleContext| {
         if value.ends_with(suffix) {
             ValidationError::default()
         } else {
             let mut err = ValidationError::single(
-                Path::root(),
+                ctx.full_path(),
                 "invalid_suffix",
                 format!("Must end with '{}'", suffix),
             );
@@ -430,13 +430,13 @@ pub fn ends_with(suffix: &'static str) -> Rule<str> {
 /// Panics if the regex pattern is invalid.
 #[cfg(feature = "regex")]
 pub fn matches_regex(pattern: &'static str) -> Rule<str> {
-    Rule::new(move |value: &str| {
+    Rule::new(move |value: &str, ctx: &RuleContext| {
         let re = regex::Regex::new(pattern).expect("Invalid regex pattern");
         if re.is_match(value) {
             ValidationError::default()
         } else {
             let mut err = ValidationError::single(
-                Path::root(),
+                ctx.full_path(),
                 "pattern_mismatch",
                 "Does not match required pattern",
             );

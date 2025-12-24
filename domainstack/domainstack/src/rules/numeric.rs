@@ -1,4 +1,4 @@
-use crate::{Path, Rule, ValidationError};
+use crate::{Rule, RuleContext, ValidationError};
 
 /// Validates that a numeric value is within the specified range (inclusive).
 ///
@@ -23,10 +23,10 @@ pub fn range<T>(min: T, max: T) -> Rule<T>
 where
     T: PartialOrd + Copy + std::fmt::Display + Send + Sync + 'static,
 {
-    Rule::new(move |value: &T| {
+    Rule::new(move |value: &T, ctx: &RuleContext| {
         if *value < min || *value > max {
             let mut err = ValidationError::single(
-                Path::root(),
+                ctx.full_path(),
                 "out_of_range",
                 format!("Must be between {} and {}", min, max),
             );
@@ -60,10 +60,10 @@ pub fn min<T>(min: T) -> Rule<T>
 where
     T: PartialOrd + Copy + std::fmt::Display + Send + Sync + 'static,
 {
-    Rule::new(move |value: &T| {
+    Rule::new(move |value: &T, ctx: &RuleContext| {
         if *value < min {
             let mut err = ValidationError::single(
-                Path::root(),
+                ctx.full_path(),
                 "below_minimum",
                 format!("Must be at least {}", min),
             );
@@ -96,10 +96,10 @@ pub fn max<T>(max: T) -> Rule<T>
 where
     T: PartialOrd + Copy + std::fmt::Display + Send + Sync + 'static,
 {
-    Rule::new(move |value: &T| {
+    Rule::new(move |value: &T, ctx: &RuleContext| {
         if *value > max {
             let mut err = ValidationError::single(
-                Path::root(),
+                ctx.full_path(),
                 "above_maximum",
                 format!("Must be at most {}", max),
             );
@@ -132,12 +132,12 @@ pub fn positive<T>() -> Rule<T>
 where
     T: PartialOrd + Default + Copy + Send + Sync + 'static,
 {
-    Rule::new(move |value: &T| {
+    Rule::new(move |value: &T, ctx: &RuleContext| {
         if *value > T::default() {
             ValidationError::default()
         } else {
             ValidationError::single(
-                Path::root(),
+                ctx.full_path(),
                 "not_positive",
                 "Must be positive (greater than zero)",
             )
@@ -166,12 +166,12 @@ pub fn negative<T>() -> Rule<T>
 where
     T: PartialOrd + Default + Copy + Send + Sync + 'static,
 {
-    Rule::new(move |value: &T| {
+    Rule::new(move |value: &T, ctx: &RuleContext| {
         if *value < T::default() {
             ValidationError::default()
         } else {
             ValidationError::single(
-                Path::root(),
+                ctx.full_path(),
                 "not_negative",
                 "Must be negative (less than zero)",
             )
@@ -201,12 +201,12 @@ pub fn multiple_of<T>(divisor: T) -> Rule<T>
 where
     T: std::ops::Rem<Output = T> + PartialEq + Default + Copy + std::fmt::Display + Send + Sync + 'static,
 {
-    Rule::new(move |value: &T| {
+    Rule::new(move |value: &T, ctx: &RuleContext| {
         if *value % divisor == T::default() {
             ValidationError::default()
         } else {
             let mut err = ValidationError::single(
-                Path::root(),
+                ctx.full_path(),
                 "not_multiple",
                 format!("Must be a multiple of {}", divisor),
             );

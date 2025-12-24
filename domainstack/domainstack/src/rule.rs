@@ -1,10 +1,12 @@
-use crate::{Path, ValidationError};
+use crate::{Path, RuleContext, ValidationError};
 use std::sync::Arc;
 
 /// A composable validation rule for values of type `T`.
 ///
 /// Rules are the building blocks of domainstack's validation system. They can be composed
 /// using `and()`, `or()`, `not()`, and `when()` to create complex validation logic.
+///
+/// Rules now receive a `RuleContext` providing field information for better error messages.
 ///
 /// # Examples
 ///
@@ -14,8 +16,9 @@ use std::sync::Arc;
 /// use domainstack::prelude::*;
 ///
 /// let rule = rules::email();
-/// assert!(rule.apply("user@example.com").is_empty());
-/// assert!(!rule.apply("invalid").is_empty());
+/// let ctx = RuleContext::root("email");
+/// assert!(rule.apply_with_context("user@example.com", &ctx).is_empty());
+/// assert!(!rule.apply_with_context("invalid", &ctx).is_empty());
 /// ```
 ///
 /// ## Composing Rules
@@ -28,22 +31,23 @@ use std::sync::Arc;
 ///     .and(rules::max_len(255))
 ///     .and(rules::email());
 ///
-/// assert!(rule.apply("user@example.com").is_empty());
-/// assert!(!rule.apply("a@b").is_empty());  // too short
+/// let ctx = RuleContext::root("email");
+/// assert!(rule.apply_with_context("user@example.com", &ctx).is_empty());
+/// assert!(!rule.apply_with_context("a@b", &ctx).is_empty());  // too short
 /// ```
 ///
-/// ## Custom Rules
+/// ## Custom Rules with Context
 ///
 /// ```
-/// use domainstack::{Rule, ValidationError, Path};
+/// use domainstack::{Rule, RuleContext, ValidationError, Path};
 ///
 /// fn lowercase_only() -> Rule<str> {
-///     Rule::new(|value: &str| {
+///     Rule::new(|value: &str, ctx: &RuleContext| {
 ///         if value.chars().all(|c| c.is_lowercase() || !c.is_alphabetic()) {
 ///             ValidationError::default()
 ///         } else {
 ///             ValidationError::single(
-///                 Path::root(),
+///                 ctx.full_path(),
 ///                 "not_lowercase",
 ///                 "Must contain only lowercase letters"
 ///             )
@@ -52,11 +56,12 @@ use std::sync::Arc;
 /// }
 ///
 /// let rule = lowercase_only();
-/// assert!(rule.apply("hello").is_empty());
-/// assert!(!rule.apply("Hello").is_empty());
+/// let ctx = RuleContext::root("username");
+/// assert!(rule.apply_with_context("hello", &ctx).is_empty());
+/// assert!(!rule.apply_with_context("Hello", &ctx).is_empty());
 /// ```
 pub struct Rule<T: ?Sized> {
-    inner: Arc<dyn Fn(&T) -> ValidationError + Send + Sync>,
+    inner: Arc<dyn Fn(&T, &RuleContext) -> ValidationError + Send + Sync>,
 }
 
 impl<T: ?Sized> Clone for Rule<T> {
@@ -68,15 +73,27 @@ impl<T: ?Sized> Clone for Rule<T> {
 }
 
 impl<T: ?Sized + 'static> Rule<T> {
+    /// Creates a new validation rule.
+    ///
+    /// Rules receive both the value to validate and a `RuleContext` providing
+    /// field information for better error messages.
     pub fn new<F>(f: F) -> Self
     where
-        F: Fn(&T) -> ValidationError + Send + Sync + 'static,
+        F: Fn(&T, &RuleContext) -> ValidationError + Send + Sync + 'static,
     {
         Self { inner: Arc::new(f) }
     }
 
+    /// Applies the rule with an anonymous context.
+    ///
+    /// For better error messages, use `apply_with_context()` instead.
     pub fn apply(&self, value: &T) -> ValidationError {
-        (self.inner)(value)
+        self.apply_with_context(value, &RuleContext::anonymous())
+    }
+
+    /// Applies the rule with a specific context for field-aware error messages.
+    pub fn apply_with_context(&self, value: &T, ctx: &RuleContext) -> ValidationError {
+        (self.inner)(value, ctx)
     }
 
     /// Customize the error code for validation failures.
@@ -91,8 +108,8 @@ impl<T: ?Sized + 'static> Rule<T> {
     /// assert_eq!(err.violations[0].code, "email_too_short");
     /// ```
     pub fn code(self, code: &'static str) -> Rule<T> {
-        Rule::new(move |value: &T| {
-            let mut err = self.apply(value);
+        Rule::new(move |value: &T, ctx: &RuleContext| {
+            let mut err = self.apply_with_context(value, ctx);
             for violation in &mut err.violations {
                 violation.code = code;
             }
@@ -112,8 +129,8 @@ impl<T: ?Sized + 'static> Rule<T> {
     /// assert_eq!(err.violations[0].message, "Email too short");
     /// ```
     pub fn message(self, msg: impl Into<String> + Clone + Send + Sync + 'static) -> Rule<T> {
-        Rule::new(move |value: &T| {
-            let mut err = self.apply(value);
+        Rule::new(move |value: &T, ctx: &RuleContext| {
+            let mut err = self.apply_with_context(value, ctx);
             let message = msg.clone().into();
             for violation in &mut err.violations {
                 violation.message = message.clone();
@@ -140,8 +157,8 @@ impl<T: ?Sized + 'static> Rule<T> {
         key: &'static str,
         value: impl Into<String> + Clone + Send + Sync + 'static,
     ) -> Rule<T> {
-        Rule::new(move |val: &T| {
-            let mut err = self.apply(val);
+        Rule::new(move |val: &T, ctx: &RuleContext| {
+            let mut err = self.apply_with_context(val, ctx);
             let v = value.clone().into();
             for violation in &mut err.violations {
                 violation.meta.insert(key, v.clone());
@@ -151,20 +168,20 @@ impl<T: ?Sized + 'static> Rule<T> {
     }
 
     pub fn and(self, other: Rule<T>) -> Rule<T> {
-        Rule::new(move |value| {
-            let mut err = self.apply(value);
-            err.extend(other.apply(value));
+        Rule::new(move |value, ctx| {
+            let mut err = self.apply_with_context(value, ctx);
+            err.extend(other.apply_with_context(value, ctx));
             err
         })
     }
 
     pub fn or(self, other: Rule<T>) -> Rule<T> {
-        Rule::new(move |value| {
-            let err1 = self.apply(value);
+        Rule::new(move |value, ctx| {
+            let err1 = self.apply_with_context(value, ctx);
             if err1.is_empty() {
                 return err1;
             }
-            let err2 = other.apply(value);
+            let err2 = other.apply_with_context(value, ctx);
             if err2.is_empty() {
                 return err2;
             }
@@ -175,10 +192,10 @@ impl<T: ?Sized + 'static> Rule<T> {
     }
 
     pub fn not(self, code: &'static str, message: &'static str) -> Rule<T> {
-        Rule::new(move |value| {
-            let err = self.apply(value);
+        Rule::new(move |value, ctx| {
+            let err = self.apply_with_context(value, ctx);
             if err.is_empty() {
-                ValidationError::single(Path::root(), code, message)
+                ValidationError::single(ctx.full_path(), code, message)
             } else {
                 ValidationError::default()
             }
@@ -186,8 +203,8 @@ impl<T: ?Sized + 'static> Rule<T> {
     }
 
     pub fn map_path(self, prefix: impl Into<Path> + Clone + Send + Sync + 'static) -> Rule<T> {
-        Rule::new(move |value| {
-            let err = self.apply(value);
+        Rule::new(move |value, ctx| {
+            let err = self.apply_with_context(value, ctx);
             if err.is_empty() {
                 return err;
             }
@@ -201,9 +218,9 @@ impl<T: ?Sized + 'static> Rule<T> {
     where
         F: Fn() -> bool + Send + Sync + 'static,
     {
-        Rule::new(move |value| {
+        Rule::new(move |value, ctx| {
             if predicate() {
-                self.apply(value)
+                self.apply_with_context(value, ctx)
             } else {
                 ValidationError::default()
             }
@@ -216,21 +233,21 @@ mod tests {
     use super::*;
 
     fn positive_rule() -> Rule<i32> {
-        Rule::new(|value: &i32| {
+        Rule::new(|value: &i32, ctx: &RuleContext| {
             if *value >= 0 {
                 ValidationError::default()
             } else {
-                ValidationError::single(Path::root(), "negative", "Must be positive")
+                ValidationError::single(ctx.full_path(), "negative", "Must be positive")
             }
         })
     }
 
     fn even_rule() -> Rule<i32> {
-        Rule::new(|value: &i32| {
+        Rule::new(|value: &i32, ctx: &RuleContext| {
             if *value % 2 == 0 {
                 ValidationError::default()
             } else {
-                ValidationError::single(Path::root(), "odd", "Must be even")
+                ValidationError::single(ctx.full_path(), "odd", "Must be even")
             }
         })
     }

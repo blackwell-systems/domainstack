@@ -42,6 +42,41 @@ let rule = rules::email()
 
 These methods work uniformly across all built-in and custom rules.
 
+#### Context-Aware Error Messages
+Introduced `RuleContext` to provide validation rules with field information for better error messages:
+
+```rust
+use domainstack::{Rule, RuleContext, ValidationError};
+
+fn min_len_with_context(min: usize) -> Rule<str> {
+    Rule::new(move |value: &str, ctx: &RuleContext| {
+        if value.len() < min {
+            ValidationError::single(
+                ctx.full_path(),
+                "min_length",
+                format!(
+                    "Field '{}' must be at least {} characters (got {})",
+                    ctx.field_name.as_ref().map(|s| s.as_ref()).unwrap_or("unknown"),
+                    min,
+                    value.len()
+                )
+            )
+        } else {
+            ValidationError::default()
+        }
+    })
+}
+```
+
+**New Type:**
+- `RuleContext` - Contains `field_name`, `parent_path`, and `value_debug` for context-aware validation
+- Methods: `root()`, `anonymous()`, `child()`, `with_value_debug()`, `full_path()`
+
+**Benefits:**
+- More helpful error messages including field names
+- Better debugging with contextual information
+- Improved user experience with specific, actionable errors
+
 #### Documentation Improvements
 - Added 30+ runnable doctests to public APIs (`ValidationError`, `Rule`, `Path`, all rules)
 - Documented `Box::leak()` memory behavior in `Path::parse()` with usage guidance
@@ -60,9 +95,16 @@ These methods work uniformly across all built-in and custom rules.
 
 - Improved error messages for all new validation rules
 - Enhanced inline documentation across core types
-- All existing tests passing (170 total: 122 unit + 33 doctests + framework tests)
+- All existing tests passing (177 total: 128 unit + 39 doctests + framework tests)
 
 ### Breaking Changes
+- **Rule function signature changed**: All rules now receive `RuleContext` as second parameter
+  - Old: `Fn(&T) -> ValidationError`
+  - New: `Fn(&T, &RuleContext) -> ValidationError`
+  - **Migration**: Add `ctx: &RuleContext` parameter to custom rules, use `ctx.full_path()` instead of `Path::root()`
+  - Existing code using `rule.apply()` continues to work (creates anonymous context)
+  - Use `rule.apply_with_context()` for field-aware error messages
+
 - `PathSegment::Field` now uses `Arc<str>` instead of `&'static str`
   - Affects code that pattern matches on `PathSegment` directly
   - Most users unaffected (use `Path::field()` API which remains the same)

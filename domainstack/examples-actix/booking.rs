@@ -18,16 +18,9 @@ pub struct Email(String);
 
 impl Email {
     pub fn new(raw: String) -> Result<Self, ValidationError> {
-        let rule = rules::min_len(5).and(rules::max_len(255));
-        validate("value", raw.as_str(), &rule)?;
-
-        if !raw.contains('@') {
-            return Err(ValidationError::single(
-                Path::from("value"),
-                "invalid_email",
-                "Must be a valid email address",
-            ));
-        }
+        // Use Path::root() in primitives - caller will prefix with field name
+        let rule = rules::min_len(5).and(rules::max_len(255)).and(rules::email());
+        validate(Path::root(), raw.as_str(), &rule)?;
 
         Ok(Self(raw))
     }

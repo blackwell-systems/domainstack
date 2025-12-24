@@ -10,7 +10,7 @@ name = "booking"
 path = "booking.rs"
 
 [dependencies]
-domainstack = { workspace = true, features = ["derive"] }
+domainstack = { workspace = true, features = ["derive", "email"] }
 domainstack-axum = { workspace = true }
 domainstack-envelope = { workspace = true }
 error-envelope = { workspace = true }

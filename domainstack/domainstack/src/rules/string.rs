@@ -16,9 +16,9 @@ static URL_REGEX: Lazy<regex::Regex> = Lazy::new(|| {
 
 /// Validates that a string is a valid email address.
 ///
-/// With the `regex` feature enabled, uses a cached regex pattern for RFC-compliant validation.
-/// Without the feature, performs basic structural validation (checks for @ and domain).
+/// Uses a cached regex pattern for RFC-compliant validation.
 ///
+/// Requires the `regex` feature to be enabled.
 ///
 /// # Examples
 ///
@@ -37,29 +37,13 @@ static URL_REGEX: Lazy<regex::Regex> = Lazy::new(|| {
 /// # Performance
 /// The regex pattern is compiled once and cached for the lifetime of the program,
 /// making subsequent validations very efficient.
+#[cfg(feature = "regex")]
 pub fn email() -> Rule<str> {
     Rule::new(|value: &str, ctx: &RuleContext| {
-        #[cfg(feature = "regex")]
-        {
-            if EMAIL_REGEX.is_match(value) {
-                ValidationError::default()
-            } else {
-                ValidationError::single(ctx.full_path(), "invalid_email", "Invalid email format")
-            }
-        }
-
-        #[cfg(not(feature = "regex"))]
-        {
-            let parts: Vec<&str> = value.split('@').collect();
-            if parts.len() == 2
-                && !parts[0].is_empty()
-                && parts[1].contains('.')
-                && !parts[1].starts_with('.')
-            {
-                ValidationError::default()
-            } else {
-                ValidationError::single(ctx.full_path(), "invalid_email", "Invalid email format")
-            }
+        if EMAIL_REGEX.is_match(value) {
+            ValidationError::default()
+        } else {
+            ValidationError::single(ctx.full_path(), "invalid_email", "Invalid email format")
         }
     })
 }
@@ -179,9 +163,11 @@ pub fn length(min: usize, max: usize) -> Rule<str> {
 /// Validates that a string is a valid URL.
 ///
 /// Checks for:
-/// - Valid URL scheme (http, https, ftp, etc.)
+/// - Valid URL scheme (http, https)
 /// - Presence of domain
 /// - Valid URL characters
+///
+/// Requires the `regex` feature to be enabled.
 ///
 /// # Examples
 ///
@@ -202,37 +188,13 @@ pub fn length(min: usize, max: usize) -> Rule<str> {
 /// # Performance
 /// The regex pattern is compiled once and cached for the lifetime of the program,
 /// making subsequent validations very efficient.
+#[cfg(feature = "regex")]
 pub fn url() -> Rule<str> {
     Rule::new(|value: &str, ctx: &RuleContext| {
-        #[cfg(feature = "regex")]
-        {
-            if URL_REGEX.is_match(value) {
-                ValidationError::default()
-            } else {
-                ValidationError::single(ctx.full_path(), "invalid_url", "Invalid URL format")
-            }
-        }
-
-        #[cfg(not(feature = "regex"))]
-        {
-            // Basic URL validation without regex
-            if value.starts_with("http://") || value.starts_with("https://") {
-                let without_scheme = value
-                    .strip_prefix("http://")
-                    .or_else(|| value.strip_prefix("https://"))
-                    .unwrap_or("");
-
-                if !without_scheme.is_empty()
-                    && without_scheme.contains('.')
-                    && !without_scheme.starts_with('.')
-                {
-                    ValidationError::default()
-                } else {
-                    ValidationError::single(ctx.full_path(), "invalid_url", "Invalid URL format")
-                }
-            } else {
-                ValidationError::single(ctx.full_path(), "invalid_url", "Invalid URL format")
-            }
+        if URL_REGEX.is_match(value) {
+            ValidationError::default()
+        } else {
+            ValidationError::single(ctx.full_path(), "invalid_url", "Invalid URL format")
         }
     })
 }

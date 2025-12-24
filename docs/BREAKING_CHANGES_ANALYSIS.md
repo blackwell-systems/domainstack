@@ -6,6 +6,55 @@ This document explores improvements that would be possible in a major version bu
 
 ---
 
+## ✅ Implementation Progress (v0.4.0 - v0.5.0)
+
+### Already Implemented WITHOUT Breaking Changes! 🎉
+
+1. **✅ Builder Pattern for Rules (v0.4.0)**
+   - Implemented via `.with_message()`, `.with_code()`, `.with_meta()`
+   - Fully backward compatible - rules still work without customization
+   - No breaking changes required!
+
+2. **✅ Cross-Field Validation (v0.5.0)**
+   - Implemented via `#[validate(check = "expr", code = "...", message = "...")]`
+   - Conditional validation via `when = "predicate"`
+   - Examples in `examples/v5_cross_field_validation.rs`
+   - Added as new feature, zero breaking changes!
+
+3. **✅ Better Error Context (v0.3.0+)**
+   - `RuleContext` already exists and provides field paths
+   - Context-aware error messages working
+   - This was built into the system from the start!
+
+4. **✅ Rule System Improvements (v0.4.0)**
+   - **Fixed:** NaN handling with new `finite()` rule + `FiniteCheck` trait
+   - **Fixed:** Added `non_zero()` rule for better numeric validation
+   - **Fixed:** Regex caching with `once_cell` - EMAIL_REGEX and URL_REGEX are static
+   - **Fixed:** Feature flags unified under `regex` (removed `email` alias)
+   - All improvements done without breaking changes!
+
+### Current Status
+
+**v0.4.0 Achievements:**
+- Builder-style customization ✅
+- Float edge case handling ✅
+- Regex performance optimization ✅
+- Feature flag consistency ✅
+- Zero breaking changes ✅
+
+**v0.5.0 Achievements:**
+- Cross-field validation ✅
+- Conditional validation ✅
+- Password confirmation patterns ✅
+- Date range validation ✅
+
+**What This Means:**
+- We've implemented 3 of the P0/P1 features WITHOUT breaking changes
+- The architecture is more flexible than initially thought
+- Breaking changes may not be needed for most desired features!
+
+---
+
 ## Current Constraints
 
 In v0.4.0, we maintained **100% backward compatibility** with v0.3.0. This means:
@@ -630,68 +679,76 @@ let schema = schema_for!(User);
 
 ## Prioritization Matrix
 
-| Change | Impact | Complexity | User Demand | Priority |
-|--------|--------|------------|-------------|----------|
-| Builder pattern for rules | 🔥🔥🔥 | Medium | Very High | **P0** |
-| Async validation | 🔥🔥🔥 | High | Very High | **P0** |
-| Cross-field validation | 🔥🔥 | Medium | High | **P1** |
-| Remove Box::leak() | 🔥🔥 | High | Medium | **P1** |
-| Phantom types for validation state | 🔥🔥 | Low | Medium | **P2** |
-| Conditional validation | 🔥🔥 | Medium | Medium | **P2** |
-| Better error messages | 🔥🔥🔥 | Medium | High | **P1** |
-| Schema generation | 🔥🔥 | High | Medium | **P2** |
-| SmallVec optimization | 🔥 | Low | Low | **P3** |
-| Const generics | 🔥 | Medium | Low | **P3** |
-| HashMap for metadata | 🔥 | Low | Low | **P3** |
+| Change | Impact | Complexity | User Demand | Priority | Status |
+|--------|--------|------------|-------------|----------|--------|
+| ~~Builder pattern for rules~~ | 🔥🔥🔥 | Medium | Very High | **P0** | ✅ v0.4.0 |
+| Async validation | 🔥🔥🔥 | High | Very High | **P0** | 📋 Planned |
+| ~~Cross-field validation~~ | 🔥🔥 | Medium | High | **P1** | ✅ v0.5.0 |
+| Remove Box::leak() | 🔥🔥 | High | Medium | **P1** | 📋 Planned |
+| Phantom types for validation state | 🔥🔥 | Low | Medium | **P2** | 📋 Planned |
+| ~~Conditional validation~~ | 🔥🔥 | Medium | Medium | **P2** | ✅ v0.5.0 |
+| ~~Better error messages~~ | 🔥🔥🔥 | Medium | High | **P1** | ✅ v0.3.0+ |
+| Schema generation | 🔥🔥 | High | Medium | **P2** | 📋 Planned |
+| SmallVec optimization | 🔥 | Low | Low | **P3** | 📋 Planned |
+| Const generics | 🔥 | Medium | Low | **P3** | 📋 Planned |
+| HashMap for metadata | 🔥 | Low | Low | **P3** | 📋 Planned |
+
+**Legend:**
+- ✅ = Implemented (no breaking changes needed!)
+- 📋 = Planned for future versions
 
 ---
 
 ## Recommended v1.0.0 Feature Set
 
-### Must Have (P0)
+### ✅ Already Completed (v0.4.0 - v0.5.0)
 
-1. **Builder Pattern for Rules**
-   - Custom error messages
-   - Custom error codes
-   - Additional metadata
-   - Backward compatible migration path
+1. **~~Builder Pattern for Rules~~** (v0.4.0)
+   - ✅ Custom error messages via `.with_message()`
+   - ✅ Custom error codes via `.with_code()`
+   - ✅ Additional metadata via `.with_meta()`
+   - ✅ Backward compatible - no breaking changes!
 
-2. **Async Validation**
+2. **~~Cross-Field Validation~~** (v0.5.0)
+   - ✅ `#[validate(check = "expr")]` attribute
+   - ✅ Field relationship enforcement
+   - ✅ Business rule validation
+
+3. **~~Better Error Messages~~** (v0.3.0+)
+   - ✅ Context-aware messages via `RuleContext`
+   - ✅ Includes field names and paths
+   - ✅ Built into system from start
+
+4. **~~Conditional Validation~~** (v0.5.0)
+   - ✅ `#[validate(when = "predicate")]`
+   - ✅ Polymorphic validation
+   - ✅ Business logic support
+
+### Still Needed for v1.0.0
+
+#### Must Have (P0)
+
+1. **Async Validation**
    - `AsyncValidate` trait
    - Database uniqueness checks
    - External API validation
    - Validation context passing
 
-### Should Have (P1)
+#### Should Have (P1)
 
-3. **Cross-Field Validation**
-   - `#[validate(check = "fn_name")]` attribute
-   - Field relationship enforcement
-   - Business rule validation
-
-4. **Remove Box::leak()**
+2. **Remove Box::leak()**
    - Use `Arc<str>` for path segments
    - Better memory profile
    - More idiomatic Rust
 
-5. **Better Error Messages**
-   - Context-aware messages
-   - Include field names and values
-   - More helpful for debugging
+#### Nice to Have (P2)
 
-### Nice to Have (P2)
-
-6. **Phantom Types**
+3. **Phantom Types**
    - Compile-time validation guarantees
    - Type-safe state tracking
    - Optional adoption
 
-7. **Conditional Validation**
-   - `#[validate(when = "predicate")]`
-   - Polymorphic validation
-   - Business logic support
-
-8. **Schema Generation**
+4. **Schema Generation**
    - OpenAPI integration
    - JSON Schema export
    - TypeScript type generation
@@ -787,10 +844,23 @@ let schema = schema_for!(User);
 
 ## Conclusion
 
-**If breaking changes were allowed, domainstack could become the most powerful validation framework in Rust.** However, the smart approach is:
+**Update (v0.5.0):** It turns out we didn't need breaking changes! We've successfully implemented:
+- ✅ Builder pattern for rules (v0.4.0)
+- ✅ Cross-field validation (v0.5.0)
+- ✅ Conditional validation (v0.5.0)
+- ✅ Better error context (built-in)
+- ✅ Rule system improvements (v0.4.0)
 
-1. **v0.4.0** - Ship current improvements (no breaking changes)
-2. **v0.5-0.9** - Add advanced features gradually
-3. **v1.0.0** - Stabilize with lessons learned
+**All without breaking backward compatibility!** 🎉
 
-**The features are exciting, but user trust is more valuable.**
+### Revised Strategy
+
+1. **v0.4.0** - ✅ Done! Builder pattern, rule improvements, zero breaking changes
+2. **v0.5.0** - ✅ Done! Cross-field validation, conditional validation
+3. **v0.6.0** - Collection rules, choice/membership, string semantics
+4. **v0.7.0** - Async validation (new trait, no breaking changes)
+5. **v1.0.0** - Stabilize, maybe fix Box::leak() (only real breaking change needed)
+
+**Key Insight:** Most desired features can be added without breaking changes. The architecture is more flexible than initially thought. Breaking changes should be reserved for true architectural improvements (like Box::leak removal) that can't be done compatibly.
+
+**The features are exciting, AND we kept user trust.**

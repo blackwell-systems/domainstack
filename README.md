@@ -31,9 +31,9 @@ That means:
 - **Composable rules** - Rules are reusable values, not just attributes
 - **Structured error paths** - `rooms[0].adults`, `guest.email.value`
 - **Clean boundary mapping** - Optional error-envelope integration for APIs
-- **Async validation** - Database uniqueness checks with context passing (v0.5)
-- **Type-state tracking** - Compile-time guarantees with phantom types (v0.6)
-- **OpenAPI schema generation** - Auto-generate API documentation from your types (v0.7-v0.8)
+- **Async validation** - Database uniqueness checks with context passing
+- **Type-state tracking** - Compile-time guarantees with phantom types
+- **OpenAPI schema generation** - Auto-generate API documentation from your types
 
 ## Quick Start
 
@@ -184,9 +184,9 @@ async fn create_booking(Json(dto): Json<BookingDto>) -> Result<Json<Booking>, Er
 | Valid-by-construction aggregates | Yes (core goal) | No (not primary) | No |
 | Composable rule algebra (and/or/when) | Yes (core feature) | No / limited | Partial (predicate-based) |
 | Structured error paths for APIs | Yes | Partial (varies) | No |
-| Async validation w/ context | ✅ v0.5 | No | No |
-| Type-state validation tracking | ✅ v0.6 | No | Partial |
-| OpenAPI schema generation | ✅ v0.7-v0.8 | No | No |
+| Async validation w/ context | ✅ | No | No |
+| Type-state validation tracking | ✅ | No | Partial |
+| OpenAPI schema generation | ✅ | No | No |
 | Error envelope integration | Yes (optional) | No | No |
 
 ### When to use domainstack
@@ -412,7 +412,7 @@ This repository contains **10 workspace members** (7 publishable crates, 3 examp
 - **[domainstack](./domainstack/)** - Core validation library with composable rules
 - **[domainstack-derive](./domainstack/domainstack-derive/)** - Derive macro for `#[derive(Validate)]`
 - **[domainstack-envelope](./domainstack/domainstack-envelope/)** - error-envelope integration for HTTP APIs
-- **[domainstack-schema](./domainstack/domainstack-schema/)** - OpenAPI 3.0 schema generation (v0.7-v0.8)
+- **[domainstack-schema](./domainstack/domainstack-schema/)** - OpenAPI 3.0 schema generation
 
 **Framework Adapters (Publishable):**
 - **[domainstack-http](./domainstack/domainstack-http/)** - Framework-agnostic HTTP helpers
@@ -420,7 +420,7 @@ This repository contains **10 workspace members** (7 publishable crates, 3 examp
 - **[domainstack-actix](./domainstack/domainstack-actix/)** - Actix-web extractor and response implementations
 
 **Examples (Not Published):**
-- **[domainstack-examples](./domainstack/domainstack-examples/)** - Core examples (v0.1-v0.6)
+- **[domainstack-examples](./domainstack/domainstack-examples/)** - Core validation examples
 - **[examples-axum](./domainstack/examples-axum/)** - Axum booking service example
 - **[examples-actix](./domainstack/examples-actix/)** - Actix-web booking service example
 
@@ -532,7 +532,7 @@ fn send_email(email: Email<Validated>) {
 
 **Benefits:** Zero runtime cost, compile-time safety, self-documenting APIs.
 
-#### OpenAPI Schema Generation (v0.7-v0.8)
+#### OpenAPI Schema Generation
 
 Auto-generate OpenAPI 3.0 documentation from your domain types:
 
@@ -581,7 +581,7 @@ println!("{}", spec.to_json().unwrap());
 - **API gateway integration** - Kong, AWS API Gateway, Traefik
 - **Single source of truth** - Change Rust validation, docs update automatically
 
-**Features (v0.8):**
+**Features:**
 - Schema composition (anyOf/allOf/oneOf)
 - Rich metadata (default, example, examples)
 - Request/response modifiers (readOnly, writeOnly, deprecated)
@@ -689,35 +689,35 @@ Error response with field-level details:
 ```bash
 cd domainstack
 
-# v0.1 examples (manual validation)
+# Manual validation examples
 cargo run --example email_primitive --features regex
 cargo run --example booking_aggregate --features regex
 cargo run --example age_primitive
 
-# v0.2 examples (derive macro)
+# Derive macro examples
 cargo run --example v2_basic
 cargo run --example v2_nested
 cargo run --example v2_collections
 cargo run --example v2_custom
 
-# v0.3 examples (HTTP integration)
+# HTTP integration examples
 cargo run --example v3_error_envelope_basic
 cargo run --example v3_error_envelope_nested
 
-# v0.4 examples (builder customization)
+# Builder customization examples
 cargo run --example v4_builder_customization
 
-# v0.5 examples (cross-field validation)
+# Cross-field validation examples
 cargo run --example v5_cross_field_validation
 
-# v0.5 examples (async validation)
+# Async validation examples
 cargo run --example async_validation --features async
 cargo run --example async_sqlite --features async
 
-# v0.6 examples (phantom types)
+# Phantom types examples
 cargo run --example phantom_types --features regex
 
-# v0.7-v0.8 examples (OpenAPI schema generation)
+# OpenAPI schema generation examples
 cd domainstack-schema
 cargo run --example user_api
 cargo run --example v08_features

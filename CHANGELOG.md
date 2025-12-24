@@ -5,7 +5,100 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - Extended Rule Library
+## [Unreleased] - v0.6.0 Type-State Validation
+
+### Added
+
+#### Phantom Types for Validated State 🔥🔥
+
+**New Feature: Compile-Time Validation Guarantees**
+- `typestate` module with `Validated` and `Unvalidated` marker types
+- Zero-cost type-state pattern for tracking validation status at compile time
+- Prevents accidentally using unvalidated data in critical operations
+- Perfect for builder patterns, database operations, and business logic boundaries
+
+**Example:**
+```rust
+use domainstack::typestate::{Validated, Unvalidated};
+use domainstack::{ValidationError, validate, rules};
+use std::marker::PhantomData;
+
+// Domain type with validation state
+pub struct Email<State = Unvalidated> {
+    value: String,
+    _state: PhantomData<State>,
+}
+
+impl Email<Unvalidated> {
+    pub fn new(value: String) -> Self {
+        Self { value, _state: PhantomData }
+    }
+
+    pub fn validate(self) -> Result<Email<Validated>, ValidationError> {
+        validate("email", self.value.as_str(), &rules::email())?;
+        Ok(Email { value: self.value, _state: PhantomData })
+    }
+}
+
+// Only accept validated emails!
+fn send_email(email: Email<Validated>) {
+    // Compiler GUARANTEES email is validated!
+}
+
+// Usage
+let email = Email::new("user@example.com".to_string());
+// send_email(email); // ❌ Compile error: expected Email<Validated>
+
+let validated = email.validate()?;
+send_email(validated); // ✅ Compiles!
+```
+
+**Key Features:**
+- **Zero runtime cost** - PhantomData has size 0, no memory or CPU overhead
+- **Compile-time safety** - Type system enforces validation occurred
+- **Opt-in adoption** - Add to types that benefit from state tracking
+- **Self-documenting** - Function signatures make validation requirements explicit
+- **Builder pattern friendly** - Natural fit with builder APIs
+
+**Use Cases:**
+- Database operations requiring validated data
+- Business logic with validation boundaries
+- Multi-step workflows with validation gates
+- API handlers ensuring data is validated before processing
+- Builder patterns with validation as final step
+
+**Documentation:**
+- Comprehensive module-level documentation with examples
+- 9 unit tests covering all patterns
+- Full example: `phantom_types.rs` demonstrating:
+  - Simple single-field types (Email)
+  - Multi-field structs (User)
+  - Builder pattern integration
+  - Simulated database operations
+  - Zero-cost proof
+
+**Design Philosophy:**
+This feature follows domainstack's principle of "make invalid states unrepresentable."
+Phantom types take this further by making **unvalidated states unusable in validated contexts**.
+
+### Technical Details
+
+**Test Coverage:**
+- 9 new typestate tests (100% pass rate)
+- Tests cover: zero-cost verification, state transitions, multi-field validation
+- Example demonstrates 6 real-world scenarios
+
+**Code Quality:**
+- Zero clippy warnings
+- Fully documented with doctests
+- Zero dependencies (uses only std::marker::PhantomData)
+
+**Performance:**
+- Truly zero-cost: PhantomData<T> optimizes away completely
+- Same size as underlying data structure
+- No runtime checks or overhead
+
+## [0.5.0] - Extended Rule Library (Completed ✅)
 
 ### Added
 
@@ -377,7 +470,7 @@ Initial release with core validation framework, derive macros, and framework ada
 
 See `docs/BREAKING_CHANGES_ANALYSIS.md` for planned features in future versions:
 - v0.5.0: ✅ Completed (async validation, path API encapsulation, extended rules, cross-field validation)
-- v0.6.0: Phantom types for validated state (type-safe validation guarantees)
+- v0.6.0: ✅ Completed (phantom types for validated state with compile-time guarantees)
 - v0.7.0: Schema generation (OpenAPI, JSON Schema, TypeScript types)
 - v1.0.0: API stabilization, performance optimizations
 

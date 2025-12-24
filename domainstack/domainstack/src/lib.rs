@@ -42,6 +42,7 @@ mod async_validate;
 
 pub mod prelude;
 pub mod rules;
+pub mod typestate;
 
 pub use context::RuleContext;
 pub use error::ValidationError;

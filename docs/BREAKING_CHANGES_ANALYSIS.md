@@ -252,7 +252,7 @@ let schema = schema_for!(User);
 
 | Change | Impact | Complexity | User Demand | Priority | Status |
 |--------|--------|------------|-------------|----------|--------|
-| Phantom types for validation state | 🔥🔥 | Low | Medium | **P1** | 📋 Planned |
+| Phantom types for validation state | 🔥🔥 | Low | Medium | **P1** | ✅ Completed (v0.6.0) |
 | Schema generation | 🔥🔥 | High | Medium | **P1** | 📋 Planned |
 | SmallVec optimization | 🔥 | Low | Low | **P2** | 📋 Planned |
 | Const generics | 🔥 | Medium | Low | **P2** | 📋 Planned |
@@ -311,10 +311,12 @@ let schema = schema_for!(User);
 - ✅ Cross-field validation
 - **Breaking:** Path API internal structure private
 
-#### v0.6.0 - Type Safety
-- Phantom types for validated state
-- Optional adoption pattern
-- **Breaking:** None (new pattern)
+#### v0.6.0 - Type Safety ✅
+- ✅ Phantom types for validated state
+- ✅ Optional adoption pattern (typestate module)
+- ✅ Zero-cost abstractions with PhantomData
+- ✅ Comprehensive documentation and examples
+- **Breaking:** None (new pattern, fully opt-in)
 
 #### v0.7.0 - Developer Experience
 - Schema generation
@@ -343,12 +345,12 @@ let schema = schema_for!(User);
 | Cross-Field | ✅ v0.5 | ⚠️ Limited | ❌ | ❌ |
 | Conditional Validation | ✅ v0.5 | ❌ | ❌ | ❌ |
 | Custom Messages | ✅ v0.4 | ⚠️ Attributes only | ⚠️ | ✅ |
-| Type-Safe State | 📋 Planned | ❌ | ❌ | ✅ |
+| Type-Safe State | ✅ v0.6 | ❌ | ❌ | ✅ |
 | Framework Adapters | ✅ v0.4 | ❌ | ❌ | ❌ |
 | Schema Generation | 📋 Planned | ❌ | ❌ | ❌ |
 | Zero Dependencies | ✅ Core only | ❌ | ❌ | ✅ |
 
-**Note:** domainstack has already implemented most P0 features (async validation, cross-field validation, Path API encapsulation) without breaking changes in v0.5.
+**Note:** domainstack has already implemented most P0/P1 features (async validation, cross-field validation, Path API encapsulation in v0.5, phantom types in v0.6) without breaking changes.
 
 ---
 

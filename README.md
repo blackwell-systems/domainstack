@@ -32,6 +32,7 @@ That means:
 - **Structured error paths** - `rooms[0].adults`, `guest.email.value`
 - **Clean boundary mapping** - Optional error-envelope integration for APIs
 - **Async validation** - Database uniqueness checks with context passing
+- **Type-state tracking** - Compile-time guarantees with phantom types (v0.6+)
 
 ## Quick Start
 
@@ -183,6 +184,7 @@ async fn create_booking(Json(dto): Json<BookingDto>) -> Result<Json<Booking>, Er
 | Composable rule algebra (and/or/when) | Yes (core feature) | No / limited | Partial (predicate-based) |
 | Structured error paths for APIs | Yes | Partial (varies) | No |
 | Async validation w/ context | ✅ Yes (v0.5+) | No | No |
+| Type-state validation tracking | ✅ Yes (v0.6+) | No | Partial |
 | Error envelope integration | Yes (optional) | No | No |
 
 ### When to use domainstack
@@ -193,6 +195,7 @@ async fn create_booking(Json(dto): Json<BookingDto>) -> Result<Json<Booking>, Er
 - Reusable validation rules shared across services
 - Consistent field-level errors that map to forms/clients
 - Async validation with database/API context (v0.5+)
+- Compile-time guarantees that data was validated (phantom types, v0.6+)
 
 **You might not need domainstack if:**
 - You're validating only DTOs and your domain is basically DTO-shaped

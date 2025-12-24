@@ -778,6 +778,9 @@ Error response with field-level details:
 
 ## Running Examples
 
+<details>
+<summary>Click to expand example commands</summary>
+
 ```bash
 cd domainstack
 
@@ -817,9 +820,15 @@ cargo run --example v08_features
 # Framework examples
 cd examples-axum && cargo run    # Axum booking service
 cd examples-actix && cargo run   # Actix-web booking service
+cd examples-rocket && cargo run  # Rocket booking service
 ```
 
+</details>
+
 ## Testing
+
+<details>
+<summary>Click to expand testing commands</summary>
 
 ```bash
 cd domainstack
@@ -835,6 +844,8 @@ cargo test -p domainstack-envelope
 # Run with coverage
 cargo llvm-cov --all-features --workspace --html
 ```
+
+</details>
 
 ## License
 

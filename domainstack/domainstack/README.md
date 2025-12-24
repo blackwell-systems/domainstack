@@ -1,4 +1,4 @@
-# domain-model
+# domainstack
 
 A Rust validation framework for domain-driven design.
 
@@ -7,18 +7,20 @@ A Rust validation framework for domain-driven design.
 - **Valid-by-construction types** - Invalid states can't exist
 - **Composable rules** - Combine validation logic with `and`, `or`, `when`
 - **Structured error paths** - Field-level error reporting for APIs
-- **Zero dependencies** - Core crate uses only std (regex optional for email validation)
+- **Zero dependencies** - Core crate uses only std (regex optional for email/URL validation)
+- **31 built-in rules** - String (17), Numeric (8), Choice (3), Collection (3)
 
 ## Quick Start
 
 ```rust
-use domain_model::prelude::*;
+use domainstack::prelude::*;
 
-struct Email(String);
+struct Username(String);
 
-impl Email {
+impl Username {
     pub fn new(raw: String) -> Result<Self, ValidationError> {
-        validate("email", raw.as_str(), rules::email())?;
+        let rule = rules::min_len(3).and(rules::max_len(20));
+        validate("username", raw.as_str(), &rule)?;
         Ok(Self(raw))
     }
 }
@@ -30,124 +32,133 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-domain-model = "0.1"
+domainstack = "0.4"
 
-# Optional: enable regex-based email validation
-domain-model = { version = "0.1", features = ["email"] }
+# Optional: enable regex-based validation (email, url, matches_regex)
+domainstack = { version = "0.4", features = ["regex"] }
+
+# Optional: enable derive macro
+domainstack = { version = "0.4", features = ["derive"] }
 ```
 
 ## Examples
 
-### Domain Primitive (Email)
+### Domain Primitive (Age)
 
 ```rust
-use domain_model::prelude::*;
+use domainstack::prelude::*;
 
 #[derive(Debug, Clone)]
-pub struct Email(String);
+pub struct Age(u8);
 
-impl Email {
-    pub fn new(raw: impl Into<String>) -> Result<Self, ValidationError> {
-        let raw = raw.into();
-        validate("email", raw.as_str(), rules::email().and(rules::max_len(255)))?;
-        Ok(Self(raw))
+impl Age {
+    pub fn new(value: u8) -> Result<Self, ValidationError> {
+        let rule = rules::range(0, 120);
+        validate("age", &value, &rule)?;
+        Ok(Self(value))
     }
 
-    pub fn as_str(&self) -> &str {
-        &self.0
+    pub fn value(&self) -> u8 {
+        self.0
     }
 }
 
 // Usage
-let email = Email::new("user@example.com")?;
+let age = Age::new(25)?;
 ```
 
-### Domain Aggregate (Booking)
+### Using Derive Macro
 
 ```rust
-use domain_model::prelude::*;
+use domainstack::prelude::*;
 
-#[derive(Debug)]
-pub struct Guest {
-    pub name: String,
-    pub email: Email,
+#[derive(Debug, Validate)]
+pub struct CreateUser {
+    #[validate(min_len = 3, max_len = 20)]
+    pub username: String,
+
+    #[validate(range = "18..=120")]
+    pub age: u8,
+
+    #[validate(email, max_len = 255)]
+    pub email: String,
 }
 
-impl Validate for Guest {
-    fn validate(&self) -> Result<(), ValidationError> {
-        let mut err = ValidationError::default();
+// Usage
+let user = CreateUser {
+    username: "alice".to_string(),
+    age: 25,
+    email: "alice@example.com".to_string(),
+};
 
-        if let Err(e) = validate("name", self.name.as_str(), 
-            rules::min_len(1).and(rules::max_len(50))) {
-            err.extend(e);
-        }
-
-        if let Err(e) = self.email.validate() {
-            err.merge_prefixed("email", e);
-        }
-
-        if err.is_empty() { Ok(()) } else { Err(err) }
-    }
-}
-
-#[derive(Debug)]
-pub struct BookingRequest {
-    pub guest: Guest,
-    pub guests_count: u8,
-}
-
-impl Validate for BookingRequest {
-    fn validate(&self) -> Result<(), ValidationError> {
-        let mut err = ValidationError::default();
-
-        if let Err(e) = validate("guests_count", &self.guests_count, 
-            rules::range(1, 10)) {
-            err.extend(e);
-        }
-
-        if let Err(e) = self.guest.validate() {
-            err.merge_prefixed("guest", e);
-        }
-
-        if err.is_empty() { Ok(()) } else { Err(err) }
-    }
-}
+user.validate()?;
 ```
 
 ### Error Handling
 
 ```rust
-match BookingRequest::new(guest, 15) {
-    Ok(booking) => println!("Valid: {:?}", booking),
+match user.validate() {
+    Ok(_) => println!("Valid!"),
     Err(e) => {
         println!("Validation failed with {} errors:", e.violations.len());
         for v in &e.violations {
             println!("  [{} {}] {}", v.path, v.code, v.message);
         }
-        
+
         // Field errors map for API responses
         let field_errors = e.field_errors_map();
-        // { "guests_count": ["Must be between 1 and 10"], 
-        //   "guest.name": ["Must be at least 1 characters"] }
+        // { "username": ["Must be at least 3 characters"],
+        //   "age": ["Must be between 18 and 120"] }
     }
 }
 ```
 
 ## Built-in Rules
 
-### String Rules
+### String Rules (17)
 
-- `email()` - Email format validation
+- `email()`† - Email format validation
+- `url()`† - URL format validation
+- `matches_regex(pattern)`† - Custom regex matching
 - `non_empty()` - Non-empty string
-- `min_len(min)` - Minimum length
-- `max_len(max)` - Maximum length
-- `length(min, max)` - Length range
+- `non_blank()` - Not empty or whitespace-only
+- `no_whitespace()` - No whitespace characters
+- `ascii()` - ASCII-only characters
+- `min_len(min)` - Minimum byte length
+- `max_len(max)` - Maximum byte length
+- `length(exact)` - Exact byte length
+- `len_chars(min, max)` - Character count range
+- `alphanumeric()` - Only letters and digits
+- `alpha_only()` - Only letters
+- `numeric_string()` - Only digits
+- `contains(substring)` - Contains substring
+- `starts_with(prefix)` - Starts with prefix
+- `ends_with(suffix)` - Ends with suffix
 
-### Numeric Rules
+### Numeric Rules (8)
 
 - `range(min, max)` - Value range
 - `min(min)` - Minimum value
 - `max(max)` - Maximum value
+- `positive()` - Greater than zero
+- `negative()` - Less than zero
+- `non_zero()` - Not equal to zero
+- `finite()` - Finite floating-point (not NaN/Infinity)
+- `multiple_of(n)` - Divisible by n
+
+### Choice/Membership Rules (3)
+
+- `equals(value)` - Equal to value
+- `not_equals(value)` - Not equal to value
+- `one_of(set)` - Member of set
+
+### Collection Rules (3)
+
+- `min_items(min)` - Minimum items
+- `max_items(max)` - Maximum items
+- `unique()` - All items unique
+
+†Requires `regex` feature
 
 ### Rule Composition
 
@@ -156,21 +167,39 @@ match BookingRequest::new(guest, 15) {
 - `rule.not(code, msg)` - Negate the rule
 - `rule.when(predicate)` - Conditional validation
 - `rule.map_path(prefix)` - Prefix error paths
+- `rule.code(code)` - Override error code
+- `rule.message(msg)` - Override error message
+- `rule.meta(key, value)` - Add metadata
 
 ## Running Examples
 
 ```bash
-cargo run --example email_primitive
+# Basic examples
 cargo run --example age_primitive
-cargo run --example booking_aggregate
+
+# Examples requiring regex feature
+cargo run --example email_primitive --features regex
+cargo run --example booking_aggregate --features regex
+
+# Package examples
+cargo run -p domainstack-examples --example v2_basic
 ```
 
 ## Testing
 
 ```bash
 cargo test
-cargo test --all-features  # Test with email feature enabled
+cargo test --features regex    # Test with regex feature
+cargo test --all-features       # Test all features
 ```
+
+## Documentation
+
+For complete documentation, see:
+
+- [Rules Reference](../../docs/RULES.md) - All 31 validation rules
+- [API Guide](../../docs/api-guide.md) - Complete API usage
+- [Architecture](../../docs/architecture.md) - System design
 
 ## License
 

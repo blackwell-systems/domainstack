@@ -305,6 +305,7 @@ mod tests {
             }
         }
 
+        #[allow(clippy::result_large_err)]
         fn validate(self) -> Result<Email<Validated>, ValidationError> {
             // Use simple validation that doesn't require regex feature
             validate("email", self.value.as_str(), &rules::contains("@"))?;
@@ -422,6 +423,7 @@ mod tests {
             }
         }
 
+        #[allow(clippy::result_large_err)]
         fn validate(self) -> Result<User<Validated>, ValidationError> {
             let mut errors = ValidationError::default();
 

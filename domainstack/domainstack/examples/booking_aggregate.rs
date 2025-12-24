@@ -4,6 +4,7 @@ use domainstack::prelude::*;
 pub struct Email(String);
 
 impl Email {
+    #[allow(clippy::result_large_err)]
     pub fn new(raw: String) -> Result<Self, ValidationError> {
         let rule = rules::email();
         validate("email", raw.as_str(), &rule)?;
@@ -25,6 +26,7 @@ pub struct Guest {
 }
 
 impl Guest {
+    #[allow(clippy::result_large_err)]
     pub fn new(name: String, email: Email) -> Result<Self, ValidationError> {
         let guest = Self { name, email };
         guest.validate()?;
@@ -60,6 +62,7 @@ pub struct BookingRequest {
 }
 
 impl BookingRequest {
+    #[allow(clippy::result_large_err)]
     pub fn new(guest: Guest, guests_count: u8) -> Result<Self, ValidationError> {
         let booking = Self {
             guest,

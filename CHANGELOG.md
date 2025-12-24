@@ -376,9 +376,9 @@ Initial release with core validation framework, derive macros, and framework ada
 ## Unreleased Features (Roadmap)
 
 See `docs/BREAKING_CHANGES_ANALYSIS.md` for planned features in future versions:
-- v0.5.0: Async validation with database uniqueness checks
-- v0.6.0: Cross-field validation
-- v0.7.0: Enhanced metadata system
-- v1.0.0: API stabilization
+- v0.5.0: ✅ Completed (async validation, path API encapsulation, extended rules, cross-field validation)
+- v0.6.0: Phantom types for validated state (type-safe validation guarantees)
+- v0.7.0: Schema generation (OpenAPI, JSON Schema, TypeScript types)
+- v1.0.0: API stabilization, performance optimizations
 
 [0.4.0]: https://github.com/blackwell-systems/domainstack/compare/v0.3.0...v0.4.0

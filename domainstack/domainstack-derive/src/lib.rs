@@ -27,6 +27,7 @@ pub fn derive_to_schema(input: TokenStream) -> TokenStream {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 enum ValidationRule {
+    // Existing rules
     Length {
         min: Option<usize>,
         max: Option<usize>,
@@ -42,6 +43,36 @@ enum ValidationRule {
     Nested,
     Each(Box<ValidationRule>),
     Custom(String),
+
+    // New rich syntax rules
+    Email,
+    Url,
+    MinLen(usize),
+    MaxLen(usize),
+    Alphanumeric,
+    Ascii,
+    AlphaOnly,
+    NumericString,
+    NonEmpty,
+    NonBlank,
+    NoWhitespace,
+    Contains(String),
+    StartsWith(String),
+    EndsWith(String),
+    MatchesRegex(String),
+    Min(proc_macro2::TokenStream),
+    Max(proc_macro2::TokenStream),
+    Positive,
+    Negative,
+    NonZero,
+    Finite,
+    MultipleOf(proc_macro2::TokenStream),
+    Equals(proc_macro2::TokenStream),
+    NotEquals(proc_macro2::TokenStream),
+    OneOf(Vec<String>),
+    MinItems(usize),
+    MaxItems(usize),
+    Unique,
 }
 
 #[derive(Debug, Clone)]
@@ -199,168 +230,285 @@ fn parse_field_attributes(field: &Field) -> syn::Result<Vec<ValidationRule>> {
             continue;
         }
 
-        let rule = parse_validate_attribute(attr)?;
-        rules.push(rule);
+        // Parse all rules from this attribute
+        attr.parse_nested_meta(|meta| {
+            // Email
+            if meta.path.is_ident("email") {
+                rules.push(ValidationRule::Email);
+                return Ok(());
+            }
+
+            // URL
+            if meta.path.is_ident("url") {
+                rules.push(ValidationRule::Url);
+                return Ok(());
+            }
+
+            // min_len
+            if meta.path.is_ident("min_len") {
+                let value: syn::Lit = meta.value()?.parse()?;
+                if let syn::Lit::Int(lit_int) = value {
+                    let val = lit_int.base10_parse()?;
+                    rules.push(ValidationRule::MinLen(val));
+                }
+                return Ok(());
+            }
+
+            // max_len
+            if meta.path.is_ident("max_len") {
+                let value: syn::Lit = meta.value()?.parse()?;
+                if let syn::Lit::Int(lit_int) = value {
+                    let val = lit_int.base10_parse()?;
+                    rules.push(ValidationRule::MaxLen(val));
+                }
+                return Ok(());
+            }
+
+            // length (legacy syntax)
+            if meta.path.is_ident("length") {
+                let mut min = None;
+                let mut max = None;
+                let mut code = None;
+                let mut message = None;
+
+                meta.parse_nested_meta(|nested| {
+                    if nested.path.is_ident("min") {
+                        let value: syn::Lit = nested.value()?.parse()?;
+                        if let syn::Lit::Int(lit_int) = value {
+                            min = Some(lit_int.base10_parse()?);
+                        }
+                    } else if nested.path.is_ident("max") {
+                        let value: syn::Lit = nested.value()?.parse()?;
+                        if let syn::Lit::Int(lit_int) = value {
+                            max = Some(lit_int.base10_parse()?);
+                        }
+                    } else if nested.path.is_ident("code") {
+                        let value: syn::Lit = nested.value()?.parse()?;
+                        if let syn::Lit::Str(lit_str) = value {
+                            code = Some(lit_str.value());
+                        }
+                    } else if nested.path.is_ident("message") {
+                        let value: syn::Lit = nested.value()?.parse()?;
+                        if let syn::Lit::Str(lit_str) = value {
+                            message = Some(lit_str.value());
+                        }
+                    }
+                    Ok(())
+                })?;
+
+                rules.push(ValidationRule::Length { min, max, code, message });
+                return Ok(());
+            }
+
+            // range
+            if meta.path.is_ident("range") {
+                let mut min = None;
+                let mut max = None;
+                let mut code = None;
+                let mut message = None;
+
+                meta.parse_nested_meta(|nested| {
+                    if nested.path.is_ident("min") {
+                        let value: syn::Expr = nested.value()?.parse()?;
+                        min = Some(quote! { #value });
+                    } else if nested.path.is_ident("max") {
+                        let value: syn::Expr = nested.value()?.parse()?;
+                        max = Some(quote! { #value });
+                    } else if nested.path.is_ident("code") {
+                        let value: syn::Lit = nested.value()?.parse()?;
+                        if let syn::Lit::Str(lit_str) = value {
+                            code = Some(lit_str.value());
+                        }
+                    } else if nested.path.is_ident("message") {
+                        let value: syn::Lit = nested.value()?.parse()?;
+                        if let syn::Lit::Str(lit_str) = value {
+                            message = Some(lit_str.value());
+                        }
+                    }
+                    Ok(())
+                })?;
+
+                rules.push(ValidationRule::Range { min, max, code, message });
+                return Ok(());
+            }
+
+            // nested
+            if meta.path.is_ident("nested") {
+                rules.push(ValidationRule::Nested);
+                return Ok(());
+            }
+
+            // each
+            if meta.path.is_ident("each") {
+                meta.parse_nested_meta(|nested| {
+                    if nested.path.is_ident("nested") {
+                        rules.push(ValidationRule::Each(Box::new(ValidationRule::Nested)));
+                    }
+                    Ok(())
+                })?;
+                return Ok(());
+            }
+
+            // custom
+            if meta.path.is_ident("custom") {
+                let value: syn::Lit = meta.value()?.parse()?;
+                if let syn::Lit::Str(lit_str) = value {
+                    rules.push(ValidationRule::Custom(lit_str.value()));
+                }
+                return Ok(());
+            }
+
+            // String pattern rules
+            if meta.path.is_ident("alphanumeric") {
+                rules.push(ValidationRule::Alphanumeric);
+                return Ok(());
+            }
+
+            if meta.path.is_ident("ascii") {
+                rules.push(ValidationRule::Ascii);
+                return Ok(());
+            }
+
+            if meta.path.is_ident("alpha_only") {
+                rules.push(ValidationRule::AlphaOnly);
+                return Ok(());
+            }
+
+            if meta.path.is_ident("numeric_string") {
+                rules.push(ValidationRule::NumericString);
+                return Ok(());
+            }
+
+            if meta.path.is_ident("non_empty") {
+                rules.push(ValidationRule::NonEmpty);
+                return Ok(());
+            }
+
+            if meta.path.is_ident("non_blank") {
+                rules.push(ValidationRule::NonBlank);
+                return Ok(());
+            }
+
+            if meta.path.is_ident("no_whitespace") {
+                rules.push(ValidationRule::NoWhitespace);
+                return Ok(());
+            }
+
+            // String content rules with values
+            if meta.path.is_ident("contains") {
+                let value: syn::Lit = meta.value()?.parse()?;
+                if let syn::Lit::Str(lit_str) = value {
+                    rules.push(ValidationRule::Contains(lit_str.value()));
+                }
+                return Ok(());
+            }
+
+            if meta.path.is_ident("starts_with") {
+                let value: syn::Lit = meta.value()?.parse()?;
+                if let syn::Lit::Str(lit_str) = value {
+                    rules.push(ValidationRule::StartsWith(lit_str.value()));
+                }
+                return Ok(());
+            }
+
+            if meta.path.is_ident("ends_with") {
+                let value: syn::Lit = meta.value()?.parse()?;
+                if let syn::Lit::Str(lit_str) = value {
+                    rules.push(ValidationRule::EndsWith(lit_str.value()));
+                }
+                return Ok(());
+            }
+
+            if meta.path.is_ident("matches_regex") {
+                let value: syn::Lit = meta.value()?.parse()?;
+                if let syn::Lit::Str(lit_str) = value {
+                    rules.push(ValidationRule::MatchesRegex(lit_str.value()));
+                }
+                return Ok(());
+            }
+
+            // Numeric rules
+            if meta.path.is_ident("min") {
+                let value: syn::Expr = meta.value()?.parse()?;
+                rules.push(ValidationRule::Min(quote! { #value }));
+                return Ok(());
+            }
+
+            if meta.path.is_ident("max") {
+                let value: syn::Expr = meta.value()?.parse()?;
+                rules.push(ValidationRule::Max(quote! { #value }));
+                return Ok(());
+            }
+
+            if meta.path.is_ident("positive") {
+                rules.push(ValidationRule::Positive);
+                return Ok(());
+            }
+
+            if meta.path.is_ident("negative") {
+                rules.push(ValidationRule::Negative);
+                return Ok(());
+            }
+
+            if meta.path.is_ident("non_zero") {
+                rules.push(ValidationRule::NonZero);
+                return Ok(());
+            }
+
+            if meta.path.is_ident("finite") {
+                rules.push(ValidationRule::Finite);
+                return Ok(());
+            }
+
+            if meta.path.is_ident("multiple_of") {
+                let value: syn::Expr = meta.value()?.parse()?;
+                rules.push(ValidationRule::MultipleOf(quote! { #value }));
+                return Ok(());
+            }
+
+            // Choice rules
+            if meta.path.is_ident("equals") {
+                let value: syn::Expr = meta.value()?.parse()?;
+                rules.push(ValidationRule::Equals(quote! { #value }));
+                return Ok(());
+            }
+
+            if meta.path.is_ident("not_equals") {
+                let value: syn::Expr = meta.value()?.parse()?;
+                rules.push(ValidationRule::NotEquals(quote! { #value }));
+                return Ok(());
+            }
+
+            // Collection rules
+            if meta.path.is_ident("min_items") {
+                let value: syn::Lit = meta.value()?.parse()?;
+                if let syn::Lit::Int(lit_int) = value {
+                    let val = lit_int.base10_parse()?;
+                    rules.push(ValidationRule::MinItems(val));
+                }
+                return Ok(());
+            }
+
+            if meta.path.is_ident("max_items") {
+                let value: syn::Lit = meta.value()?.parse()?;
+                if let syn::Lit::Int(lit_int) = value {
+                    let val = lit_int.base10_parse()?;
+                    rules.push(ValidationRule::MaxItems(val));
+                }
+                return Ok(());
+            }
+
+            if meta.path.is_ident("unique") {
+                rules.push(ValidationRule::Unique);
+                return Ok(());
+            }
+
+            // Unknown rule - silently ignore for forward compatibility
+            Ok(())
+        })?;
     }
 
     Ok(rules)
-}
-
-fn parse_validate_attribute(attr: &Attribute) -> syn::Result<ValidationRule> {
-    let meta = &attr.meta;
-
-    match meta {
-        Meta::Path(_) => {
-            // #[validate] with no arguments - error
-            Err(syn::Error::new_spanned(
-                meta,
-                "#[validate] requires an argument",
-            ))
-        }
-        Meta::List(list) => {
-            // Parse the tokens inside the list
-            let nested: syn::punctuated::Punctuated<Meta, syn::Token![,]> =
-                list.parse_args_with(syn::punctuated::Punctuated::parse_terminated)?;
-
-            if nested.is_empty() {
-                return Err(syn::Error::new_spanned(
-                    meta,
-                    "#[validate(...)] requires an argument",
-                ));
-            }
-
-            // Get the first meta (e.g., "length", "range", "nested", "each", "custom")
-            let first = nested.first().unwrap();
-
-            match first {
-                Meta::Path(path) if path.is_ident("nested") => Ok(ValidationRule::Nested),
-                Meta::List(list) if list.path.is_ident("length") => parse_length_rule(list),
-                Meta::List(list) if list.path.is_ident("range") => parse_range_rule(list),
-                Meta::List(list) if list.path.is_ident("each") => parse_each_rule(list),
-                Meta::NameValue(nv) if nv.path.is_ident("custom") => parse_custom_rule(nv),
-                _ => Err(syn::Error::new_spanned(
-                    first,
-                    "Unknown validation rule. Expected: length, range, nested, each, or custom",
-                )),
-            }
-        }
-        Meta::NameValue(_) => Err(syn::Error::new_spanned(
-            meta,
-            "Use #[validate(rule)] syntax",
-        )),
-    }
-}
-
-fn parse_length_rule(list: &syn::MetaList) -> syn::Result<ValidationRule> {
-    let nested: syn::punctuated::Punctuated<Meta, syn::Token![,]> =
-        list.parse_args_with(syn::punctuated::Punctuated::parse_terminated)?;
-
-    let mut min = None;
-    let mut max = None;
-    let mut code = None;
-    let mut message = None;
-
-    for meta in nested {
-        match meta {
-            Meta::NameValue(nv) => {
-                if nv.path.is_ident("min") {
-                    min = Some(parse_usize_lit(&nv.value)?);
-                } else if nv.path.is_ident("max") {
-                    max = Some(parse_usize_lit(&nv.value)?);
-                } else if nv.path.is_ident("code") {
-                    code = Some(parse_string_lit(&nv.value)?);
-                } else if nv.path.is_ident("message") {
-                    message = Some(parse_string_lit(&nv.value)?);
-                }
-            }
-            _ => return Err(syn::Error::new_spanned(meta, "Expected name = value")),
-        }
-    }
-
-    Ok(ValidationRule::Length {
-        min,
-        max,
-        code,
-        message,
-    })
-}
-
-fn parse_range_rule(list: &syn::MetaList) -> syn::Result<ValidationRule> {
-    let nested: syn::punctuated::Punctuated<Meta, syn::Token![,]> =
-        list.parse_args_with(syn::punctuated::Punctuated::parse_terminated)?;
-
-    let mut min = None;
-    let mut max = None;
-    let mut code = None;
-    let mut message = None;
-
-    for meta in nested {
-        match meta {
-            Meta::NameValue(nv) => {
-                if nv.path.is_ident("min") {
-                    min = Some(expr_to_tokens(&nv.value)?);
-                } else if nv.path.is_ident("max") {
-                    max = Some(expr_to_tokens(&nv.value)?);
-                } else if nv.path.is_ident("code") {
-                    code = Some(parse_string_lit(&nv.value)?);
-                } else if nv.path.is_ident("message") {
-                    message = Some(parse_string_lit(&nv.value)?);
-                }
-            }
-            _ => return Err(syn::Error::new_spanned(meta, "Expected name = value")),
-        }
-    }
-
-    Ok(ValidationRule::Range {
-        min,
-        max,
-        code,
-        message,
-    })
-}
-
-fn parse_each_rule(list: &syn::MetaList) -> syn::Result<ValidationRule> {
-    let nested: syn::punctuated::Punctuated<Meta, syn::Token![,]> =
-        list.parse_args_with(syn::punctuated::Punctuated::parse_terminated)?;
-
-    if nested.is_empty() {
-        return Err(syn::Error::new_spanned(list, "each requires an inner rule"));
-    }
-
-    let first = nested.first().unwrap();
-
-    let inner_rule = match first {
-        Meta::Path(path) if path.is_ident("nested") => ValidationRule::Nested,
-        Meta::List(inner_list) if inner_list.path.is_ident("length") => {
-            parse_length_rule(inner_list)?
-        }
-        Meta::List(inner_list) if inner_list.path.is_ident("range") => {
-            parse_range_rule(inner_list)?
-        }
-        _ => {
-            return Err(syn::Error::new_spanned(
-                first,
-                "each supports: nested, length, or range",
-            ))
-        }
-    };
-
-    Ok(ValidationRule::Each(Box::new(inner_rule)))
-}
-
-fn parse_custom_rule(nv: &syn::MetaNameValue) -> syn::Result<ValidationRule> {
-    let fn_path = parse_string_lit(&nv.value)?;
-    Ok(ValidationRule::Custom(fn_path))
-}
-
-fn parse_usize_lit(expr: &Expr) -> syn::Result<usize> {
-    match expr {
-        Expr::Lit(lit_expr) => match &lit_expr.lit {
-            Lit::Int(int_lit) => int_lit.base10_parse(),
-            _ => Err(syn::Error::new_spanned(expr, "Expected integer literal")),
-        },
-        _ => Err(syn::Error::new_spanned(expr, "Expected integer literal")),
-    }
 }
 
 fn parse_string_lit(expr: &Expr) -> syn::Result<String> {
@@ -373,10 +521,6 @@ fn parse_string_lit(expr: &Expr) -> syn::Result<String> {
     }
 }
 
-fn expr_to_tokens(expr: &Expr) -> syn::Result<proc_macro2::TokenStream> {
-    Ok(quote! { #expr })
-}
-
 fn generate_field_validation(fv: &FieldValidation) -> proc_macro2::TokenStream {
     let field_name = &fv.field_name;
     let field_name_str = field_name.to_string();
@@ -385,6 +529,7 @@ fn generate_field_validation(fv: &FieldValidation) -> proc_macro2::TokenStream {
         .rules
         .iter()
         .map(|rule| match rule {
+            // Legacy rules
             ValidationRule::Length { min, max, .. } => {
                 generate_length_validation(field_name, &field_name_str, min, max)
             }
@@ -398,6 +543,42 @@ fn generate_field_validation(fv: &FieldValidation) -> proc_macro2::TokenStream {
             ValidationRule::Custom(fn_path) => {
                 generate_custom_validation(field_name, &field_name_str, fn_path)
             }
+
+            // New rich syntax rules - String rules
+            ValidationRule::Email => generate_simple_string_rule(field_name, &field_name_str, "email"),
+            ValidationRule::Url => generate_simple_string_rule(field_name, &field_name_str, "url"),
+            ValidationRule::MinLen(min) => generate_min_len(field_name, &field_name_str, *min),
+            ValidationRule::MaxLen(max) => generate_max_len(field_name, &field_name_str, *max),
+            ValidationRule::Alphanumeric => generate_simple_string_rule(field_name, &field_name_str, "alphanumeric"),
+            ValidationRule::Ascii => generate_simple_string_rule(field_name, &field_name_str, "ascii"),
+            ValidationRule::AlphaOnly => generate_simple_string_rule(field_name, &field_name_str, "alpha_only"),
+            ValidationRule::NumericString => generate_simple_string_rule(field_name, &field_name_str, "numeric_string"),
+            ValidationRule::NonEmpty => generate_simple_string_rule(field_name, &field_name_str, "non_empty"),
+            ValidationRule::NonBlank => generate_simple_string_rule(field_name, &field_name_str, "non_blank"),
+            ValidationRule::NoWhitespace => generate_simple_string_rule(field_name, &field_name_str, "no_whitespace"),
+            ValidationRule::Contains(substr) => generate_string_param_rule(field_name, &field_name_str, "contains", substr),
+            ValidationRule::StartsWith(prefix) => generate_string_param_rule(field_name, &field_name_str, "starts_with", prefix),
+            ValidationRule::EndsWith(suffix) => generate_string_param_rule(field_name, &field_name_str, "ends_with", suffix),
+            ValidationRule::MatchesRegex(pattern) => generate_matches_regex(field_name, &field_name_str, pattern),
+
+            // Numeric rules
+            ValidationRule::Min(min) => generate_min_max(field_name, &field_name_str, "min", min),
+            ValidationRule::Max(max) => generate_min_max(field_name, &field_name_str, "max", max),
+            ValidationRule::Positive => generate_simple_numeric_rule(field_name, &field_name_str, "positive"),
+            ValidationRule::Negative => generate_simple_numeric_rule(field_name, &field_name_str, "negative"),
+            ValidationRule::NonZero => generate_simple_numeric_rule(field_name, &field_name_str, "non_zero"),
+            ValidationRule::Finite => generate_simple_numeric_rule(field_name, &field_name_str, "finite"),
+            ValidationRule::MultipleOf(n) => generate_min_max(field_name, &field_name_str, "multiple_of", n),
+
+            // Choice rules
+            ValidationRule::Equals(val) => generate_min_max(field_name, &field_name_str, "equals", val),
+            ValidationRule::NotEquals(val) => generate_min_max(field_name, &field_name_str, "not_equals", val),
+            ValidationRule::OneOf(values) => generate_one_of(field_name, &field_name_str, values),
+
+            // Collection rules
+            ValidationRule::MinItems(min) => generate_collection_rule(field_name, &field_name_str, "min_items", *min),
+            ValidationRule::MaxItems(max) => generate_collection_rule(field_name, &field_name_str, "max_items", *max),
+            ValidationRule::Unique => generate_simple_collection_rule(field_name, &field_name_str, "unique"),
         })
         .collect();
 
@@ -545,6 +726,168 @@ fn generate_custom_validation(
     quote! {
         if let Err(e) = #fn_path(&self.#field_name) {
             err.extend(e.prefixed(#field_name_str));
+        }
+    }
+}
+
+// Helper functions for new validation rule code generation
+
+fn generate_simple_string_rule(
+    field_name: &syn::Ident,
+    field_name_str: &str,
+    rule_fn: &str,
+) -> proc_macro2::TokenStream {
+    let rule_fn: proc_macro2::TokenStream = format!("domainstack::rules::{}()", rule_fn).parse().unwrap();
+    quote! {
+        {
+            let rule = #rule_fn;
+            if let Err(e) = domainstack::validate(#field_name_str, self.#field_name.as_str(), &rule) {
+                err.extend(e);
+            }
+        }
+    }
+}
+
+fn generate_min_len(
+    field_name: &syn::Ident,
+    field_name_str: &str,
+    min: usize,
+) -> proc_macro2::TokenStream {
+    quote! {
+        {
+            let rule = domainstack::rules::min_len(#min);
+            if let Err(e) = domainstack::validate(#field_name_str, self.#field_name.as_str(), &rule) {
+                err.extend(e);
+            }
+        }
+    }
+}
+
+fn generate_max_len(
+    field_name: &syn::Ident,
+    field_name_str: &str,
+    max: usize,
+) -> proc_macro2::TokenStream {
+    quote! {
+        {
+            let rule = domainstack::rules::max_len(#max);
+            if let Err(e) = domainstack::validate(#field_name_str, self.#field_name.as_str(), &rule) {
+                err.extend(e);
+            }
+        }
+    }
+}
+
+fn generate_string_param_rule(
+    field_name: &syn::Ident,
+    field_name_str: &str,
+    rule_fn: &str,
+    param: &str,
+) -> proc_macro2::TokenStream {
+    let rule_fn: proc_macro2::TokenStream = format!("domainstack::rules::{}(\"{}\")", rule_fn, param).parse().unwrap();
+    quote! {
+        {
+            let rule = #rule_fn;
+            if let Err(e) = domainstack::validate(#field_name_str, self.#field_name.as_str(), &rule) {
+                err.extend(e);
+            }
+        }
+    }
+}
+
+fn generate_matches_regex(
+    field_name: &syn::Ident,
+    field_name_str: &str,
+    pattern: &str,
+) -> proc_macro2::TokenStream {
+    quote! {
+        {
+            let rule = domainstack::rules::matches_regex(#pattern);
+            if let Err(e) = domainstack::validate(#field_name_str, self.#field_name.as_str(), &rule) {
+                err.extend(e);
+            }
+        }
+    }
+}
+
+fn generate_simple_numeric_rule(
+    field_name: &syn::Ident,
+    field_name_str: &str,
+    rule_fn: &str,
+) -> proc_macro2::TokenStream {
+    let rule_fn: proc_macro2::TokenStream = format!("domainstack::rules::{}()", rule_fn).parse().unwrap();
+    quote! {
+        {
+            let rule = #rule_fn;
+            if let Err(e) = domainstack::validate(#field_name_str, &self.#field_name, &rule) {
+                err.extend(e);
+            }
+        }
+    }
+}
+
+fn generate_min_max(
+    field_name: &syn::Ident,
+    field_name_str: &str,
+    rule_fn: &str,
+    val: &proc_macro2::TokenStream,
+) -> proc_macro2::TokenStream {
+    let rule_fn: proc_macro2::TokenStream = format!("domainstack::rules::{}({})", rule_fn, val).parse().unwrap();
+    quote! {
+        {
+            let rule = #rule_fn;
+            if let Err(e) = domainstack::validate(#field_name_str, &self.#field_name, &rule) {
+                err.extend(e);
+            }
+        }
+    }
+}
+
+fn generate_one_of(
+    field_name: &syn::Ident,
+    field_name_str: &str,
+    values: &[String],
+) -> proc_macro2::TokenStream {
+    let values_str = values.iter().map(|v| quote! { #v }).collect::<Vec<_>>();
+    quote! {
+        {
+            let rule = domainstack::rules::one_of(&[#(#values_str),*]);
+            if let Err(e) = domainstack::validate(#field_name_str, &self.#field_name, &rule) {
+                err.extend(e);
+            }
+        }
+    }
+}
+
+fn generate_collection_rule(
+    field_name: &syn::Ident,
+    field_name_str: &str,
+    rule_fn: &str,
+    val: usize,
+) -> proc_macro2::TokenStream {
+    let rule_fn: proc_macro2::TokenStream = format!("domainstack::rules::{}({})", rule_fn, val).parse().unwrap();
+    quote! {
+        {
+            let rule = #rule_fn;
+            if let Err(e) = domainstack::validate(#field_name_str, &self.#field_name, &rule) {
+                err.extend(e);
+            }
+        }
+    }
+}
+
+fn generate_simple_collection_rule(
+    field_name: &syn::Ident,
+    field_name_str: &str,
+    rule_fn: &str,
+) -> proc_macro2::TokenStream {
+    let rule_fn: proc_macro2::TokenStream = format!("domainstack::rules::{}()", rule_fn).parse().unwrap();
+    quote! {
+        {
+            let rule = #rule_fn;
+            if let Err(e) = domainstack::validate(#field_name_str, &self.#field_name, &rule) {
+                err.extend(e);
+            }
         }
     }
 }

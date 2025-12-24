@@ -102,111 +102,6 @@ impl Path {
 
 ---
 
-#### 1.3 **Builder Pattern for Rules** 🔥🔥
-
-**Current Problem:**
-```rust
-// No way to customize error messages
-let rule = rules::min_len(5);  // Error message is hardcoded
-
-// Have to create custom rule for custom message
-let rule = Rule::new(move |value: &str| {
-    if value.len() < 5 {
-        ValidationError::single(Path::root(), "min_length", "Email too short")
-    } else {
-        ValidationError::default()
-    }
-});
-```
-
-**v1.0.0 Proposal:**
-```rust
-// Builder pattern for all rules
-let rule = rules::min_len(5)
-    .message("Email too short")
-    .code("email_too_short");
-
-// Or use defaults
-let rule = rules::min_len(5);  // Still works
-
-// Fluent API
-let rule = rules::email()
-    .message("Invalid email format")
-    .code("invalid_email")
-    .meta("hint", "Use format: user@domain.com");
-```
-
-**Implementation:**
-```rust
-pub struct MinLenBuilder {
-    min: usize,
-    code: &'static str,
-    message: Option<String>,
-    metadata: HashMap<&'static str, String>,
-}
-
-impl MinLenBuilder {
-    pub fn message(mut self, msg: impl Into<String>) -> Self {
-        self.message = Some(msg.into());
-        self
-    }
-
-    pub fn code(mut self, code: &'static str) -> Self {
-        self.code = code;
-        self
-    }
-
-    pub fn meta(mut self, key: &'static str, value: impl Into<String>) -> Self {
-        self.metadata.insert(key, value.into());
-        self
-    }
-
-    pub fn build(self) -> Rule<str> {
-        let min = self.min;
-        let code = self.code;
-        let message = self.message.unwrap_or_else(|| format!("Must be at least {} characters", min));
-        let mut metadata = self.metadata;
-        metadata.insert("min", min.to_string());
-
-        Rule::new(move |value: &str| {
-            if value.len() < min {
-                let mut err = ValidationError::single(Path::root(), code, &message);
-                err.violations[0].metadata = metadata.clone();
-                err
-            } else {
-                ValidationError::default()
-            }
-        })
-    }
-}
-
-pub fn min_len(min: usize) -> MinLenBuilder {
-    MinLenBuilder {
-        min,
-        code: "min_length",
-        message: None,
-        metadata: HashMap::new(),
-    }
-}
-
-// Auto-conversion so existing code still works
-impl From<MinLenBuilder> for Rule<str> {
-    fn from(builder: MinLenBuilder) -> Self {
-        builder.build()
-    }
-}
-```
-
-**Benefits:**
-- Custom error messages (most requested feature)
-- Custom error codes
-- Additional metadata
-- Backward compatible pattern (builder → Rule conversion)
-
-**Breaking Change:** Technically yes, but migration is trivial
-
----
-
 ### Category 2: Type Safety Improvements
 
 #### 2.1 **Const Generics for String Length** 🔥
@@ -410,144 +305,9 @@ async fn create_user(user: User, ctx: ValidationContext) -> Result<(), Error> {
 
 ---
 
-#### 4.2 **Cross-Field Validation** 🔥🔥
-
-**Current Limitation:**
-```rust
-// Cannot validate relationships between fields
-struct DateRange {
-    start: Date,
-    end: Date,  // Must be >= start, but no way to express this!
-}
-```
-
-**v1.0.0 Proposal:**
-```rust
-#[derive(Validate)]
-#[validate(check = "end_after_start")]
-struct DateRange {
-    start: Date,
-    end: Date,
-}
-
-impl DateRange {
-    fn end_after_start(&self) -> Result<(), ValidationError> {
-        if self.end < self.start {
-            return Err(ValidationError::single(
-                Path::root().field("end"),
-                "invalid_range",
-                "End date must be after start date"
-            ));
-        }
-        Ok(())
-    }
-}
-```
-
-**Benefits:**
-- Validate field relationships
-- Business rule enforcement
-- Password confirmation matching
-
-**Breaking Change:** New derive macro attribute
-
----
-
-#### 4.3 **Conditional Validation** 🔥
-
-**Current Limitation:**
-```rust
-// Cannot conditionally apply rules based on other fields
-struct PaymentMethod {
-    method_type: String,  // "card" or "bank"
-    card_number: Option<String>,  // Required if method_type == "card"
-    routing_number: Option<String>,  // Required if method_type == "bank"
-}
-```
-
-**v1.0.0 Proposal:**
-```rust
-#[derive(Validate)]
-struct PaymentMethod {
-    method_type: String,
-
-    #[validate(when = "is_card", non_empty)]
-    card_number: Option<String>,
-
-    #[validate(when = "is_bank", non_empty)]
-    routing_number: Option<String>,
-}
-
-impl PaymentMethod {
-    fn is_card(&self) -> bool {
-        self.method_type == "card"
-    }
-
-    fn is_bank(&self) -> bool {
-        self.method_type == "bank"
-    }
-}
-```
-
-**Benefits:**
-- Conditional validation logic
-- Polymorphic domain models
-- Cleaner business rules
-
-**Breaking Change:** New derive macro features
-
----
-
 ### Category 5: Developer Experience
 
-#### 5.1 **Better Error Messages** 🔥🔥🔥
-
-**Current Problem:**
-```rust
-// Generic error messages
-"Must be at least 5 characters"
-"Invalid email format"
-```
-
-**v1.0.0 Proposal:**
-```rust
-// Context-aware error messages
-pub struct RuleContext {
-    field_name: &'static str,
-    field_value: Option<String>,  // For debugging
-    parent_path: Path,
-}
-
-// Rules receive context
-pub fn min_len(min: usize) -> Rule<str> {
-    Rule::new(move |value: &str, ctx: &RuleContext| {
-        if value.len() < min {
-            ValidationError::single(
-                ctx.parent_path.field(ctx.field_name),
-                "min_length",
-                format!("Field '{}' must be at least {} characters (got {})",
-                    ctx.field_name, min, value.len())
-            )
-        } else {
-            ValidationError::default()
-        }
-    })
-}
-
-// Generates:
-// "Field 'email' must be at least 5 characters (got 3)"
-```
-
-**Benefits:**
-- More helpful error messages
-- Better debugging experience
-- Easier for end users
-
-**Breaking Change:** Yes - Rule signature changes
-
----
-
-#### 5.2 **Schema Generation** 🔥🔥
+#### 5.1 **Schema Generation** 🔥🔥
 
 **Current Limitation:**
 ```rust
@@ -659,22 +419,22 @@ let schema = schema_for!(User);
 
 ---
 
-## Ecosystem Comparison with Breaking Changes
+## Ecosystem Comparison
 
-| Feature | domainstack v1.0 | validator | garde | nutype |
-|---------|------------------|-----------|-------|--------|
+| Feature | domainstack (current) | validator | garde | nutype |
+|---------|----------------------|-----------|-------|--------|
 | Domain-First | ✅ | ❌ | ❌ | ⚠️ |
 | Composable Rules | ✅ + Builders | ❌ | ⚠️ | ⚠️ |
-| Async Validation | ✅ | ❌ | ❌ | ❌ |
-| Cross-Field | ✅ | ⚠️ Limited | ❌ | ❌ |
-| Conditional Validation | ✅ | ❌ | ❌ | ❌ |
-| Custom Messages | ✅ | ⚠️ Attributes only | ⚠️ | ✅ |
-| Type-Safe State | ✅ Phantom types | ❌ | ❌ | ✅ |
-| Framework Adapters | ✅ | ❌ | ❌ | ❌ |
-| Schema Generation | ✅ | ❌ | ❌ | ❌ |
+| Async Validation | 📋 Planned | ❌ | ❌ | ❌ |
+| Cross-Field | ✅ v0.5 | ⚠️ Limited | ❌ | ❌ |
+| Conditional Validation | ✅ v0.5 | ❌ | ❌ | ❌ |
+| Custom Messages | ✅ v0.4 | ⚠️ Attributes only | ⚠️ | ✅ |
+| Type-Safe State | 📋 Planned | ❌ | ❌ | ✅ |
+| Framework Adapters | ✅ v0.4 | ❌ | ❌ | ❌ |
+| Schema Generation | 📋 Planned | ❌ | ❌ | ❌ |
 | Zero Dependencies | ✅ Core only | ❌ | ❌ | ✅ |
 
-**Result:** domainstack v1.0 would be **undisputed leader** in domain validation.
+**Note:** domainstack already implements most desired features without breaking changes.
 
 ---
 

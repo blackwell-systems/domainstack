@@ -1,4 +1,4 @@
-# Validation Rules Reference (v0.5.0 Unreleased)
+# Validation Rules Reference
 
 **Complete reference for all 31 built-in validation rules in domainstack.**
 
@@ -12,7 +12,7 @@
 | **Numeric** | 8 | `range`, `min`, `max`, `positive`, `negative`, `multiple_of`, `finite`‡, `non_zero`‡ |
 | **Choice** | 3 | `equals`‡, `not_equals`‡, `one_of`‡ |
 | **Collection** | 3 | `min_items`‡, `max_items`‡, `unique`‡ |
-| **Total** | **31** | †Requires `regex` feature \| ‡New in v0.5 (unreleased) |
+| **Total** | **31** | †Requires `regex` feature |
 
 ---
 
@@ -96,9 +96,9 @@ assert!(!rule.apply("hello world!").is_empty()); // too long
 
 ---
 
-### Pattern Validation (NEW in v0.4)
+### Pattern Validation
 
-#### `url()` 🆕
+#### `url()`
 Validates HTTP/HTTPS URLs.
 
 ```rust
@@ -114,7 +114,7 @@ assert!(!rule.apply("example.com").is_empty());  // missing scheme
 
 ---
 
-#### `alphanumeric()` 🆕
+#### `alphanumeric()`
 Validates that a string contains only letters and numbers.
 
 ```rust
@@ -129,7 +129,7 @@ assert!(!rule.apply("user-name").is_empty());  // hyphen not allowed
 
 ---
 
-#### `alpha_only()` 🆕
+#### `alpha_only()`
 Validates that a string contains only alphabetic characters.
 
 ```rust
@@ -144,7 +144,7 @@ assert!(!rule.apply("Hello123").is_empty());  // numbers not allowed
 
 ---
 
-#### `numeric_string()` 🆕
+#### `numeric_string()`
 Validates that a string contains only numeric characters.
 
 ```rust
@@ -159,9 +159,9 @@ assert!(!rule.apply("12.34").is_empty());  // decimal not allowed
 
 ---
 
-### Substring Matching (NEW in v0.4)
+### Substring Matching
 
-#### `contains(substring: &'static str)` 🆕
+#### `contains(substring: &'static str)`
 Validates that a string contains the specified substring.
 
 ```rust
@@ -177,7 +177,7 @@ assert!(!rule.apply("user@other.com").is_empty());
 
 ---
 
-#### `starts_with(prefix: &'static str)` 🆕
+#### `starts_with(prefix: &'static str)`
 Validates that a string starts with the specified prefix.
 
 ```rust
@@ -193,7 +193,7 @@ assert!(!rule.apply("http://example.com").is_empty());
 
 ---
 
-#### `ends_with(suffix: &'static str)` 🆕
+#### `ends_with(suffix: &'static str)`
 Validates that a string ends with the specified suffix.
 
 ```rust
@@ -209,7 +209,7 @@ assert!(!rule.apply("example.org").is_empty());
 
 ---
 
-#### `matches_regex(pattern: &'static str)` 🆕 (requires `regex` feature)
+#### `matches_regex(pattern: &'static str)` (requires `regex` feature)
 Validates that a string matches the specified regex pattern.
 
 ```rust
@@ -229,9 +229,9 @@ Validates that a string matches the specified regex pattern.
 
 ---
 
-### String Semantics (NEW in v0.5)
+### String Semantics
 
-#### `non_blank()` 🆕
+#### `non_blank()`
 Validates that a string is not empty after trimming whitespace.
 
 ```rust
@@ -247,7 +247,7 @@ assert!(!rule.apply("").is_empty());           // empty
 
 ---
 
-#### `no_whitespace()` 🆕
+#### `no_whitespace()`
 Validates that a string contains no whitespace characters.
 
 ```rust
@@ -263,7 +263,7 @@ assert!(!rule.apply("user name").is_empty());  // contains space
 
 ---
 
-#### `ascii()` 🆕
+#### `ascii()`
 Validates that all characters are ASCII (0-127).
 
 ```rust
@@ -279,7 +279,7 @@ assert!(!rule.apply("Hello🚀").is_empty());   // contains emoji
 
 ---
 
-#### `len_chars(min: usize, max: usize)` 🆕
+#### `len_chars(min: usize, max: usize)`
 Validates character count (not byte count) - handles Unicode correctly.
 
 ```rust
@@ -350,9 +350,9 @@ assert!(!rule.apply(&101).is_empty());
 
 ---
 
-### Sign Validation (NEW in v0.4)
+### Sign Validation
 
-#### `positive<T>()` 🆕
+#### `positive<T>()`
 Validates that a numeric value is positive (greater than zero).
 
 ```rust
@@ -369,7 +369,7 @@ assert!(!rule.apply(&-1).is_empty());
 
 ---
 
-#### `negative<T>()` 🆕
+#### `negative<T>()`
 Validates that a numeric value is negative (less than zero).
 
 ```rust
@@ -386,9 +386,9 @@ assert!(!rule.apply(&1).is_empty());
 
 ---
 
-### Divisibility (NEW in v0.4)
+### Divisibility
 
-#### `multiple_of<T>(divisor: T)` 🆕
+#### `multiple_of<T>(divisor: T)`
 Validates that a numeric value is a multiple of the specified number.
 
 ```rust
@@ -406,9 +406,9 @@ assert!(!rule.apply(&7).is_empty());
 
 ---
 
-### Special Numeric Validation (NEW in v0.5)
+### Special Numeric Validation
 
-#### `finite<T>()` 🆕
+#### `finite<T>()`
 Validates that a floating-point value is finite (not NaN or infinity).
 
 ```rust
@@ -426,7 +426,7 @@ assert!(!rule.apply(&f64::INFINITY).is_empty());
 
 ---
 
-#### `non_zero<T>()` 🆕
+#### `non_zero<T>()`
 Validates that a value is not zero (uses `!= T::default()`).
 
 ```rust
@@ -442,7 +442,7 @@ assert!(!rule.apply(&0).is_empty());
 
 ---
 
-## Choice/Membership Rules (3 rules) 🆕
+## Choice/Membership Rules (3 rules)
 
 ### `equals<T>(expected: T)`
 Validates that a value equals the specified value.
@@ -497,7 +497,7 @@ assert!(!rule.apply(&"banned").is_empty());
 
 ---
 
-## Collection Rules (3 rules) 🆕
+## Collection Rules (3 rules)
 
 ### `min_items<T>(min: usize)`
 Validates that a collection has at least the minimum number of items.
@@ -593,31 +593,6 @@ let rule = rules::max_len(100).when(is_premium);
 
 // Only validates if is_premium() returns true
 ```
-
----
-
-## Migration Guide
-
-### From v0.3 to v0.4
-
-All existing rules remain unchanged. New rules added:
-
-**String Rules:**
-- `url()` - URL validation
-- `alphanumeric()` - Letters and numbers only
-- `alpha_only()` - Letters only
-- `numeric_string()` - Numbers only
-- `contains(substring)` - Substring matching
-- `starts_with(prefix)` - Prefix validation
-- `ends_with(suffix)` - Suffix validation
-- `matches_regex(pattern)` - Custom regex patterns (feature-gated)
-
-**Numeric Rules:**
-- `positive()` - Greater than zero
-- `negative()` - Less than zero
-- `multiple_of(divisor)` - Divisibility check
-
-**Breaking Changes:** None
 
 ---
 

@@ -184,9 +184,9 @@ async fn create_booking(Json(dto): Json<BookingDto>) -> Result<Json<Booking>, Er
 | Valid-by-construction aggregates | Yes (core goal) | No (not primary) | No |
 | Composable rule algebra (and/or/when) | Yes (core feature) | No / limited | Partial (predicate-based) |
 | Structured error paths for APIs | Yes | Partial (varies) | No |
-| Async validation w/ context | ✅ | No | No |
-| Type-state validation tracking | ✅ | No | Partial |
-| OpenAPI schema generation | ✅ | No | No |
+| Async validation w/ context | Yes | No | No |
+| Type-state validation tracking | Yes | No | Partial |
+| OpenAPI schema generation | Yes | No | No |
 | Error envelope integration | Yes (optional) | No | No |
 
 ### When to use domainstack

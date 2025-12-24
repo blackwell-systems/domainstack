@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 /// Represents a path to a field in a nested structure.
 ///
 /// Paths are used to identify which field caused a validation error in nested
@@ -22,30 +24,21 @@
 /// assert_eq!(path.to_string(), "items[0].name");
 /// ```
 ///
-/// # Memory Considerations
+/// # Memory Management
 ///
-/// This implementation uses `Box::leak()` in the `parse()` method to create `'static`
-/// references to field names. This is intentional - field names in validation paths need
-/// static lifetime because:
+/// Path uses `Arc<str>` for field names, providing:
+/// - **No memory leaks:** Reference counting ensures proper cleanup
+/// - **Efficient cloning:** Cloning a path is cheap (just incrementing reference counts)
+/// - **Shared ownership:** Multiple errors can reference the same field names
 ///
-/// 1. Paths can be stored in `ValidationError` which must be `'static`
-/// 2. Field names are typically known at compile time (from derive macro)
-/// 3. The number of unique field paths is bounded by your schema
-///
-/// **Memory Impact:** Each unique field name is leaked once when parsed from a string.
-/// For a typical application with ~100 domain types and ~10 fields each, this is
-/// ~1000 leaked strings (~50KB). This is negligible for server applications.
-///
-/// **When to worry:** If you're dynamically generating millions of unique field names
-/// at runtime using `Path::parse()`, this could accumulate memory. In that case, use
-/// the fluent API (`Path::root().field("name")`) which uses compile-time `&'static str`
-/// without leaking memory.
+/// Field names from compile-time literals (`"email"`) are converted to `Arc<str>`
+/// on first use and reference-counted thereafter.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Path(pub Vec<PathSegment>);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum PathSegment {
-    Field(&'static str),
+    Field(Arc<str>),
     Index(usize),
 }
 
@@ -77,8 +70,8 @@ impl Path {
     /// let nested = Path::root().field("user").field("email");
     /// assert_eq!(nested.to_string(), "user.email");
     /// ```
-    pub fn field(mut self, name: &'static str) -> Self {
-        self.0.push(PathSegment::Field(name));
+    pub fn field(mut self, name: impl Into<Arc<str>>) -> Self {
+        self.0.push(PathSegment::Field(name.into()));
         self
     }
 
@@ -102,9 +95,9 @@ impl Path {
 
     /// Parses a path from a string representation.
     ///
-    /// **Note:** This method uses `Box::leak()` to create `'static` references to field names.
-    /// See the [`Path`] documentation for memory considerations. Prefer using the fluent API
-    /// (`Path::root().field("name")`) when field names are known at compile time.
+    /// Uses `Arc<str>` for field names, ensuring proper memory management
+    /// without leaks. Field names are reference-counted and cleaned up
+    /// when no longer needed.
     ///
     /// # Examples
     ///
@@ -128,8 +121,8 @@ impl Path {
             match chars[i] {
                 '.' => {
                     if !current.is_empty() {
-                        segments.push(PathSegment::Field(Box::leak(
-                            current.clone().into_boxed_str(),
+                        segments.push(PathSegment::Field(Arc::from(
+                            current.as_str(),
                         )));
                         current.clear();
                     }
@@ -137,8 +130,8 @@ impl Path {
                 }
                 '[' => {
                     if !current.is_empty() {
-                        segments.push(PathSegment::Field(Box::leak(
-                            current.clone().into_boxed_str(),
+                        segments.push(PathSegment::Field(Arc::from(
+                            current.as_str(),
                         )));
                         current.clear();
                     }
@@ -164,7 +157,7 @@ impl Path {
         }
 
         if !current.is_empty() {
-            segments.push(PathSegment::Field(Box::leak(current.into_boxed_str())));
+            segments.push(PathSegment::Field(Arc::from(current.as_str())));
         }
 
         Path(segments)
@@ -190,7 +183,7 @@ impl core::fmt::Display for Path {
 
 impl From<&'static str> for Path {
     fn from(s: &'static str) -> Self {
-        Path(vec![PathSegment::Field(s)])
+        Path(vec![PathSegment::Field(Arc::from(s))])
     }
 }
 

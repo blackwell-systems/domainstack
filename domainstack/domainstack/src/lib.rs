@@ -7,12 +7,12 @@
 //! ```rust
 //! use domainstack::prelude::*;
 //!
-//! struct Email(String);
+//! struct Username(String);
 //!
-//! impl Email {
+//! impl Username {
 //!     pub fn new(raw: String) -> Result<Self, ValidationError> {
-//!         let rule = rules::email();
-//!         validate("email", raw.as_str(), &rule)?;
+//!         let rule = rules::min_len(3).and(rules::max_len(20));
+//!         validate("username", raw.as_str(), &rule)?;
 //!         Ok(Self(raw))
 //!     }
 //! }

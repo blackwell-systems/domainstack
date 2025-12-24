@@ -17,10 +17,10 @@ type RuleFn<T> = Arc<dyn Fn(&T, &RuleContext) -> ValidationError + Send + Sync>;
 /// ```
 /// use domainstack::prelude::*;
 ///
-/// let rule = rules::email();
-/// let ctx = RuleContext::root("email");
-/// assert!(rule.apply_with_context("user@example.com", &ctx).is_empty());
-/// assert!(!rule.apply_with_context("invalid", &ctx).is_empty());
+/// let rule = rules::min_len(3);
+/// let ctx = RuleContext::root("username");
+/// assert!(rule.apply_with_context("alice", &ctx).is_empty());
+/// assert!(!rule.apply_with_context("ab", &ctx).is_empty());
 /// ```
 ///
 /// ## Composing Rules
@@ -28,14 +28,14 @@ type RuleFn<T> = Arc<dyn Fn(&T, &RuleContext) -> ValidationError + Send + Sync>;
 /// ```
 /// use domainstack::prelude::*;
 ///
-/// // Email must be 5-255 characters
-/// let rule = rules::min_len(5)
-///     .and(rules::max_len(255))
-///     .and(rules::email());
+/// // Username must be 3-20 characters and alphanumeric
+/// let rule = rules::min_len(3)
+///     .and(rules::max_len(20))
+///     .and(rules::alphanumeric());
 ///
-/// let ctx = RuleContext::root("email");
-/// assert!(rule.apply_with_context("user@example.com", &ctx).is_empty());
-/// assert!(!rule.apply_with_context("a@b", &ctx).is_empty());  // too short
+/// let ctx = RuleContext::root("username");
+/// assert!(rule.apply_with_context("alice123", &ctx).is_empty());
+/// assert!(!rule.apply_with_context("ab", &ctx).is_empty());  // too short
 /// ```
 ///
 /// ## Custom Rules with Context

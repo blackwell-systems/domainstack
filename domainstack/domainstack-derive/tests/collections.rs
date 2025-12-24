@@ -155,10 +155,7 @@ fn test_each_email() {
     assert!(emails.validate().is_ok());
 
     let invalid = EmailList {
-        emails: vec![
-            "alice@example.com".to_string(),
-            "not-an-email".to_string(),
-        ],
+        emails: vec!["alice@example.com".to_string(), "not-an-email".to_string()],
     };
 
     let result = invalid.validate();

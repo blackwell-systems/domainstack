@@ -228,7 +228,10 @@ struct ApiCredentials {
 
     /// Service URL
     #[validate(url)]
-    #[schema(description = "Service endpoint URL", example = "https://api.example.com")]
+    #[schema(
+        description = "Service endpoint URL",
+        example = "https://api.example.com"
+    )]
     service_url: String,
 }
 

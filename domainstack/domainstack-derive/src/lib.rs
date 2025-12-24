@@ -296,7 +296,12 @@ fn parse_field_attributes(field: &Field) -> syn::Result<Vec<ValidationRule>> {
                     Ok(())
                 })?;
 
-                rules.push(ValidationRule::Length { min, max, code, message });
+                rules.push(ValidationRule::Length {
+                    min,
+                    max,
+                    code,
+                    message,
+                });
                 return Ok(());
             }
 
@@ -328,7 +333,12 @@ fn parse_field_attributes(field: &Field) -> syn::Result<Vec<ValidationRule>> {
                     Ok(())
                 })?;
 
-                rules.push(ValidationRule::Range { min, max, code, message });
+                rules.push(ValidationRule::Range {
+                    min,
+                    max,
+                    code,
+                    message,
+                });
                 return Ok(());
             }
 
@@ -419,7 +429,9 @@ fn parse_field_attributes(field: &Field) -> syn::Result<Vec<ValidationRule>> {
                         return Ok(());
                     }
                     if nested.path.is_ident("numeric_string") {
-                        rules.push(ValidationRule::Each(Box::new(ValidationRule::NumericString)));
+                        rules.push(ValidationRule::Each(Box::new(
+                            ValidationRule::NumericString,
+                        )));
                         return Ok(());
                     }
                     if nested.path.is_ident("non_empty") {
@@ -451,7 +463,9 @@ fn parse_field_attributes(field: &Field) -> syn::Result<Vec<ValidationRule>> {
                     if nested.path.is_ident("matches_regex") {
                         let value: syn::Lit = nested.value()?.parse()?;
                         if let syn::Lit::Str(lit_str) = value {
-                            rules.push(ValidationRule::Each(Box::new(ValidationRule::MatchesRegex(lit_str.value()))));
+                            rules.push(ValidationRule::Each(Box::new(
+                                ValidationRule::MatchesRegex(lit_str.value()),
+                            )));
                         }
                         return Ok(());
                     }
@@ -657,40 +671,84 @@ fn generate_field_validation(fv: &FieldValidation) -> proc_macro2::TokenStream {
             }
 
             // New rich syntax rules - String rules
-            ValidationRule::Email => generate_simple_string_rule(field_name, &field_name_str, "email"),
+            ValidationRule::Email => {
+                generate_simple_string_rule(field_name, &field_name_str, "email")
+            }
             ValidationRule::Url => generate_simple_string_rule(field_name, &field_name_str, "url"),
             ValidationRule::MinLen(min) => generate_min_len(field_name, &field_name_str, *min),
             ValidationRule::MaxLen(max) => generate_max_len(field_name, &field_name_str, *max),
-            ValidationRule::Alphanumeric => generate_simple_string_rule(field_name, &field_name_str, "alphanumeric"),
-            ValidationRule::Ascii => generate_simple_string_rule(field_name, &field_name_str, "ascii"),
-            ValidationRule::AlphaOnly => generate_simple_string_rule(field_name, &field_name_str, "alpha_only"),
-            ValidationRule::NumericString => generate_simple_string_rule(field_name, &field_name_str, "numeric_string"),
-            ValidationRule::NonEmpty => generate_simple_string_rule(field_name, &field_name_str, "non_empty"),
-            ValidationRule::NonBlank => generate_simple_string_rule(field_name, &field_name_str, "non_blank"),
-            ValidationRule::NoWhitespace => generate_simple_string_rule(field_name, &field_name_str, "no_whitespace"),
-            ValidationRule::Contains(substr) => generate_string_param_rule(field_name, &field_name_str, "contains", substr),
-            ValidationRule::StartsWith(prefix) => generate_string_param_rule(field_name, &field_name_str, "starts_with", prefix),
-            ValidationRule::EndsWith(suffix) => generate_string_param_rule(field_name, &field_name_str, "ends_with", suffix),
-            ValidationRule::MatchesRegex(pattern) => generate_matches_regex(field_name, &field_name_str, pattern),
+            ValidationRule::Alphanumeric => {
+                generate_simple_string_rule(field_name, &field_name_str, "alphanumeric")
+            }
+            ValidationRule::Ascii => {
+                generate_simple_string_rule(field_name, &field_name_str, "ascii")
+            }
+            ValidationRule::AlphaOnly => {
+                generate_simple_string_rule(field_name, &field_name_str, "alpha_only")
+            }
+            ValidationRule::NumericString => {
+                generate_simple_string_rule(field_name, &field_name_str, "numeric_string")
+            }
+            ValidationRule::NonEmpty => {
+                generate_simple_string_rule(field_name, &field_name_str, "non_empty")
+            }
+            ValidationRule::NonBlank => {
+                generate_simple_string_rule(field_name, &field_name_str, "non_blank")
+            }
+            ValidationRule::NoWhitespace => {
+                generate_simple_string_rule(field_name, &field_name_str, "no_whitespace")
+            }
+            ValidationRule::Contains(substr) => {
+                generate_string_param_rule(field_name, &field_name_str, "contains", substr)
+            }
+            ValidationRule::StartsWith(prefix) => {
+                generate_string_param_rule(field_name, &field_name_str, "starts_with", prefix)
+            }
+            ValidationRule::EndsWith(suffix) => {
+                generate_string_param_rule(field_name, &field_name_str, "ends_with", suffix)
+            }
+            ValidationRule::MatchesRegex(pattern) => {
+                generate_matches_regex(field_name, &field_name_str, pattern)
+            }
 
             // Numeric rules
             ValidationRule::Min(min) => generate_min_max(field_name, &field_name_str, "min", min),
             ValidationRule::Max(max) => generate_min_max(field_name, &field_name_str, "max", max),
-            ValidationRule::Positive => generate_simple_numeric_rule(field_name, &field_name_str, "positive"),
-            ValidationRule::Negative => generate_simple_numeric_rule(field_name, &field_name_str, "negative"),
-            ValidationRule::NonZero => generate_simple_numeric_rule(field_name, &field_name_str, "non_zero"),
-            ValidationRule::Finite => generate_simple_numeric_rule(field_name, &field_name_str, "finite"),
-            ValidationRule::MultipleOf(n) => generate_min_max(field_name, &field_name_str, "multiple_of", n),
+            ValidationRule::Positive => {
+                generate_simple_numeric_rule(field_name, &field_name_str, "positive")
+            }
+            ValidationRule::Negative => {
+                generate_simple_numeric_rule(field_name, &field_name_str, "negative")
+            }
+            ValidationRule::NonZero => {
+                generate_simple_numeric_rule(field_name, &field_name_str, "non_zero")
+            }
+            ValidationRule::Finite => {
+                generate_simple_numeric_rule(field_name, &field_name_str, "finite")
+            }
+            ValidationRule::MultipleOf(n) => {
+                generate_min_max(field_name, &field_name_str, "multiple_of", n)
+            }
 
             // Choice rules
-            ValidationRule::Equals(val) => generate_min_max(field_name, &field_name_str, "equals", val),
-            ValidationRule::NotEquals(val) => generate_min_max(field_name, &field_name_str, "not_equals", val),
+            ValidationRule::Equals(val) => {
+                generate_min_max(field_name, &field_name_str, "equals", val)
+            }
+            ValidationRule::NotEquals(val) => {
+                generate_min_max(field_name, &field_name_str, "not_equals", val)
+            }
             ValidationRule::OneOf(values) => generate_one_of(field_name, &field_name_str, values),
 
             // Collection rules
-            ValidationRule::MinItems(min) => generate_collection_rule(field_name, &field_name_str, "min_items", *min),
-            ValidationRule::MaxItems(max) => generate_collection_rule(field_name, &field_name_str, "max_items", *max),
-            ValidationRule::Unique => generate_simple_collection_rule(field_name, &field_name_str, "unique"),
+            ValidationRule::MinItems(min) => {
+                generate_collection_rule(field_name, &field_name_str, "min_items", *min)
+            }
+            ValidationRule::MaxItems(max) => {
+                generate_collection_rule(field_name, &field_name_str, "max_items", *max)
+            }
+            ValidationRule::Unique => {
+                generate_simple_collection_rule(field_name, &field_name_str, "unique")
+            }
         })
         .collect();
 
@@ -997,7 +1055,9 @@ fn generate_simple_string_rule(
     field_name_str: &str,
     rule_fn: &str,
 ) -> proc_macro2::TokenStream {
-    let rule_fn: proc_macro2::TokenStream = format!("domainstack::rules::{}()", rule_fn).parse().unwrap();
+    let rule_fn: proc_macro2::TokenStream = format!("domainstack::rules::{}()", rule_fn)
+        .parse()
+        .unwrap();
     quote! {
         {
             let rule = #rule_fn;
@@ -1044,7 +1104,10 @@ fn generate_string_param_rule(
     rule_fn: &str,
     param: &str,
 ) -> proc_macro2::TokenStream {
-    let rule_fn: proc_macro2::TokenStream = format!("domainstack::rules::{}(\"{}\")", rule_fn, param).parse().unwrap();
+    let rule_fn: proc_macro2::TokenStream =
+        format!("domainstack::rules::{}(\"{}\")", rule_fn, param)
+            .parse()
+            .unwrap();
     quote! {
         {
             let rule = #rule_fn;
@@ -1075,7 +1138,9 @@ fn generate_simple_numeric_rule(
     field_name_str: &str,
     rule_fn: &str,
 ) -> proc_macro2::TokenStream {
-    let rule_fn: proc_macro2::TokenStream = format!("domainstack::rules::{}()", rule_fn).parse().unwrap();
+    let rule_fn: proc_macro2::TokenStream = format!("domainstack::rules::{}()", rule_fn)
+        .parse()
+        .unwrap();
     quote! {
         {
             let rule = #rule_fn;
@@ -1092,7 +1157,9 @@ fn generate_min_max(
     rule_fn: &str,
     val: &proc_macro2::TokenStream,
 ) -> proc_macro2::TokenStream {
-    let rule_fn: proc_macro2::TokenStream = format!("domainstack::rules::{}({})", rule_fn, val).parse().unwrap();
+    let rule_fn: proc_macro2::TokenStream = format!("domainstack::rules::{}({})", rule_fn, val)
+        .parse()
+        .unwrap();
     quote! {
         {
             let rule = #rule_fn;
@@ -1125,7 +1192,9 @@ fn generate_collection_rule(
     rule_fn: &str,
     val: usize,
 ) -> proc_macro2::TokenStream {
-    let rule_fn: proc_macro2::TokenStream = format!("domainstack::rules::{}({})", rule_fn, val).parse().unwrap();
+    let rule_fn: proc_macro2::TokenStream = format!("domainstack::rules::{}({})", rule_fn, val)
+        .parse()
+        .unwrap();
     quote! {
         {
             let rule = #rule_fn;
@@ -1141,7 +1210,9 @@ fn generate_simple_collection_rule(
     field_name_str: &str,
     rule_fn: &str,
 ) -> proc_macro2::TokenStream {
-    let rule_fn: proc_macro2::TokenStream = format!("domainstack::rules::{}()", rule_fn).parse().unwrap();
+    let rule_fn: proc_macro2::TokenStream = format!("domainstack::rules::{}()", rule_fn)
+        .parse()
+        .unwrap();
     quote! {
         {
             let rule = #rule_fn;

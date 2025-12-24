@@ -1,10 +1,6 @@
 use domainstack::prelude::*;
 use domainstack_rocket::{DomainJson, ErrorResponse};
-use rocket::{
-    catch, catchers, get, post, routes,
-    serde::json::Json,
-    Request, State,
-};
+use rocket::{catch, catchers, get, post, routes, serde::json::Json, Request, State};
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
 use uuid::Uuid;
@@ -181,9 +177,7 @@ fn health() -> &'static str {
 fn validation_catcher(req: &Request) -> ErrorResponse {
     req.local_cache(|| None::<ErrorResponse>)
         .clone()
-        .unwrap_or_else(|| {
-            ErrorResponse(error_envelope::Error::bad_request("Bad Request"))
-        })
+        .unwrap_or_else(|| ErrorResponse(error_envelope::Error::bad_request("Bad Request")))
 }
 
 #[rocket::main]

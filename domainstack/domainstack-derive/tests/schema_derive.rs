@@ -21,7 +21,10 @@ fn test_simple_schema_derivation() {
 
     // Schema should be an object
     let json = serde_json::to_value(&schema).unwrap();
-    eprintln!("SimpleUser schema: {}", serde_json::to_string_pretty(&json).unwrap());
+    eprintln!(
+        "SimpleUser schema: {}",
+        serde_json::to_string_pretty(&json).unwrap()
+    );
     assert_eq!(json["type"], "object");
 
     // Should have email and age properties
@@ -31,7 +34,10 @@ fn test_simple_schema_derivation() {
     // Email should have format and maxLength
     assert_eq!(json["properties"]["email"]["type"], "string");
     assert_eq!(json["properties"]["email"]["format"], "email");
-    assert_eq!(json["properties"]["email"]["maxLength"].as_f64(), Some(255.0));
+    assert_eq!(
+        json["properties"]["email"]["maxLength"].as_f64(),
+        Some(255.0)
+    );
 
     // Age should have minimum and maximum
     assert_eq!(json["properties"]["age"]["type"], "integer");
@@ -63,8 +69,14 @@ fn test_optional_fields() {
 
     // Nickname property should still exist
     assert!(json["properties"]["nickname"].is_object());
-    assert_eq!(json["properties"]["nickname"]["minLength"].as_f64(), Some(1.0));
-    assert_eq!(json["properties"]["nickname"]["maxLength"].as_f64(), Some(100.0));
+    assert_eq!(
+        json["properties"]["nickname"]["minLength"].as_f64(),
+        Some(1.0)
+    );
+    assert_eq!(
+        json["properties"]["nickname"]["maxLength"].as_f64(),
+        Some(100.0)
+    );
 }
 
 // Test nested types
@@ -118,8 +130,14 @@ fn test_collections() {
 
     // Members should be an array
     assert_eq!(json["properties"]["members"]["type"], "array");
-    assert_eq!(json["properties"]["members"]["minItems"].as_f64(), Some(1.0));
-    assert_eq!(json["properties"]["members"]["maxItems"].as_f64(), Some(10.0));
+    assert_eq!(
+        json["properties"]["members"]["minItems"].as_f64(),
+        Some(1.0)
+    );
+    assert_eq!(
+        json["properties"]["members"]["maxItems"].as_f64(),
+        Some(10.0)
+    );
 }
 
 // Test schema hints
@@ -185,7 +203,10 @@ struct PatternTest {
 fn test_pattern_rules() {
     let schema = PatternTest::schema();
     let json = serde_json::to_value(&schema).unwrap();
-    eprintln!("PatternTest schema: {}", serde_json::to_string_pretty(&json).unwrap());
+    eprintln!(
+        "PatternTest schema: {}",
+        serde_json::to_string_pretty(&json).unwrap()
+    );
 
     // Alphanumeric should have pattern
     assert_eq!(json["properties"]["code"]["pattern"], "^[a-zA-Z0-9]*$");

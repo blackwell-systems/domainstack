@@ -1,6 +1,6 @@
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{Attribute, Data, DeriveInput, Fields, Lit, Meta, Type};
+use syn::{Attribute, Data, DeriveInput, Fields, Lit, Type};
 
 /// Derive implementation for ToSchema
 pub fn derive_to_schema_impl(input: DeriveInput) -> syn::Result<TokenStream> {
@@ -98,18 +98,27 @@ struct SchemaHints {
     read_only: bool,
     write_only: bool,
     pattern: Option<String>,
+    #[allow(dead_code)]
     min_length: Option<usize>,
+    #[allow(dead_code)]
     max_length: Option<usize>,
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 enum ValidationRule {
     Email,
     Url,
     MinLen(usize),
     MaxLen(usize),
-    Length { min: Option<usize>, max: Option<usize> },
-    LenChars { min: usize, max: usize },
+    Length {
+        min: Option<usize>,
+        max: Option<usize>,
+    },
+    LenChars {
+        min: usize,
+        max: usize,
+    },
     MatchesRegex(String),
     Ascii,
     Alphanumeric,
@@ -117,7 +126,10 @@ enum ValidationRule {
     NumericString,
     Min(TokenStream),
     Max(TokenStream),
-    Range { min: TokenStream, max: TokenStream },
+    Range {
+        min: TokenStream,
+        max: TokenStream,
+    },
     Positive,
     Negative,
     NonZero,
@@ -368,10 +380,7 @@ fn generate_field_schema(field: &FieldSchema) -> syn::Result<TokenStream> {
 }
 
 /// Generate base schema based on Rust type
-fn generate_base_schema_from_type(
-    ty: &Type,
-    rules: &[ValidationRule],
-) -> syn::Result<TokenStream> {
+fn generate_base_schema_from_type(ty: &Type, rules: &[ValidationRule]) -> syn::Result<TokenStream> {
     // Check if it's a nested type
     if rules.iter().any(|r| matches!(r, ValidationRule::Nested)) {
         return Ok(quote! {
@@ -430,10 +439,7 @@ fn generate_base_schema_from_type(
 }
 
 /// Apply validation rule constraints to schema
-fn apply_validation_constraints(
-    base: TokenStream,
-    rules: &[ValidationRule],
-) -> TokenStream {
+fn apply_validation_constraints(base: TokenStream, rules: &[ValidationRule]) -> TokenStream {
     let mut schema = base;
 
     for rule in rules {

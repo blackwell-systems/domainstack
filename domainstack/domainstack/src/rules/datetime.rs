@@ -121,9 +121,7 @@ pub fn before(limit: DateTime<Utc>) -> Rule<DateTime<Utc>> {
                 "not_before",
                 format!("Must be before {}", limit.to_rfc3339()),
             );
-            err.violations[0]
-                .meta
-                .insert("limit", limit.to_rfc3339());
+            err.violations[0].meta.insert("limit", limit.to_rfc3339());
             err
         }
     })
@@ -177,9 +175,7 @@ pub fn after(limit: DateTime<Utc>) -> Rule<DateTime<Utc>> {
                 "not_after",
                 format!("Must be after {}", limit.to_rfc3339()),
             );
-            err.violations[0]
-                .meta
-                .insert("limit", limit.to_rfc3339());
+            err.violations[0].meta.insert("limit", limit.to_rfc3339());
             err
         }
     })

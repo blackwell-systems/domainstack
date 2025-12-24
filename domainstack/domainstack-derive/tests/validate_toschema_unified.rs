@@ -1,7 +1,7 @@
 //! Test that Validate and ToSchema work together with unified rich syntax
 
 use domainstack::prelude::*;
-use domainstack_derive::{Validate, ToSchema};
+use domainstack_derive::{ToSchema, Validate};
 use domainstack_schema::ToSchema as ToSchemaTrait;
 use serde_json;
 
@@ -78,7 +78,10 @@ fn test_schema_generation_works() {
 
     // Email should have format and maxLength
     assert_eq!(json["properties"]["email"]["format"], "email");
-    assert_eq!(json["properties"]["email"]["maxLength"].as_f64(), Some(255.0));
+    assert_eq!(
+        json["properties"]["email"]["maxLength"].as_f64(),
+        Some(255.0)
+    );
 
     // Age should have minimum and maximum
     assert_eq!(json["properties"]["age"]["minimum"].as_f64(), Some(18.0));
@@ -86,11 +89,20 @@ fn test_schema_generation_works() {
 
     // Username should have pattern and length constraints
     assert_eq!(json["properties"]["username"]["pattern"], "^[a-zA-Z0-9]*$");
-    assert_eq!(json["properties"]["username"]["minLength"].as_f64(), Some(3.0));
-    assert_eq!(json["properties"]["username"]["maxLength"].as_f64(), Some(20.0));
+    assert_eq!(
+        json["properties"]["username"]["minLength"].as_f64(),
+        Some(3.0)
+    );
+    assert_eq!(
+        json["properties"]["username"]["maxLength"].as_f64(),
+        Some(20.0)
+    );
 
     // All fields required
-    assert_eq!(json["required"], serde_json::json!(["email", "age", "username"]));
+    assert_eq!(
+        json["required"],
+        serde_json::json!(["email", "age", "username"])
+    );
 }
 
 // Test with optional fields - simpler version without validation on Option
@@ -165,7 +177,10 @@ fn test_pattern_validations() {
     // Schema should have pattern constraints
     let schema = PatternTest::schema();
     let json = serde_json::to_value(&schema).unwrap();
-    assert_eq!(json["properties"]["alnum_field"]["pattern"], "^[a-zA-Z0-9]*$");
+    assert_eq!(
+        json["properties"]["alnum_field"]["pattern"],
+        "^[a-zA-Z0-9]*$"
+    );
     assert_eq!(json["properties"]["alpha_field"]["pattern"], "^[a-zA-Z]*$");
     assert_eq!(json["properties"]["numeric_field"]["pattern"], "^[0-9]*$");
 }
@@ -208,6 +223,12 @@ fn test_numeric_validations() {
     // Schema should have numeric constraints
     let schema = NumericTest::schema();
     let json = serde_json::to_value(&schema).unwrap();
-    assert_eq!(json["properties"]["percentage"]["minimum"].as_f64(), Some(0.0));
-    assert_eq!(json["properties"]["percentage"]["maximum"].as_f64(), Some(100.0));
+    assert_eq!(
+        json["properties"]["percentage"]["minimum"].as_f64(),
+        Some(0.0)
+    );
+    assert_eq!(
+        json["properties"]["percentage"]["maximum"].as_f64(),
+        Some(100.0)
+    );
 }

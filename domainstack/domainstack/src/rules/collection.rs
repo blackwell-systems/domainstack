@@ -185,7 +185,14 @@ pub fn non_empty_items() -> Rule<[String]> {
                 .insert("empty_count", count.to_string());
             err.violations[0].meta.insert(
                 "indices",
-                format!("[{}]", empty_indices.iter().map(|i| i.to_string()).collect::<Vec<_>>().join(", ")),
+                format!(
+                    "[{}]",
+                    empty_indices
+                        .iter()
+                        .map(|i| i.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                ),
             );
             err
         } else {
@@ -358,7 +365,12 @@ mod tests {
             .contains("1"));
 
         // Multiple empty strings
-        let tags = vec!["".to_string(), "tag2".to_string(), "".to_string(), "tag4".to_string()];
+        let tags = vec![
+            "".to_string(),
+            "tag2".to_string(),
+            "".to_string(),
+            "tag4".to_string(),
+        ];
         let result = rule.apply(&tags);
         assert!(!result.is_empty());
         assert_eq!(result.violations[0].meta.get("empty_count"), Some("2"));

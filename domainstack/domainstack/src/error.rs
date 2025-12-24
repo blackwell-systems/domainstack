@@ -71,9 +71,14 @@ impl ValidationError {
     pub fn merge_prefixed(&mut self, prefix: impl Into<Path>, other: ValidationError) {
         let prefix = prefix.into();
         for mut violation in other.violations {
-            let mut new_segments = prefix.0.clone();
-            new_segments.extend(violation.path.0);
-            violation.path = Path(new_segments);
+            let mut new_path = prefix.clone();
+            for seg in violation.path.segments() {
+                match seg {
+                    crate::PathSegment::Field(name) => new_path.push_field(name.clone()),
+                    crate::PathSegment::Index(idx) => new_path.push_index(*idx),
+                }
+            }
+            violation.path = new_path;
             self.violations.push(violation);
         }
     }
@@ -104,9 +109,14 @@ impl ValidationError {
             .violations
             .into_iter()
             .map(|mut v| {
-                let mut segments = prefix.0.clone();
-                segments.extend(v.path.0);
-                v.path = Path(segments);
+                let mut new_path = prefix.clone();
+                for seg in v.path.segments() {
+                    match seg {
+                        crate::PathSegment::Field(name) => new_path.push_field(name.clone()),
+                        crate::PathSegment::Index(idx) => new_path.push_index(*idx),
+                    }
+                }
+                v.path = new_path;
                 v
             })
             .collect();

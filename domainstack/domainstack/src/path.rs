@@ -34,7 +34,7 @@ use std::sync::Arc;
 /// Field names from compile-time literals (`"email"`) are converted to `Arc<str>`
 /// on first use and reference-counted thereafter.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Path(pub Vec<PathSegment>);
+pub struct Path(Vec<PathSegment>);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum PathSegment {
@@ -158,6 +158,51 @@ impl Path {
 
         Path(segments)
     }
+
+    /// Returns a slice of the path segments.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use domainstack::{Path, PathSegment};
+    ///
+    /// let path = Path::root().field("user").index(0).field("name");
+    /// assert_eq!(path.segments().len(), 3);
+    /// ```
+    pub fn segments(&self) -> &[PathSegment] {
+        &self.0
+    }
+
+    /// Pushes a field segment to the path.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use domainstack::Path;
+    ///
+    /// let mut path = Path::root();
+    /// path.push_field("email");
+    /// assert_eq!(path.to_string(), "email");
+    /// ```
+    pub fn push_field(&mut self, name: impl Into<Arc<str>>) {
+        self.0.push(PathSegment::Field(name.into()));
+    }
+
+    /// Pushes an index segment to the path.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use domainstack::Path;
+    ///
+    /// let mut path = Path::root();
+    /// path.push_field("items");
+    /// path.push_index(0);
+    /// assert_eq!(path.to_string(), "items[0]");
+    /// ```
+    pub fn push_index(&mut self, idx: usize) {
+        self.0.push(PathSegment::Index(idx));
+    }
 }
 
 impl core::fmt::Display for Path {
@@ -196,28 +241,28 @@ mod tests {
     #[test]
     fn test_root() {
         let path = Path::root();
-        assert!(path.0.is_empty());
+        assert!(path.segments().is_empty());
         assert_eq!(path.to_string(), "");
     }
 
     #[test]
     fn test_field() {
         let path = Path::root().field("email");
-        assert_eq!(path.0.len(), 1);
+        assert_eq!(path.segments().len(), 1);
         assert_eq!(path.to_string(), "email");
     }
 
     #[test]
     fn test_nested_field() {
         let path = Path::root().field("guest").field("email");
-        assert_eq!(path.0.len(), 2);
+        assert_eq!(path.segments().len(), 2);
         assert_eq!(path.to_string(), "guest.email");
     }
 
     #[test]
     fn test_index() {
         let path = Path::root().field("guests").index(0);
-        assert_eq!(path.0.len(), 2);
+        assert_eq!(path.segments().len(), 2);
         assert_eq!(path.to_string(), "guests[0]");
     }
 
@@ -234,7 +279,7 @@ mod tests {
     #[test]
     fn test_from_str() {
         let path = Path::from("email");
-        assert_eq!(path.0.len(), 1);
+        assert_eq!(path.segments().len(), 1);
         assert_eq!(path.to_string(), "email");
     }
 

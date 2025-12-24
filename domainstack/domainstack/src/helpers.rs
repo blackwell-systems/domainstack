@@ -7,13 +7,21 @@ pub fn validate<T: ?Sized + 'static>(
 ) -> Result<(), ValidationError> {
     let path = path.into();
     // Extract field name from path if it's a simple field
-    let field_name = path.0.last().and_then(|seg| match seg {
+    let field_name = path.segments().last().and_then(|seg| match seg {
         crate::PathSegment::Field(name) => Some(name.clone()),
         _ => None,
     });
 
-    let parent_path = if field_name.is_some() && path.0.len() > 1 {
-        Path(path.0[..path.0.len() - 1].to_vec())
+    let parent_path = if field_name.is_some() && path.segments().len() > 1 {
+        let segments = &path.segments()[..path.segments().len() - 1];
+        let mut parent = Path::root();
+        for seg in segments {
+            match seg {
+                crate::PathSegment::Field(name) => parent.push_field(name.clone()),
+                crate::PathSegment::Index(idx) => parent.push_index(*idx),
+            }
+        }
+        parent
     } else if field_name.is_some() {
         Path::root()
     } else {

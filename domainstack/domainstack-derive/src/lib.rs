@@ -338,12 +338,124 @@ fn parse_field_attributes(field: &Field) -> syn::Result<Vec<ValidationRule>> {
                 return Ok(());
             }
 
-            // each
+            // each - supports any validation rule
             if meta.path.is_ident("each") {
                 meta.parse_nested_meta(|nested| {
+                    // Handle nested
                     if nested.path.is_ident("nested") {
                         rules.push(ValidationRule::Each(Box::new(ValidationRule::Nested)));
+                        return Ok(());
                     }
+
+                    // Handle length
+                    if nested.path.is_ident("length") {
+                        let mut min = None;
+                        let mut max = None;
+                        nested.parse_nested_meta(|inner| {
+                            if inner.path.is_ident("min") {
+                                let value: syn::Lit = inner.value()?.parse()?;
+                                if let syn::Lit::Int(lit_int) = value {
+                                    min = Some(lit_int.base10_parse()?);
+                                }
+                            } else if inner.path.is_ident("max") {
+                                let value: syn::Lit = inner.value()?.parse()?;
+                                if let syn::Lit::Int(lit_int) = value {
+                                    max = Some(lit_int.base10_parse()?);
+                                }
+                            }
+                            Ok(())
+                        })?;
+                        rules.push(ValidationRule::Each(Box::new(ValidationRule::Length {
+                            min,
+                            max,
+                            code: None,
+                            message: None,
+                        })));
+                        return Ok(());
+                    }
+
+                    // Handle range
+                    if nested.path.is_ident("range") {
+                        let mut min = None;
+                        let mut max = None;
+                        nested.parse_nested_meta(|inner| {
+                            if inner.path.is_ident("min") {
+                                let value: syn::Expr = inner.value()?.parse()?;
+                                min = Some(quote! { #value });
+                            } else if inner.path.is_ident("max") {
+                                let value: syn::Expr = inner.value()?.parse()?;
+                                max = Some(quote! { #value });
+                            }
+                            Ok(())
+                        })?;
+                        rules.push(ValidationRule::Each(Box::new(ValidationRule::Range {
+                            min,
+                            max,
+                            code: None,
+                            message: None,
+                        })));
+                        return Ok(());
+                    }
+
+                    // Handle all simple string rules
+                    if nested.path.is_ident("email") {
+                        rules.push(ValidationRule::Each(Box::new(ValidationRule::Email)));
+                        return Ok(());
+                    }
+                    if nested.path.is_ident("url") {
+                        rules.push(ValidationRule::Each(Box::new(ValidationRule::Url)));
+                        return Ok(());
+                    }
+                    if nested.path.is_ident("alphanumeric") {
+                        rules.push(ValidationRule::Each(Box::new(ValidationRule::Alphanumeric)));
+                        return Ok(());
+                    }
+                    if nested.path.is_ident("ascii") {
+                        rules.push(ValidationRule::Each(Box::new(ValidationRule::Ascii)));
+                        return Ok(());
+                    }
+                    if nested.path.is_ident("alpha_only") {
+                        rules.push(ValidationRule::Each(Box::new(ValidationRule::AlphaOnly)));
+                        return Ok(());
+                    }
+                    if nested.path.is_ident("numeric_string") {
+                        rules.push(ValidationRule::Each(Box::new(ValidationRule::NumericString)));
+                        return Ok(());
+                    }
+                    if nested.path.is_ident("non_empty") {
+                        rules.push(ValidationRule::Each(Box::new(ValidationRule::NonEmpty)));
+                        return Ok(());
+                    }
+                    if nested.path.is_ident("non_blank") {
+                        rules.push(ValidationRule::Each(Box::new(ValidationRule::NonBlank)));
+                        return Ok(());
+                    }
+
+                    // Handle rules with parameters
+                    if nested.path.is_ident("min_len") {
+                        let value: syn::Lit = nested.value()?.parse()?;
+                        if let syn::Lit::Int(lit_int) = value {
+                            let val = lit_int.base10_parse()?;
+                            rules.push(ValidationRule::Each(Box::new(ValidationRule::MinLen(val))));
+                        }
+                        return Ok(());
+                    }
+                    if nested.path.is_ident("max_len") {
+                        let value: syn::Lit = nested.value()?.parse()?;
+                        if let syn::Lit::Int(lit_int) = value {
+                            let val = lit_int.base10_parse()?;
+                            rules.push(ValidationRule::Each(Box::new(ValidationRule::MaxLen(val))));
+                        }
+                        return Ok(());
+                    }
+                    if nested.path.is_ident("matches_regex") {
+                        let value: syn::Lit = nested.value()?.parse()?;
+                        if let syn::Lit::Str(lit_str) = value {
+                            rules.push(ValidationRule::Each(Box::new(ValidationRule::MatchesRegex(lit_str.value()))));
+                        }
+                        return Ok(());
+                    }
+
                     Ok(())
                 })?;
                 return Ok(());
@@ -712,6 +824,154 @@ fn generate_each_validation(
             }
             _ => quote! {},
         },
+
+        // New rich syntax rules - String rules (simple)
+        ValidationRule::Email => {
+            quote! {
+                {
+                    let rule = domainstack::rules::email();
+                    for (i, item) in self.#field_name.iter().enumerate() {
+                        let path = domainstack::Path::root().field(#field_name_str).index(i);
+                        if let Err(e) = domainstack::validate(path, item.as_str(), &rule) {
+                            err.extend(e);
+                        }
+                    }
+                }
+            }
+        }
+        ValidationRule::Url => {
+            quote! {
+                {
+                    let rule = domainstack::rules::url();
+                    for (i, item) in self.#field_name.iter().enumerate() {
+                        let path = domainstack::Path::root().field(#field_name_str).index(i);
+                        if let Err(e) = domainstack::validate(path, item.as_str(), &rule) {
+                            err.extend(e);
+                        }
+                    }
+                }
+            }
+        }
+        ValidationRule::Alphanumeric => {
+            quote! {
+                {
+                    let rule = domainstack::rules::alphanumeric();
+                    for (i, item) in self.#field_name.iter().enumerate() {
+                        let path = domainstack::Path::root().field(#field_name_str).index(i);
+                        if let Err(e) = domainstack::validate(path, item.as_str(), &rule) {
+                            err.extend(e);
+                        }
+                    }
+                }
+            }
+        }
+        ValidationRule::Ascii => {
+            quote! {
+                {
+                    let rule = domainstack::rules::ascii();
+                    for (i, item) in self.#field_name.iter().enumerate() {
+                        let path = domainstack::Path::root().field(#field_name_str).index(i);
+                        if let Err(e) = domainstack::validate(path, item.as_str(), &rule) {
+                            err.extend(e);
+                        }
+                    }
+                }
+            }
+        }
+        ValidationRule::AlphaOnly => {
+            quote! {
+                {
+                    let rule = domainstack::rules::alpha_only();
+                    for (i, item) in self.#field_name.iter().enumerate() {
+                        let path = domainstack::Path::root().field(#field_name_str).index(i);
+                        if let Err(e) = domainstack::validate(path, item.as_str(), &rule) {
+                            err.extend(e);
+                        }
+                    }
+                }
+            }
+        }
+        ValidationRule::NumericString => {
+            quote! {
+                {
+                    let rule = domainstack::rules::numeric_string();
+                    for (i, item) in self.#field_name.iter().enumerate() {
+                        let path = domainstack::Path::root().field(#field_name_str).index(i);
+                        if let Err(e) = domainstack::validate(path, item.as_str(), &rule) {
+                            err.extend(e);
+                        }
+                    }
+                }
+            }
+        }
+        ValidationRule::NonEmpty => {
+            quote! {
+                {
+                    let rule = domainstack::rules::non_empty();
+                    for (i, item) in self.#field_name.iter().enumerate() {
+                        let path = domainstack::Path::root().field(#field_name_str).index(i);
+                        if let Err(e) = domainstack::validate(path, item.as_str(), &rule) {
+                            err.extend(e);
+                        }
+                    }
+                }
+            }
+        }
+        ValidationRule::NonBlank => {
+            quote! {
+                {
+                    let rule = domainstack::rules::non_blank();
+                    for (i, item) in self.#field_name.iter().enumerate() {
+                        let path = domainstack::Path::root().field(#field_name_str).index(i);
+                        if let Err(e) = domainstack::validate(path, item.as_str(), &rule) {
+                            err.extend(e);
+                        }
+                    }
+                }
+            }
+        }
+
+        // String rules with parameters
+        ValidationRule::MinLen(min) => {
+            quote! {
+                {
+                    let rule = domainstack::rules::min_len(#min);
+                    for (i, item) in self.#field_name.iter().enumerate() {
+                        let path = domainstack::Path::root().field(#field_name_str).index(i);
+                        if let Err(e) = domainstack::validate(path, item.as_str(), &rule) {
+                            err.extend(e);
+                        }
+                    }
+                }
+            }
+        }
+        ValidationRule::MaxLen(max) => {
+            quote! {
+                {
+                    let rule = domainstack::rules::max_len(#max);
+                    for (i, item) in self.#field_name.iter().enumerate() {
+                        let path = domainstack::Path::root().field(#field_name_str).index(i);
+                        if let Err(e) = domainstack::validate(path, item.as_str(), &rule) {
+                            err.extend(e);
+                        }
+                    }
+                }
+            }
+        }
+        ValidationRule::MatchesRegex(pattern) => {
+            quote! {
+                {
+                    let rule = domainstack::rules::matches_regex(#pattern);
+                    for (i, item) in self.#field_name.iter().enumerate() {
+                        let path = domainstack::Path::root().field(#field_name_str).index(i);
+                        if let Err(e) = domainstack::validate(path, item.as_str(), &rule) {
+                            err.extend(e);
+                        }
+                    }
+                }
+            }
+        }
+
         _ => quote! {},
     }
 }

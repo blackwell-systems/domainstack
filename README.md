@@ -197,7 +197,7 @@ async fn create_booking(Json(dto): Json<BookingDto>) -> Result<Json<Booking>, Er
 | **Integration** |
 | OpenAPI schema generation | Yes (auto-derive) | No | No |
 | Error envelope integration | Yes (optional) | No | No |
-| Framework adapters (Axum, Actix) | Yes | Varies by crate | No |
+| Framework adapters (Axum, Actix, Rocket) | Yes | Varies by crate | No |
 
 ### When to use domainstack
 

@@ -1,0 +1,27 @@
+[package]
+name = "domainstack-rocket"
+version = "0.4.0"
+edition = "2021"
+rust-version = "1.76"
+license = "Apache-2.0"
+authors = ["Dayna Blackwell <blackwellsystems@protonmail.com>"]
+description = "Rocket request guards for domainstack: DomainJson<T> with automatic validation and RFC 9457 error responses"
+repository = "https://github.com/blackwell-systems/domainstack"
+documentation = "https://docs.rs/domainstack-rocket"
+keywords = ["validation", "rocket", "guard", "api", "ddd"]
+categories = ["web-programming", "web-programming::http-server"]
+
+[dependencies]
+domainstack = { workspace = true }
+domainstack-http = { workspace = true }
+domainstack-envelope = { workspace = true }
+error-envelope = { workspace = true }
+rocket = { version = "0.5", features = ["json"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1"
+
+[dev-dependencies]
+domainstack = { workspace = true, features = ["derive", "regex"] }
+domainstack-derive = { workspace = true }
+rocket = { version = "0.5", features = ["json"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }

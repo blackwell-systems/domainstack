@@ -2,8 +2,11 @@
 
 This document describes how to publish domainstack crates to crates.io.
 
-## Publishable Crates (7 total)
+## Workspace Overview
 
+The workspace contains **10 members total**:
+
+**7 Publishable Crates:**
 1. **domainstack-derive** - Procedural macros (no workspace dependencies)
 2. **domainstack** - Core validation framework
 3. **domainstack-http** - HTTP integration utilities
@@ -12,9 +15,14 @@ This document describes how to publish domainstack crates to crates.io.
 6. **domainstack-axum** - Axum web framework integration
 7. **domainstack-actix** - Actix-web framework integration
 
+**3 Example Crates (not published):**
+8. **domainstack-examples** - Core validation examples
+9. **examples-axum** - Axum framework examples
+10. **examples-actix** - Actix-web framework examples
+
 **Note on versions:**
 - domainstack-schema is currently at v0.8.0 (newer crate)
-- Other crates will start at v1.0.0 for initial publication
+- Other publishable crates will start at v1.0.0 for initial publication
 
 ## First-Time Publishing
 

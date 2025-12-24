@@ -406,21 +406,21 @@ domainstack-actix = "1.0"   # For Actix-web framework
 
 ## Crates
 
-This repository contains ten crates:
+This repository contains **10 workspace members** (7 publishable crates, 3 example crates):
 
-**Core:**
+**Core (Publishable):**
 - **[domainstack](./domainstack/)** - Core validation library with composable rules
 - **[domainstack-derive](./domainstack/domainstack-derive/)** - Derive macro for `#[derive(Validate)]`
 - **[domainstack-envelope](./domainstack/domainstack-envelope/)** - error-envelope integration for HTTP APIs
 - **[domainstack-schema](./domainstack/domainstack-schema/)** - OpenAPI 3.0 schema generation (v0.7-v0.8)
 
-**Framework Adapters:**
+**Framework Adapters (Publishable):**
 - **[domainstack-http](./domainstack/domainstack-http/)** - Framework-agnostic HTTP helpers
 - **[domainstack-axum](./domainstack/domainstack-axum/)** - Axum extractor and response implementations
 - **[domainstack-actix](./domainstack/domainstack-actix/)** - Actix-web extractor and response implementations
 
-**Examples:**
-- **[examples](./domainstack/examples/)** - Core examples (v0.1-v0.3)
+**Examples (Not Published):**
+- **[domainstack-examples](./domainstack/domainstack-examples/)** - Core examples (v0.1-v0.6)
 - **[examples-axum](./domainstack/examples-axum/)** - Axum booking service example
 - **[examples-actix](./domainstack/examples-actix/)** - Actix-web booking service example
 

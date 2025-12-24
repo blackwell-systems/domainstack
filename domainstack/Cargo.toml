@@ -1,5 +1,5 @@
 [workspace]
-members = ["domainstack", "domainstack-derive", "domainstack-envelope", "domainstack-http", "domainstack-axum", "domainstack-actix", "examples", "examples-axum", "examples-actix", "domainstack-schema"]
+members = ["domainstack", "domainstack-derive", "domainstack-envelope", "domainstack-http", "domainstack-axum", "domainstack-actix", "domainstack-examples", "examples-axum", "examples-actix", "domainstack-schema"]
 resolver = "2"
 
 [workspace.dependencies]

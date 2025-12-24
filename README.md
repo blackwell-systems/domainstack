@@ -537,11 +537,11 @@ fn send_email(email: Email<Validated>) {
 **NEW**: Auto-generate OpenAPI 3.0 schemas directly from your validation rules—**zero duplication**:
 
 ```rust
-use domainstack_derive::ToSchema;
+use domainstack_derive::{Validate, ToSchema};
 use domainstack_schema::OpenApiBuilder;
 
-// Write validation rules ONCE, schema derives automatically
-#[derive(ToSchema)]
+// Write validation rules ONCE, get BOTH runtime validation AND OpenAPI schemas!
+#[derive(Validate, ToSchema)]
 #[schema(description = "User in the system")]
 struct User {
     #[validate(email)]

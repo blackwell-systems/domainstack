@@ -1,6 +1,10 @@
 # domainstack-derive
 
-Derive macro for the [domainstack](https://crates.io/crates/domainstack) validation framework.
+Derive macros for the [domainstack](https://crates.io/crates/domainstack) validation framework.
+
+Provides two derive macros that share the same unified rich syntax:
+- `#[derive(Validate)]` - Runtime validation
+- `#[derive(ToSchema)]` - OpenAPI schema generation
 
 ## Usage
 
@@ -9,9 +13,11 @@ Add this to your `Cargo.toml`:
 ```toml
 [dependencies]
 domainstack = { version = "1.0", features = ["derive"] }
+domainstack-derive = "1.0"  # For ToSchema
+domainstack-schema = "1.0"   # For schema generation
 ```
 
-Use the derive macro:
+### Validation Only
 
 ```rust
 use domainstack::Validate;
@@ -19,35 +25,117 @@ use domainstack::Validate;
 #[derive(Validate)]
 struct User {
     #[validate(email)]
+    #[validate(max_len = 255)]
     email: String,
 
     #[validate(range(min = 18, max = 120))]
     age: u8,
 
-    #[validate(length(min = 3, max = 50))]
+    #[validate(min_len = 3)]
+    #[validate(max_len = 50)]
     name: String,
 }
 ```
 
+### Validation + Schema Generation (Unified Syntax)
+
+**NEW**: Write validation rules ONCE, get BOTH runtime validation AND OpenAPI schemas:
+
+```rust
+use domainstack_derive::{Validate, ToSchema};
+
+#[derive(Validate, ToSchema)]
+struct User {
+    #[validate(email)]          // ✓ Works for both validation and schema
+    #[validate(max_len = 255)]
+    #[schema(description = "User's email", example = "alice@example.com")]
+    email: String,
+
+    #[validate(range(min = 18, max = 120))]
+    #[schema(description = "User's age")]
+    age: u8,
+
+    #[validate(min_len = 3)]
+    #[validate(max_len = 50)]
+    name: String,
+}
+
+// Runtime validation works
+user.validate()?;
+
+// Schema generation works
+let schema = User::schema();
+// → email: { type: "string", format: "email", maxLength: 255, ... }
+// → age: { type: "integer", minimum: 18, maximum: 120 }
+```
+
 ## Available Attributes
 
-**Field-level validation:**
-- `#[validate(rule)]` - Apply validation rule (e.g., `email`, `range`, `length`)
+### Validation Rules (Unified Rich Syntax)
+
+Both `Validate` and `ToSchema` support these validation rules:
+
+**String Rules:**
+- `#[validate(email)]` - Email format
+- `#[validate(url)]` - URL format
+- `#[validate(min_len = n)]` - Minimum length
+- `#[validate(max_len = n)]` - Maximum length
+- `#[validate(alphanumeric)]` - Alphanumeric only
+- `#[validate(ascii)]` - ASCII only
+- `#[validate(alpha_only)]` - Letters only
+- `#[validate(numeric_string)]` - Digits only
+- `#[validate(non_empty)]` - Not empty
+- `#[validate(non_blank)]` - Not blank (no whitespace)
+- `#[validate(matches_regex = "pattern")]` - Custom regex
+- Plus: `contains`, `starts_with`, `ends_with`, `no_whitespace`
+
+**Numeric Rules:**
+- `#[validate(range(min = a, max = b))]` - Range validation
+- `#[validate(positive)]` - Positive numbers
+- `#[validate(negative)]` - Negative numbers
+- `#[validate(non_zero)]` - Not zero
+- `#[validate(multiple_of = n)]` - Multiple of n
+- Plus: `min`, `max`, `finite`, `equals`, `not_equals`
+
+**Collection Rules:**
+- `#[validate(min_items = n)]` - Minimum items
+- `#[validate(max_items = n)]` - Maximum items
+- `#[validate(unique)]` - All items unique
+
+**Composite Rules:**
 - `#[validate(nested)]` - Validate nested struct
+- `#[validate(each(nested))]` - Validate each item in collection
 - `#[validate(custom = "function")]` - Custom validation function
-- `#[validate(each(rule))]` - Validate each item in a collection
 
-**Struct-level validation:**
-- `#[validate(check = "expression", code = "...", message = "...")]` - Cross-field validation
+**Legacy Syntax (Still Supported):**
+- `#[validate(length(min = a, max = b))]` - String length (prefer `min_len`/`max_len`)
 
-**Rule customization:**
+### Schema Hints
+
+For `ToSchema`, add documentation metadata:
+
 ```rust
+#[schema(description = "Field description")]
+#[schema(example = "example value")]
+#[schema(deprecated = true)]
+#[schema(read_only = true)]
+#[schema(write_only = true)]
+```
+
+### Struct-Level Validation
+
+```rust
+#[derive(Validate)]
 #[validate(
-    length(min = 8),
-    code = "weak_password",
-    message = "Password must be at least 8 characters"
+    check = "self.password == self.password_confirmation",
+    code = "passwords_mismatch",
+    message = "Passwords must match"
 )]
-password: String,
+struct RegisterForm {
+    #[validate(min_len = 8)]
+    password: String,
+    password_confirmation: String,
+}
 ```
 
 ## Documentation

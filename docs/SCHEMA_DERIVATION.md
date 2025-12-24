@@ -22,55 +22,58 @@ This guide explains how to automatically derive OpenAPI 3.0 schemas from your va
 
 ```rust
 use domainstack::prelude::*;
-use domainstack_schema::ToSchema;
+use domainstack_derive::{Validate, ToSchema};
+use domainstack_schema::OpenApiBuilder;
 
-// Before: Manual schema implementation
-#[derive(Validate)]
+// Write validation rules ONCE, get BOTH runtime validation AND OpenAPI schemas!
+#[derive(Validate, ToSchema)]
 struct User {
-    #[validate(email, max_len = 255)]
+    #[validate(email)]
+    #[validate(max_len = 255)]
+    #[schema(description = "User's email address", example = "alice@example.com")]
     email: String,
 
     #[validate(range(min = 18, max = 120))]
+    #[schema(description = "User's age")]
     age: u8,
 }
 
-impl ToSchema for User {
-    fn schema() -> Schema {
-        Schema::object()
-            .property("email", Schema::string().format("email").max_length(255))
-            .property("age", Schema::integer().minimum(18).maximum(120))
-            .required(&["email", "age"])
-    }
-}
+// Runtime validation works
+let user = User { email, age };
+user.validate()?;  // ✓ Validates email format, length, age range
 
-// After: Auto-derived schema
-#[derive(Validate, ToSchema)]  // ← Just add ToSchema!
-struct User {
-    #[validate(email, max_len = 255)]
-    email: String,
+// Schema generation works
+let schema = User::schema();
+// ✓ Automatically includes:
+//   - email: format="email", maxLength=255
+//   - age: minimum=18, maximum=120
+//   - required=["email", "age"]
 
-    #[validate(range(min = 18, max = 120))]
-    age: u8,
-}
-// Schema automatically generated from validation rules!
+// OpenAPI spec generation works
+let spec = OpenApiBuilder::new("My API", "1.0.0")
+    .register::<User>()
+    .build();
 ```
 
 ## The Problem: DRY Violation
 
-Without auto-derivation, you write validation constraints twice:
+Before unified syntax and auto-derivation, you had to write validation constraints **three times**:
 
-**1. Define validation rules:**
+**1. Define validation rules manually:**
 ```rust
-#[derive(Validate)]
 struct CreateUser {
-    #[validate(email, max_len = 255)]
     email: String,
-
-    #[validate(range(min = 18, max = 120))]
     age: u8,
-
-    #[validate(min_len = 2, max_len = 50)]
     name: String,
+}
+
+impl CreateUser {
+    fn new(email: String, age: u8, name: String) -> Result<Self, ValidationError> {
+        validate("email", &email, &rules::email().and(rules::max_len(255)))?;
+        validate("age", &age, &rules::range(18, 120))?;
+        validate("name", &name, &rules::min_len(2).and(rules::max_len(50)))?;
+        Ok(Self { email, age, name })
+    }
 }
 ```
 
@@ -94,19 +97,20 @@ impl ToSchema for CreateUser {
 ```
 
 **Problems:**
-- ❌ Write constraints twice
+- ❌ Write constraints twice (or three times with manual validation)
 - ❌ Can get out of sync (change validation, forget schema)
 - ❌ Lots of boilerplate
 - ❌ Error-prone
 
-## The Solution: Auto-Derivation
+## The Solution: Unified Syntax + Auto-Derivation
 
-With `#[derive(ToSchema)]`, you write validation rules **once**:
+With `#[derive(Validate, ToSchema)]` and unified rich syntax, you write validation rules **once** and get **both** runtime validation AND OpenAPI schemas:
 
 ```rust
 #[derive(Validate, ToSchema)]
 struct CreateUser {
-    #[validate(email, max_len = 255)]
+    #[validate(email)]
+    #[validate(max_len = 255)]
     #[schema(description = "User's email address", example = "alice@example.com")]
     email: String,
 
@@ -114,10 +118,17 @@ struct CreateUser {
     #[schema(description = "User's age in years")]
     age: u8,
 
-    #[validate(min_len = 2, max_len = 50)]
+    #[validate(min_len = 2)]
+    #[validate(max_len = 50)]
     #[schema(description = "User's full name")]
     name: String,
 }
+
+// ✓ Runtime validation works automatically
+let user = CreateUser::new(email, age, name)?;  // Validates all rules
+
+// ✓ Schema generation works automatically
+let schema = CreateUser::schema();  // Includes all constraints
 ```
 
 **Generated OpenAPI schema:**
@@ -222,13 +233,15 @@ Nested validation automatically includes referenced schemas:
 ```rust
 #[derive(Validate, ToSchema)]
 struct Email {
-    #[validate(email, max_len = 255)]
+    #[validate(email)]
+    #[validate(max_len = 255)]
     value: String,
 }
 
 #[derive(Validate, ToSchema)]
 struct Guest {
-    #[validate(min_len = 2, max_len = 50)]
+    #[validate(min_len = 2)]
+    #[validate(max_len = 50)]
     name: String,
 
     #[validate(nested)]  // ← Automatically references Email schema
@@ -314,7 +327,8 @@ Optional fields (using `Option<T>`) are not included in the `required` array:
 ```rust
 #[derive(Validate, ToSchema)]
 struct UpdateUser {
-    #[validate(email, max_len = 255)]
+    #[validate(email)]
+    #[validate(max_len = 255)]
     email: Option<String>,  // ← Optional, not in "required"
 
     #[validate(range(min = 18, max = 120))]
@@ -441,7 +455,8 @@ For complex cases, you can mix auto-derived schemas with manual enhancements:
     }"#
 )]
 struct UserRegistration {
-    #[validate(email, max_len = 255)]
+    #[validate(email)]
+    #[validate(max_len = 255)]
     #[schema(description = "Must be unique in the system")]
     email: String,
 
@@ -511,7 +526,8 @@ struct ConditionalForm {
 ```rust
 #[derive(Validate)]
 struct User {
-    #[validate(email, max_len = 255)]
+    #[validate(email)]
+    #[validate(max_len = 255)]
     email: String,
 
     #[validate(range(min = 18, max = 120))]
@@ -534,7 +550,8 @@ impl ToSchema for User {
 ```rust
 #[derive(Validate, ToSchema)]
 struct User {
-    #[validate(email, max_len = 255)]
+    #[validate(email)]
+    #[validate(max_len = 255)]
     email: String,
 
     #[validate(range(min = 18, max = 120))]
@@ -637,10 +654,12 @@ struct User {
 
 ```rust
 // This is fine:
-#[validate(min_len = 3, max_len = 20)]  // minLength: 3, maxLength: 20
+#[validate(min_len = 3)]
+#[validate(max_len = 20)]  // minLength: 3, maxLength: 20
 
 // This creates conflict:
-#[validate(email, matches_regex = "^custom$")]  // format: email AND pattern: ^custom$
+#[validate(email)]
+#[validate(matches_regex = "^custom$")]  // format: email AND pattern: ^custom$
 // Solution: Use one or the other, or combine with .or()
 ```
 
@@ -683,7 +702,8 @@ use axum::{Router, routing::post, Json};
 #[derive(Validate, ToSchema, Deserialize)]
 #[schema(description = "User registration request")]
 struct CreateUserRequest {
-    #[validate(email, max_len = 255)]
+    #[validate(email)]
+    #[validate(max_len = 255)]
     #[schema(description = "User's email address", example = "alice@example.com")]
     email: String,
 
@@ -691,7 +711,8 @@ struct CreateUserRequest {
     #[schema(description = "User's age (must be 18+)", example = 25)]
     age: u8,
 
-    #[validate(min_len = 2, max_len = 50)]
+    #[validate(min_len = 2)]
+    #[validate(max_len = 50)]
     #[schema(description = "User's full name", example = "Alice Johnson")]
     name: String,
 }

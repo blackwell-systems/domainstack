@@ -11,7 +11,8 @@ Allow users to write:
 ```rust
 #[derive(Validate, ToSchema)]
 struct User {
-    #[validate(email, max_len = 255)]
+    #[validate(email)]
+    #[validate(max_len = 255)]
     email: String,
 }
 ```
@@ -574,7 +575,8 @@ fn test_simple_struct_derivation() {
     let input = quote! {
         #[derive(Validate, ToSchema)]
         struct User {
-            #[validate(email, max_len = 255)]
+            #[validate(email)]
+            #[validate(max_len = 255)]
             email: String,
 
             #[validate(range(min = 18, max = 120))]

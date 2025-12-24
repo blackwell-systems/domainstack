@@ -11,18 +11,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Auto-Derived OpenAPI Schemas (domainstack-derive)
 
-**HEADLINE FEATURE: Zero-Duplication Schema Generation**
+**HEADLINE FEATURE: Unified Rich Syntax + Zero-Duplication Schema Generation**
 
-Write validation rules ONCE, get OpenAPI schemas automatically via `#[derive(ToSchema)]`:
+Write validation rules ONCE with `#[derive(Validate, ToSchema)]`, get BOTH runtime validation AND OpenAPI schemas automatically:
 
 ```rust
-use domainstack_derive::ToSchema;
+use domainstack_derive::{Validate, ToSchema};
 
-#[derive(ToSchema)]
+// Both macros now support the SAME rich validation syntax!
+#[derive(Validate, ToSchema)]
 #[schema(description = "User registration")]
 struct User {
-    #[validate(email)]
-    #[validate(max_len = 255)]
+    #[validate(email)]          // ✓ Works in both Validate and ToSchema
+    #[validate(max_len = 255)]   // ✓ Unified syntax
     #[schema(example = "user@example.com")]
     email: String,
 
@@ -34,7 +35,10 @@ struct User {
     nickname: Option<String>,
 }
 
-// Automatically generates:
+// Runtime validation works:
+user.validate()?;  // ✓ Validates email format, length, age range
+
+// Schema generation works:
 // - email: { type: "string", format: "email", maxLength: 255, ... }
 // - age: { type: "integer", minimum: 18, maximum: 120 }
 // - required: ["email", "age"]  (nickname excluded)

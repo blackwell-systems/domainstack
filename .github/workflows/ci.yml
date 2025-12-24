@@ -56,8 +56,8 @@ jobs:
       - name: Run tests (no default features)
         run: cargo test -p domainstack --no-default-features --verbose
 
-      - name: Run tests (with email feature)
-        run: cargo test -p domainstack --features email --verbose
+      - name: Run tests (with regex feature)
+        run: cargo test -p domainstack --features regex --verbose
 
       - name: Run tests (with derive feature)
         run: cargo test -p domainstack --features derive --verbose

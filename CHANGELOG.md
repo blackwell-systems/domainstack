@@ -9,6 +9,71 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### Auto-Derived OpenAPI Schemas (domainstack-derive)
+
+**HEADLINE FEATURE: Zero-Duplication Schema Generation**
+
+Write validation rules ONCE, get OpenAPI schemas automatically via `#[derive(ToSchema)]`:
+
+```rust
+use domainstack_derive::ToSchema;
+
+#[derive(ToSchema)]
+#[schema(description = "User registration")]
+struct User {
+    #[validate(email)]
+    #[validate(max_len = 255)]
+    #[schema(example = "user@example.com")]
+    email: String,
+
+    #[validate(range(min = 18, max = 120))]
+    age: u8,
+
+    // Optional fields excluded from required array
+    #[validate(min_len = 1)]
+    nickname: Option<String>,
+}
+
+// Automatically generates:
+// - email: { type: "string", format: "email", maxLength: 255, ... }
+// - age: { type: "integer", minimum: 18, maximum: 120 }
+// - required: ["email", "age"]  (nickname excluded)
+```
+
+**Automatic Rule → Schema Mappings:**
+- `email()` → `format: "email"`
+- `url()` → `format: "uri"`
+- `min_len(n)` / `max_len(n)` → `minLength` / `maxLength`
+- `range(min, max)` → `minimum` / `maximum`
+- `min_items(n)` / `max_items(n)` → `minItems` / `maxItems`
+- `unique()` → `uniqueItems: true`
+- `alphanumeric()` → `pattern: "^[a-zA-Z0-9]*$"`
+- `ascii()` → `pattern: "^[\x00-\x7F]*$"`
+- `Option<T>` → excluded from `required` array
+- `#[validate(nested)]` → `$ref: "#/components/schemas/TypeName"`
+- `Vec<T>` with `each_nested` → array with `$ref` items
+
+**Schema Hints via #[schema(...)]:**
+- `description` - Field/type descriptions
+- `example` - Example values for documentation
+- `deprecated` - Mark fields as deprecated
+- `read_only` / `write_only` - Request/response modifiers
+
+**Benefits:**
+- **Single source of truth** - Validation and documentation in sync
+- **Zero maintenance burden** - Change validation, docs update automatically
+- **Type-safe** - Compile-time guarantees for schema generation
+- **Comprehensive** - Handles nested types, collections, optional fields
+
+**Documentation:**
+- Complete guide: `/docs/SCHEMA_DERIVATION.md`
+- Implementation details: `/docs/SCHEMA_DERIVATION_IMPLEMENTATION.md`
+- Example: `domainstack-schema/examples/auto_derive.rs`
+- Test coverage: `domainstack-derive/tests/schema_derive.rs` (7 comprehensive tests)
+
+**Impact:**
+This feature eliminates the primary pain point of maintaining validation rules and OpenAPI schemas separately. The DRY principle now extends from validation to API documentation.
+
 #### Schema Composition
 
 **anyOf / allOf / oneOf Support:**

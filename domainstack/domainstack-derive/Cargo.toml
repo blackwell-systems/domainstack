@@ -26,3 +26,4 @@ schema = []
 trybuild = "1.0"
 domainstack = { workspace = true }
 domainstack-schema = { workspace = true }
+serde_json = "1.0"

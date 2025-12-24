@@ -265,6 +265,32 @@ fn parse_validation_attributes(attrs: &[Attribute]) -> syn::Result<Vec<Validatio
                 return Ok(());
             }
 
+            // Pattern rules
+            if meta.path.is_ident("alphanumeric") {
+                rules.push(ValidationRule::Alphanumeric);
+                return Ok(());
+            }
+
+            if meta.path.is_ident("ascii") {
+                rules.push(ValidationRule::Ascii);
+                return Ok(());
+            }
+
+            if meta.path.is_ident("alpha_only") {
+                rules.push(ValidationRule::AlphaOnly);
+                return Ok(());
+            }
+
+            if meta.path.is_ident("numeric_string") {
+                rules.push(ValidationRule::NumericString);
+                return Ok(());
+            }
+
+            if meta.path.is_ident("each_nested") {
+                rules.push(ValidationRule::EachNested);
+                return Ok(());
+            }
+
             // For now, skip other rules - we'll add them incrementally
             Ok(())
         })?;
@@ -360,8 +386,7 @@ fn generate_base_schema_from_type(
     {
         let inner_type = extract_vec_inner_type(ty)?;
         return Ok(quote! {
-            ::domainstack_schema::Schema::array()
-                .items(<#inner_type as ::domainstack_schema::ToSchema>::schema())
+            ::domainstack_schema::Schema::array(<#inner_type as ::domainstack_schema::ToSchema>::schema())
         });
     }
 
@@ -383,8 +408,11 @@ fn generate_base_schema_from_type(
             "f32" | "f64" => quote! { ::domainstack_schema::Schema::number() },
             "bool" => quote! { ::domainstack_schema::Schema::boolean() },
             "Vec" => {
-                // For Vec without nested, create basic array
-                quote! { ::domainstack_schema::Schema::array() }
+                // Extract inner type from Vec<T>
+                let inner_type = extract_vec_inner_type(ty)?;
+                // Determine the schema for inner type
+                let inner_schema = generate_base_schema_from_type(inner_type, &[])?;
+                quote! { ::domainstack_schema::Schema::array(#inner_schema) }
             }
             "Option" => {
                 // Extract inner type from Option<T>

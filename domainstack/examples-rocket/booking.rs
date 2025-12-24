@@ -177,7 +177,9 @@ fn health() -> &'static str {
 fn validation_catcher(req: &Request) -> ErrorResponse {
     req.local_cache(|| None::<ErrorResponse>)
         .clone()
-        .unwrap_or_else(|| ErrorResponse(error_envelope::Error::bad_request("Bad Request")))
+        .unwrap_or_else(|| {
+            ErrorResponse(Box::new(error_envelope::Error::bad_request("Bad Request")))
+        })
 }
 
 #[rocket::main]

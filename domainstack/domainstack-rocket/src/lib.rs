@@ -135,10 +135,10 @@ where
             data::Outcome::Success(Json(dto)) => dto,
             data::Outcome::Forward(f) => return data::Outcome::Forward(f),
             data::Outcome::Error((status, e)) => {
-                let err = ErrorResponse(error_envelope::Error::bad_request(format!(
+                let err = ErrorResponse(Box::new(error_envelope::Error::bad_request(format!(
                     "Invalid JSON: {}",
                     e
-                )));
+                ))));
                 // Store error in request-local state so catcher can access it
                 req.local_cache(|| Some(err.clone()));
                 return data::Outcome::Error((status, err));
@@ -149,7 +149,7 @@ where
         match domainstack_http::into_domain(dto) {
             Ok(domain) => data::Outcome::Success(DomainJson::new(domain)),
             Err(err) => {
-                let error_resp = ErrorResponse(err);
+                let error_resp = ErrorResponse(Box::new(err));
                 // Store error in request-local state so catcher can access it
                 req.local_cache(|| Some(error_resp.clone()));
                 data::Outcome::Error((Status::BadRequest, error_resp))
@@ -199,10 +199,10 @@ where
             data::Outcome::Success(Json(dto)) => dto,
             data::Outcome::Forward(f) => return data::Outcome::Forward(f),
             data::Outcome::Error((status, e)) => {
-                let err = ErrorResponse(error_envelope::Error::bad_request(format!(
+                let err = ErrorResponse(Box::new(error_envelope::Error::bad_request(format!(
                     "Invalid JSON: {}",
                     e
-                )));
+                ))));
                 req.local_cache(|| Some(err.clone()));
                 return data::Outcome::Error((status, err));
             }
@@ -212,7 +212,7 @@ where
         match domainstack_http::validate_dto(dto) {
             Ok(dto) => data::Outcome::Success(ValidatedJson(dto)),
             Err(err) => {
-                let error_resp = ErrorResponse(err);
+                let error_resp = ErrorResponse(Box::new(err));
                 req.local_cache(|| Some(error_resp.clone()));
                 data::Outcome::Error((Status::BadRequest, error_resp))
             }
@@ -256,18 +256,18 @@ where
 /// }
 /// ```
 #[derive(Debug, Clone)]
-pub struct ErrorResponse(pub error_envelope::Error);
+pub struct ErrorResponse(pub Box<error_envelope::Error>);
 
 impl From<error_envelope::Error> for ErrorResponse {
     fn from(err: error_envelope::Error) -> Self {
-        ErrorResponse(err)
+        ErrorResponse(Box::new(err))
     }
 }
 
 impl From<ValidationError> for ErrorResponse {
     fn from(err: ValidationError) -> Self {
         use domainstack_envelope::IntoEnvelopeError;
-        ErrorResponse(err.into_envelope_error())
+        ErrorResponse(Box::new(err.into_envelope_error()))
     }
 }
 
@@ -369,7 +369,9 @@ mod tests {
         // Extract the error from the request local cache if it exists
         req.local_cache(|| None::<ErrorResponse>)
             .clone()
-            .unwrap_or_else(|| ErrorResponse(error_envelope::Error::bad_request("Bad Request")))
+            .unwrap_or_else(|| {
+                ErrorResponse(Box::new(error_envelope::Error::bad_request("Bad Request")))
+            })
     }
 
     #[test]

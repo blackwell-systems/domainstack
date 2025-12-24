@@ -17,6 +17,7 @@ pub struct CreateBookingDto {
 pub struct Email(String);
 
 impl Email {
+    #[allow(clippy::result_large_err)]
     pub fn new(raw: String) -> Result<Self, ValidationError> {
         // Use Path::root() in primitives - caller will prefix with field name
         let rule = rules::min_len(5)

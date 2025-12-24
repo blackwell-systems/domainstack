@@ -795,6 +795,7 @@ name = "domainstack-schema"
 version = "0.8.0"
 dependencies = [
  "domainstack",
+ "domainstack-derive",
  "serde",
  "serde_json",
  "serde_yaml",

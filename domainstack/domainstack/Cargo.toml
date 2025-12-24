@@ -42,6 +42,8 @@ required-features = ["async"]
 
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
-sqlx = { version = "0.8", features = ["runtime-tokio", "sqlite"] }
+# Disable default features to avoid pulling in unnecessary database drivers (mysql, postgres)
+# which have vulnerable transitive dependencies (rsa crate in mysql driver)
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "sqlite"] }
 # Pin home to avoid edition2024 requirement
 home = "=0.5.9"

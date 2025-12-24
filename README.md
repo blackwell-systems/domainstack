@@ -743,39 +743,6 @@ Error paths include array indices for precise error tracking:
 - `tags[2]` - "Must be at most 50 characters"
 - `related_links[1]` - "Invalid URL format"
 
-### HTTP Integration
-
-```rust
-use domainstack_envelope::IntoEnvelopeError;
-
-async fn create_user(Json(user): Json<User>) -> Result<Json<User>, Error> {
-    user.validate()
-        .map_err(|e| e.into_envelope_error())?;  // One line!
-
-    // ... save user ...
-    Ok(Json(user))
-}
-```
-
-Error response with field-level details:
-
-```json
-{
-  "code": "VALIDATION",
-  "status": 400,
-  "details": {
-    "fields": {
-      "guest.email.value": [
-        {"code": "invalid_email", "message": "Invalid email format"}
-      ],
-      "rooms[1].adults": [
-        {"code": "out_of_range", "message": "Must be between 1 and 4"}
-      ]
-    }
-  }
-}
-```
-
 ## Running Examples
 
 <details>

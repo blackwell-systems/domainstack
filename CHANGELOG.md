@@ -67,6 +67,26 @@ let rule = rules::max_items(10);  // Limit to 10 items
 ### Changed
 
 #### Breaking Changes
+
+**Path API Encapsulation:**
+- Made `Path(Vec<PathSegment>)` private to prevent direct manipulation of internal structure
+- Added proper accessor methods:
+  - `segments()` - Returns `&[PathSegment]` for read-only access
+  - `push_field(name)` - Adds a field segment
+  - `push_index(idx)` - Adds an index segment
+- **Migration:** Replace direct field access with new methods:
+  ```rust
+  // Before (v0.4.x)
+  let len = path.0.len();
+  path.0.push(PathSegment::Field("name"));
+
+  // After (v1.0.0)
+  let len = path.segments().len();
+  path.push_field("name");
+  ```
+- **Benefits:** Better encapsulation, allows future implementation changes without breaking API
+
+**Regex Feature Requirement:**
 - `email()` and `url()` now require the `regex` feature (no fallback implementations)
   - **Migration:** Add `features = ["regex"]` to enable email/url validation
   - This ensures consistent, RFC-compliant validation

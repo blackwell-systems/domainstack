@@ -609,9 +609,11 @@ dependencies = [
 name = "domainstack"
 version = "0.4.0"
 dependencies = [
+ "async-trait",
  "domainstack-derive",
  "once_cell",
  "regex",
+ "tokio",
 ]
 
 [[package]]

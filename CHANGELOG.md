@@ -9,6 +9,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### Async Validation Support 🔥
+
+**New Feature: Asynchronous Validation**
+- `AsyncValidate` trait for types requiring async validation (database checks, external APIs)
+- `ValidationContext` for passing shared resources (database connections, HTTP clients, etc.)
+- `AsyncRule<T>` type for creating async validation rules
+- Full support for database uniqueness checks and external API validation
+
+**Example:**
+```rust
+use domainstack::{AsyncValidate, ValidationContext, ValidationError};
+use async_trait::async_trait;
+
+#[async_trait]
+impl AsyncValidate for User {
+    async fn validate_async(&self, ctx: &ValidationContext) -> Result<(), ValidationError> {
+        let db = ctx.get_resource::<Database>("db")?;
+
+        // Check email uniqueness in database
+        if db.email_exists(&self.email).await {
+            return Err(ValidationError::single(
+                Path::from("email"),
+                "email_taken",
+                "Email is already registered"
+            ));
+        }
+        Ok(())
+    }
+}
+```
+
+**Key Features:**
+- Zero-cost abstractions with `Arc` and `Pin<Box<Future>>`
+- Type-safe resource storage via `Any` trait
+- Compatible with any async runtime (tokio, async-std, smol)
+- Composable with sync validation - use both in same type
+- Thread-safe with `Send + Sync` bounds
+
+**Use Cases:**
+- Database uniqueness constraints (email, username, etc.)
+- External API validation (address validation, credit card checks)
+- Rate limiting checks
+- Cross-service validation in microservices
+- Any I/O-bound validation logic
+
+**Feature Flag:**
+- Enable with `features = ["async"]` in Cargo.toml
+- Adds `async-trait` dependency
+- Example: `cargo run --example async_validation --features async`
+
 #### 10 New Validation Rules (High Value Expansions)
 
 **String Semantics (4 rules):**
@@ -94,9 +144,10 @@ let rule = rules::max_items(10);  // Limit to 10 items
 ### Technical Details
 
 **Test Coverage:**
-- 131 unit tests (up from 98 - added 33 new tests)
-- 52 doctests (up from 42 - added 10 new doctests)
+- 143 unit tests (added 12 async validation tests: 9 unit + 3 integration)
+- 52 doctests (comprehensive API documentation)
 - 100% pass rate across all test suites
+- New async validation example with 5 usage scenarios
 
 **Code Quality:**
 - Zero clippy warnings

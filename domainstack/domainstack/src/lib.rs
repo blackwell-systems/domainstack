@@ -37,6 +37,9 @@ mod rule;
 mod validate;
 mod violation;
 
+#[cfg(feature = "async")]
+mod async_validate;
+
 pub mod prelude;
 pub mod rules;
 
@@ -47,6 +50,9 @@ pub use path::{Path, PathSegment};
 pub use rule::Rule;
 pub use validate::Validate;
 pub use violation::{Meta, Violation};
+
+#[cfg(feature = "async")]
+pub use async_validate::{AsyncRule, AsyncValidate, ValidationContext};
 
 #[cfg(feature = "derive")]
 pub use domainstack_derive::Validate;

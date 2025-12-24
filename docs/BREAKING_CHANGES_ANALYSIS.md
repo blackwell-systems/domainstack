@@ -71,39 +71,9 @@ let email = Email::new("user@example.com".to_string())?;
 
 ---
 
-### Category 2: Performance Optimizations
+### Category 2: Developer Experience
 
-#### 2.1 **SmallVec for Violations** 🔥
-
-**Current Problem:**
-```rust
-// Most errors have 1-3 violations, but we allocate Vec
-pub struct ValidationError {
-    pub violations: Vec<Violation>,
-}
-```
-
-**v1.0.0 Proposal:**
-```rust
-use smallvec::{SmallVec, smallvec};
-
-pub struct ValidationError {
-    pub violations: SmallVec<[Violation; 4]>,  // Stack-allocated for ≤4 violations
-}
-```
-
-**Benefits:**
-- No heap allocation for common case (1-3 errors)
-- Better cache locality
-- ~30% performance improvement for validation
-
-**Breaking Change:** Minimal - SmallVec has Vec-compatible API
-
----
-
-### Category 3: Developer Experience
-
-#### 3.1 **Schema Generation** 🔥🔥
+#### 2.1 **Schema Generation** 🔥🔥
 
 **Current Limitation:**
 ```rust
@@ -143,7 +113,6 @@ let schema = schema_for!(User);
 | Change | Impact | Complexity | User Demand | Priority | Status |
 |--------|--------|------------|-------------|----------|--------|
 | Schema generation | 🔥🔥 | High | Medium | **P1** | 📋 Planned |
-| SmallVec optimization | 🔥 | Low | Low | **P2** | 📋 Planned |
 | Const generics | 🔥 | Medium | Low | **P2** | 📋 Planned |
 
 ---
@@ -159,11 +128,7 @@ let schema = schema_for!(User);
 
 #### Medium Priority (P2)
 
-2. **SmallVec Optimization**
-   - Stack-allocated violations for common case
-   - Performance improvements
-
-3. **Const Generics**
+2. **Const Generics**
    - Type-level string length constraints
    - Better compile-time guarantees
 
@@ -193,7 +158,7 @@ let schema = schema_for!(User);
 - **Breaking:** None (new features)
 
 #### v0.9.0 - Optimizations & Deprecations
-- Performance optimizations (SmallVec, etc.)
+- Performance optimizations
 - Deprecate old APIs if needed
 - **Breaking:** None (warnings only)
 

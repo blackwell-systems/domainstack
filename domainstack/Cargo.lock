@@ -675,6 +675,7 @@ dependencies = [
  "home",
  "once_cell",
  "regex",
+ "smallvec",
  "sqlx",
  "tokio",
 ]

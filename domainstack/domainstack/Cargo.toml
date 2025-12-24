@@ -12,6 +12,7 @@ keywords = ["validation", "domain", "ddd", "dto", "api"]
 categories = ["web-programming", "data-structures"]
 
 [dependencies]
+smallvec = { workspace = true }
 regex = { workspace = true, optional = true }
 once_cell = { workspace = true, optional = true }
 domainstack-derive = { workspace = true, optional = true }

@@ -1,6 +1,7 @@
 use crate::ValidationError;
 
 pub trait Validate {
+    #[allow(clippy::result_large_err)]
     fn validate(&self) -> Result<(), ValidationError>;
 }
 

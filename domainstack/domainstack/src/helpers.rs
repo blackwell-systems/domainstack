@@ -1,5 +1,6 @@
 use crate::{Path, Rule, RuleContext, ValidationError};
 
+#[allow(clippy::result_large_err)]
 pub fn validate<T: ?Sized + 'static>(
     path: impl Into<Path>,
     value: &T,

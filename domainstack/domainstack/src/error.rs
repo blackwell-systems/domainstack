@@ -1,4 +1,5 @@
 use crate::{Meta, Path, Violation};
+use smallvec::SmallVec;
 use std::collections::BTreeMap;
 
 /// Represents a collection of validation violations.
@@ -35,13 +36,13 @@ use std::collections::BTreeMap;
 /// ```
 #[derive(Debug, Clone, Default)]
 pub struct ValidationError {
-    pub violations: Vec<Violation>,
+    pub violations: SmallVec<[Violation; 4]>,
 }
 
 impl ValidationError {
     pub fn new() -> Self {
         Self {
-            violations: Vec::new(),
+            violations: SmallVec::new(),
         }
     }
 

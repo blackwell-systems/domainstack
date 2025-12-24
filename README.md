@@ -377,16 +377,16 @@ See [domainstack-axum](./domainstack/domainstack-axum/) and [domainstack-actix](
 ```toml
 [dependencies]
 # Core library only
-domainstack = "0.3"
+domainstack = "0.4"
 
 # With derive macro (recommended)
-domainstack = { version = "0.3", features = ["derive"] }
+domainstack = { version = "0.4", features = ["derive"] }
 
-# With email validation (adds regex dependency)
-domainstack = { version = "0.3", features = ["derive", "email"] }
+# With regex validation (adds regex dependency for email/URL/pattern matching)
+domainstack = { version = "0.4", features = ["derive", "regex"] }
 
 # Optional: HTTP error mapping
-domainstack-envelope = "0.3"
+domainstack-envelope = "0.4"
 
 # Optional: Framework adapters (v0.4+)
 domainstack-axum = "0.4"    # For Axum web framework
@@ -395,7 +395,7 @@ domainstack-actix = "0.4"   # For Actix-web framework
 
 ## Crates
 
-This repository contains seven crates:
+This repository contains nine crates:
 
 **Core:**
 - **[domainstack](./domainstack/)** - Core validation library with composable rules
@@ -439,12 +439,12 @@ This project has **multiple README files** for different audiences:
 ```rust
 use domainstack::prelude::*;
 
-struct Email(String);
+struct Username(String);
 
-impl Email {
+impl Username {
     pub fn new(raw: String) -> Result<Self, ValidationError> {
-        let rule = rules::email();
-        validate("email", raw.as_str(), &rule)?;
+        let rule = rules::min_len(3).and(rules::max_len(20));
+        validate("username", raw.as_str(), &rule)?;
         Ok(Self(raw))
     }
 }

@@ -232,6 +232,61 @@ struct ApiCredentials {
     service_url: String,
 }
 
+// ===================================
+// Collection Item Validation (each)
+// ===================================
+
+/// Article with validated primitive collections using each(rule)
+///
+/// This demonstrates the powerful each(rule) feature - ANY validation rule
+/// can be applied to items in a Vec<T>, not just nested types!
+#[derive(ToSchema)]
+#[schema(description = "Article with validated collections")]
+struct Article {
+    #[validate(min_len = 1)]
+    #[validate(max_len = 200)]
+    #[schema(description = "Article title", example = "Rust Best Practices")]
+    title: String,
+
+    /// Validate each email in the author list
+    /// Generates: items: { type: "string", format: "email" }
+    #[validate(each(email))]
+    #[validate(min_items = 1)]
+    #[validate(max_items = 5)]
+    #[schema(description = "Author email addresses")]
+    author_emails: Vec<String>,
+
+    /// Validate each tag's length (1-50 chars)
+    /// Generates: items: { type: "string", minLength: 1, maxLength: 50 }
+    #[validate(each(length(min = 1, max = 50)))]
+    #[schema(description = "Content tags")]
+    tags: Vec<String>,
+
+    /// Validate each URL format
+    /// Generates: items: { type: "string", format: "uri" }
+    #[validate(each(url))]
+    #[schema(description = "Related article links")]
+    related_links: Vec<String>,
+
+    /// Validate each keyword is alphanumeric
+    /// Generates: items: { type: "string", pattern: "^[a-zA-Z0-9]*$" }
+    #[validate(each(alphanumeric))]
+    #[schema(description = "SEO keywords")]
+    keywords: Vec<String>,
+
+    /// Validate each rating is in range 1-5
+    /// Generates: items: { type: "integer", minimum: 1, maximum: 5 }
+    #[validate(each(range(min = 1, max = 5)))]
+    #[schema(description = "User ratings (1-5 stars)")]
+    ratings: Vec<u8>,
+
+    /// Validate each view count is positive
+    /// Generates: items: { type: "integer", minimum: 0 }
+    #[validate(each(range(min = 0, max = 1000000)))]
+    #[schema(description = "Daily view counts")]
+    daily_views: Vec<u32>,
+}
+
 fn main() {
     // Build OpenAPI spec with all registered schemas
     let spec = OpenApiBuilder::new("Auto-Derive Example API", "1.0.0")
@@ -245,6 +300,7 @@ fn main() {
         .register::<CartItem>()
         .register::<ShoppingCart>()
         .register::<ApiCredentials>()
+        .register::<Article>()
         .build();
 
     // Output the OpenAPI spec as JSON
@@ -266,6 +322,7 @@ fn main() {
             println!("✓ Optional<T> → excluded from required array");
             println!("✓ Nested types → $ref to component schema");
             println!("✓ Vec<T> with each_nested → array with $ref items");
+            println!("✓ Vec<T> with each(rule) → array items with validation constraints");
             println!("✓ #[schema(...)] → descriptions and examples");
 
             println!("\n======================");
@@ -280,6 +337,7 @@ fn main() {
             println!("- CartItem: Nested product reference");
             println!("- ShoppingCart: Complex collection with constraints");
             println!("- ApiCredentials: Pattern validation (alphanumeric, ascii, url)");
+            println!("- Article: Collection item validation with each(rule)");
         }
         Err(e) => eprintln!("Error generating JSON: {}", e),
     }

@@ -621,6 +621,23 @@ See [domainstack-schema/OPENAPI_CAPABILITIES.md](./domainstack/domainstack-schem
 - Content: `alpha_only()`, `alphanumeric()`, `numeric_string()`, `ascii()`
 - Patterns: `contains()`, `starts_with()`, `ends_with()`, `non_blank()`, `no_whitespace()`
 
+**All rules work with `each(rule)` for collection validation:**
+
+```rust
+#[derive(Validate)]
+struct BlogPost {
+    #[validate(each(email))]        // Validate each email in list
+    author_emails: Vec<String>,
+
+    #[validate(each(url))]           // Validate each URL
+    related_links: Vec<String>,
+
+    #[validate(each(length(min = 1, max = 50)))]  // Validate tag length
+    tags: Vec<String>,
+}
+// Errors include array indices: tags[0], author_emails[1], etc.
+```
+
 **Numeric Rules (8):**
 - Comparison: `min()`, `max()`, `range()`
 - Sign: `positive()`, `negative()`, `non_zero()`
@@ -673,6 +690,42 @@ struct Booking {
     nights: u8,
 }
 ```
+
+### Collection Item Validation
+
+Validate each item in a collection with any validation rule:
+
+```rust
+#[derive(Debug, Validate)]
+struct BlogPost {
+    #[validate(min_len = 1)]
+    #[validate(max_len = 200)]
+    title: String,
+
+    // Validate each email in the list
+    #[validate(each(email))]
+    #[validate(min_items = 1)]
+    #[validate(max_items = 5)]
+    author_emails: Vec<String>,
+
+    // Validate each tag's length
+    #[validate(each(length(min = 1, max = 50)))]
+    tags: Vec<String>,
+
+    // Validate each URL format
+    #[validate(each(url))]
+    related_links: Vec<String>,
+
+    // Validate each keyword is alphanumeric
+    #[validate(each(alphanumeric))]
+    keywords: Vec<String>,
+}
+```
+
+Error paths include array indices for precise error tracking:
+- `author_emails[0]` - "Invalid email format"
+- `tags[2]` - "Must be at most 50 characters"
+- `related_links[1]` - "Invalid URL format"
 
 ### HTTP Integration
 

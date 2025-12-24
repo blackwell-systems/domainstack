@@ -282,7 +282,9 @@ struct Guest {
 
 ## Collections and Arrays
 
-Array validation with `#[validate(each(...))]`:
+### Nested Collections with `each(nested)`
+
+Array validation for nested types using `#[validate(each(nested))]`:
 
 ```rust
 #[derive(Validate, ToSchema)]
@@ -290,7 +292,9 @@ struct Team {
     #[validate(min_len = 1, max_len = 50)]
     team_name: String,
 
-    #[validate(each(nested), min_items = 1, max_items = 10)]
+    #[validate(each(nested))]
+    #[validate(min_items = 1)]
+    #[validate(max_items = 10)]
     members: Vec<User>,
 }
 ```
@@ -319,6 +323,115 @@ struct Team {
   }
 }
 ```
+
+### Primitive Collections with `each(rule)`
+
+**Any validation rule can be used with `each()` to validate items in primitive collections:**
+
+```rust
+#[derive(Validate, ToSchema)]
+#[schema(description = "Blog post with validated collections")]
+struct BlogPost {
+    #[validate(min_len = 1)]
+    #[validate(max_len = 200)]
+    #[schema(description = "Post title")]
+    title: String,
+
+    // Validate each email in the list
+    #[validate(each(email))]
+    #[validate(min_items = 1)]
+    #[validate(max_items = 5)]
+    #[schema(description = "Author email addresses")]
+    author_emails: Vec<String>,
+
+    // Validate each tag's length
+    #[validate(each(length(min = 1, max = 50)))]
+    #[schema(description = "Post tags")]
+    tags: Vec<String>,
+
+    // Validate each URL format
+    #[validate(each(url))]
+    #[schema(description = "Related links")]
+    related_links: Vec<String>,
+
+    // Validate each keyword is alphanumeric
+    #[validate(each(alphanumeric))]
+    #[schema(description = "SEO keywords")]
+    keywords: Vec<String>,
+
+    // Validate each rating is in range
+    #[validate(each(range(min = 1, max = 5)))]
+    #[schema(description = "User ratings")]
+    ratings: Vec<u8>,
+}
+```
+
+**Generated schema includes format and pattern constraints:**
+```json
+{
+  "BlogPost": {
+    "type": "object",
+    "description": "Blog post with validated collections",
+    "required": ["title", "author_emails", "tags", "related_links", "keywords", "ratings"],
+    "properties": {
+      "title": {
+        "type": "string",
+        "description": "Post title",
+        "minLength": 1,
+        "maxLength": 200
+      },
+      "author_emails": {
+        "type": "array",
+        "description": "Author email addresses",
+        "items": {
+          "type": "string",
+          "format": "email"
+        },
+        "minItems": 1,
+        "maxItems": 5
+      },
+      "tags": {
+        "type": "array",
+        "description": "Post tags",
+        "items": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 50
+        }
+      },
+      "related_links": {
+        "type": "array",
+        "description": "Related links",
+        "items": {
+          "type": "string",
+          "format": "uri"
+        }
+      },
+      "keywords": {
+        "type": "array",
+        "description": "SEO keywords",
+        "items": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9]*$"
+        }
+      },
+      "ratings": {
+        "type": "array",
+        "description": "User ratings",
+        "items": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        }
+      }
+    }
+  }
+}
+```
+
+**Error paths include array indices for precise tracking:**
+- Runtime validation errors: `author_emails[0]`, `tags[2]`, `ratings[1]`
+- OpenAPI documentation automatically reflects item-level constraints
 
 ## Optional Fields
 

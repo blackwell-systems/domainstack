@@ -200,17 +200,52 @@ struct Team {
 // Error paths: "members[0].name", "members[1].email.value"
 ```
 
-#### Primitive Collections
+#### Primitive Collections with `each(rule)`
+
+**Any validation rule can be used with `each()` to validate collection items:**
 
 ```rust
 #[derive(Validate)]
-struct Tags {
-    #[validate(each(length(min = 3, max = 20)))]
+struct BlogPost {
+    // Validate string length for each tag
+    #[validate(each(length(min = 1, max = 50)))]
     tags: Vec<String>,
+
+    // Validate each email format
+    #[validate(each(email))]
+    author_emails: Vec<String>,
+
+    // Validate each URL
+    #[validate(each(url))]
+    related_links: Vec<String>,
+
+    // Validate each keyword is alphanumeric
+    #[validate(each(alphanumeric))]
+    keywords: Vec<String>,
+
+    // Validate each rating is in range
+    #[validate(each(range(min = 1, max = 5)))]
+    ratings: Vec<u8>,
+
+    // Combine with collection-level rules
+    #[validate(each(min_len = 3))]
+    #[validate(min_items = 1)]
+    #[validate(max_items = 10)]
+    category_names: Vec<String>,
 }
 
-// Error paths: "tags[0]", "tags[1]"
+// Error paths include array indices:
+// - "tags[0]" - "Must be at least 1 character"
+// - "author_emails[2]" - "Invalid email format"
+// - "related_links[1]" - "Invalid URL format"
+// - "keywords[3]" - "Must be alphanumeric"
+// - "ratings[0]" - "Must be between 1 and 5"
 ```
+
+**Supported `each()` rules:**
+- String: `email`, `url`, `min_len`, `max_len`, `length`, `alphanumeric`, `ascii`, `alpha_only`, `numeric_string`, `non_empty`, `non_blank`, `no_whitespace`, `contains`, `starts_with`, `ends_with`, `matches_regex`
+- Numeric: `range`, `min`, `max`, `positive`, `negative`, `non_zero`, `finite`, `multiple_of`, `equals`, `not_equals`
+- Nested: `nested` (for complex types)
 
 ### Custom Validation
 

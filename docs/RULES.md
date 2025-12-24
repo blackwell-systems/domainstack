@@ -16,6 +16,50 @@
 
 ---
 
+## Collection Item Validation with `each(rule)`
+
+**All validation rules can be used with `each()` to validate items in collections (Vec<T>):**
+
+```rust
+use domainstack_derive::Validate;
+
+#[derive(Validate)]
+struct BlogPost {
+    // String rules with each()
+    #[validate(each(email))]
+    author_emails: Vec<String>,
+
+    #[validate(each(url))]
+    related_links: Vec<String>,
+
+    #[validate(each(alphanumeric))]
+    keywords: Vec<String>,
+
+    #[validate(each(length(min = 1, max = 50)))]
+    tags: Vec<String>,
+
+    // Numeric rules with each()
+    #[validate(each(range(min = 1, max = 5)))]
+    ratings: Vec<u8>,
+
+    #[validate(each(positive))]
+    amounts: Vec<i32>,
+
+    // Nested types with each()
+    #[validate(each(nested))]
+    comments: Vec<Comment>,
+}
+```
+
+**Error paths include array indices:**
+- `author_emails[0]` - "Invalid email format"
+- `tags[2]` - "Must be at most 50 characters"
+- `ratings[1]` - "Must be between 1 and 5"
+
+**Supported with `each()`:** All string rules, all numeric rules, all choice rules, and `nested` for complex types.
+
+---
+
 ## String Rules (17 rules)
 
 ### Core String Rules

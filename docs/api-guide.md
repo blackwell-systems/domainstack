@@ -247,6 +247,61 @@ struct BlogPost {
 - Numeric: `range`, `min`, `max`, `positive`, `negative`, `non_zero`, `finite`, `multiple_of`, `equals`, `not_equals`
 - Nested: `nested` (for complex types)
 
+#### Non-Empty Collection Items
+
+The `non_empty_items()` rule validates that all string items in a collection are non-empty:
+
+```rust
+use domainstack::prelude::*;
+
+// Manual validation
+let tag_rule = rules::min_items(1)
+    .and(rules::unique())
+    .and(rules::non_empty_items());
+
+let tags = vec!["rust".to_string(), "validation".to_string(), "domain".to_string()];
+validate("tags", &tags, &tag_rule)?;  // ✓ Valid
+
+// Invalid - contains empty string
+let invalid_tags = vec!["rust".to_string(), "".to_string(), "domain".to_string()];
+match validate("tags", &invalid_tags, &tag_rule) {
+    Ok(_) => {},
+    Err(e) => {
+        // Error: empty_item
+        // Meta: {"empty_count": "1", "indices": "[1]"}
+        println!("Found {} empty items at indices {}",
+            e.violations[0].meta.get("empty_count").unwrap(),
+            e.violations[0].meta.get("indices").unwrap());
+    }
+}
+
+// With derive macro
+#[derive(Validate)]
+struct Article {
+    #[validate(min_len = 1)]
+    #[validate(max_len = 200)]
+    title: String,
+
+    // Tags must exist, be unique, and all non-empty
+    #[validate(min_items = 1)]
+    #[validate(max_items = 20)]
+    #[validate(unique)]
+    #[validate(non_empty_items)]
+    tags: Vec<String>,
+
+    // Keywords must be non-empty and alphanumeric
+    #[validate(each(alphanumeric))]
+    #[validate(non_empty_items)]
+    keywords: Vec<String>,
+}
+```
+
+**Common use cases:**
+- Tags where empty strings are invalid
+- Category names
+- Keywords for search
+- User-provided lists
+
 ### Custom Validation
 
 ```rust
@@ -418,6 +473,185 @@ function displayErrors(response: ErrorResponse) {
       showErrorAtField(path, err.message);
     });
   }
+}
+```
+
+## Date/Time Validation
+
+**Requires `chrono` feature flag**
+
+Date and time validation is essential for domain modeling - user registration, event scheduling, deadlines, age verification, and temporal constraints.
+
+### Basic Temporal Validation
+
+```rust
+use domainstack::prelude::*;
+use chrono::{Utc, Duration, NaiveDate};
+
+// Birth dates must be in the past
+let birth_date_rule = rules::past();
+let birth_date = Utc::now() - Duration::days(365 * 25);  // 25 years ago
+validate("birth_date", &birth_date, &birth_date_rule)?;
+
+// Event dates must be in the future
+let event_rule = rules::future();
+let event_date = Utc::now() + Duration::days(30);  // 30 days from now
+validate("event_date", &event_date, &event_rule)?;
+```
+
+### Temporal Range Constraints
+
+```rust
+use chrono::NaiveDate;
+
+// Registration deadline - must be before cutoff
+let deadline = NaiveDate::from_ymd_opt(2025, 12, 31)
+    .unwrap()
+    .and_hms_opt(23, 59, 59)
+    .unwrap()
+    .and_utc();
+
+let before_rule = rules::before(deadline);
+validate("registration_date", &registration_date, &before_rule)?;
+
+// Event must be after start date
+let start_date = NaiveDate::from_ymd_opt(2025, 6, 1)
+    .unwrap()
+    .and_hms_opt(0, 0, 0)
+    .unwrap()
+    .and_utc();
+
+let after_rule = rules::after(start_date);
+validate("event_date", &event_date, &after_rule)?;
+```
+
+### Age Verification
+
+```rust
+use chrono::NaiveDate;
+
+// User must be 18-120 years old
+let age_rule = rules::age_range(18, 120);
+
+// Birth date for someone 25 years old
+let birth_date = NaiveDate::from_ymd_opt(Utc::now().year() - 25, 6, 15).unwrap();
+validate("birth_date", &birth_date, &age_rule)?;  // ✓ Valid
+
+// Too young
+let minor_birth_date = NaiveDate::from_ymd_opt(Utc::now().year() - 10, 6, 15).unwrap();
+let result = validate("birth_date", &minor_birth_date, &age_rule);
+// ✗ Error: age_out_of_range
+```
+
+### Temporal Window Validation
+
+```rust
+// Event must be within a specific window (30-60 days from now)
+let start = Utc::now() + Duration::days(30);
+let end = Utc::now() + Duration::days(60);
+
+let window_rule = rules::after(start).and(rules::before(end));
+
+let valid_event = Utc::now() + Duration::days(45);
+validate("event_date", &valid_event, &window_rule)?;  // ✓ Valid
+```
+
+### Domain Model with Date/Time
+
+```rust
+use domainstack::prelude::*;
+use chrono::{DateTime, Utc, NaiveDate};
+
+pub struct UserRegistration {
+    birth_date: NaiveDate,
+    registration_date: DateTime<Utc>,
+}
+
+impl UserRegistration {
+    pub fn new(birth_date: NaiveDate, registration_date: DateTime<Utc>)
+        -> Result<Self, ValidationError>
+    {
+        let mut err = ValidationError::new();
+
+        // Birth date must be in the past and age 18-120
+        let age_rule = rules::age_range(18, 120);
+        if let Err(e) = validate("birth_date", &birth_date, &age_rule) {
+            err.extend(e);
+        }
+
+        // Registration date must be in the past (already happened)
+        let past_rule = rules::past();
+        if let Err(e) = validate("registration_date", &registration_date, &past_rule) {
+            err.extend(e);
+        }
+
+        if !err.is_empty() {
+            return Err(err);
+        }
+
+        Ok(Self { birth_date, registration_date })
+    }
+}
+
+pub struct Event {
+    name: String,
+    start_date: DateTime<Utc>,
+    end_date: DateTime<Utc>,
+}
+
+impl Event {
+    pub fn new(name: String, start_date: DateTime<Utc>, end_date: DateTime<Utc>)
+        -> Result<Self, ValidationError>
+    {
+        let mut err = ValidationError::new();
+
+        // Start date must be in the future
+        let future_rule = rules::future();
+        if let Err(e) = validate("start_date", &start_date, &future_rule) {
+            err.extend(e);
+        }
+
+        // End date must be after start date
+        let after_start = rules::after(start_date);
+        if let Err(e) = validate("end_date", &end_date, &after_start) {
+            err.extend(e);
+        }
+
+        if !err.is_empty() {
+            return Err(err);
+        }
+
+        Ok(Self { name, start_date, end_date })
+    }
+}
+```
+
+### Error Handling for Date/Time
+
+```rust
+use chrono::{NaiveDate, Utc};
+
+let age_rule = rules::age_range(18, 120);
+let birth_date = NaiveDate::from_ymd_opt(Utc::now().year() - 10, 6, 15).unwrap();
+
+match validate("birth_date", &birth_date, &age_rule) {
+    Ok(_) => println!("Valid age"),
+    Err(e) => {
+        for v in &e.violations {
+            println!("Error at {}: {}", v.path, v.message);
+            // Access metadata
+            if let Some(age) = v.meta.get("age") {
+                println!("Actual age: {}", age);
+            }
+            if let Some(min) = v.meta.get("min") {
+                println!("Minimum age: {}", min);
+            }
+        }
+        // Output:
+        // Error at birth_date: Age must be between 18 and 120 years
+        // Actual age: 10
+        // Minimum age: 18
+    }
 }
 ```
 

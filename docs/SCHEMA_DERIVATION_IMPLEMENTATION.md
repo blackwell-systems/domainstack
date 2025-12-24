@@ -109,7 +109,8 @@ enum ValidationRuleKind {
     MinItems,
     MaxItems,
     Unique,
-    // ... all 31 rules
+    NonEmptyItems,
+    // ... all 37 rules (includes 5 date/time rules when chrono feature enabled)
 }
 
 struct SchemaHints {

@@ -7,7 +7,7 @@ A Rust validation framework for domain-driven design with derive macro support a
 This workspace provides a complete validation solution for building domain models in Rust. It consists of nine crates:
 
 **Core:**
-- **[domainstack](./domainstack/)** - Core validation library with 31 built-in rules
+- **[domainstack](./domainstack/)** - Core validation library with 37 built-in rules
 - **[domainstack-derive](./domainstack-derive/)** - Derive macro for `#[derive(Validate)]`
 - **[domainstack-envelope](./domainstack-envelope/)** - error-envelope integration for HTTP APIs
 
@@ -24,13 +24,13 @@ This workspace provides a complete validation solution for building domain model
 ## Features
 
 - **Valid-by-construction types** - Invalid states can't exist
-- **31 built-in rules** - String (17), Numeric (8), Choice (3), Collection (3)
+- **37 built-in rules** - String (17), Numeric (8), Choice (3), Collection (4), Date/Time (5)
 - **Derive macro support** - `#[derive(Validate)]` with powerful attributes
 - **Framework adapters** - One-line integration with Axum and Actix-web
 - **HTTP integration** - Structured error responses with error-envelope format
 - **Composable rules** - Combine validation logic with `and`, `or`, `when`
 - **Structured error paths** - Field-level error reporting (e.g., `guest.email`, `rooms[1].adults`)
-- **Zero core dependencies** - Core crate uses only std (regex optional for email/URL validation)
+- **Zero core dependencies** - Core crate uses only std (regex and chrono optional features)
 
 ## Quick Start
 
@@ -285,7 +285,7 @@ The error response includes field-level details:
 ## Documentation
 
 - [Core Library Documentation](./domainstack/README.md) - Detailed API documentation
-- [Rules Reference](../docs/RULES.md) - All 31 validation rules
+- [Rules Reference](../docs/RULES.md) - All 37 validation rules
 - [API Guide](../docs/api-guide.md) - Complete API usage guide
 - [Architecture](../docs/architecture.md) - System design and data flow
 - [Examples](./examples/) - Runnable code examples

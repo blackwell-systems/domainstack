@@ -31,8 +31,9 @@ That means:
 - **Composable rules** - Rules are reusable values, not just attributes
 - **Structured error paths** - `rooms[0].adults`, `guest.email.value`
 - **Clean boundary mapping** - Optional error-envelope integration for APIs
-- **Async validation** - Database uniqueness checks with context passing
-- **Type-state tracking** - Compile-time guarantees with phantom types
+- **Async validation** - Database uniqueness checks with context passing (v0.5)
+- **Type-state tracking** - Compile-time guarantees with phantom types (v0.6)
+- **OpenAPI schema generation** - Auto-generate API documentation from your types (v0.7-v0.8)
 
 ## Quick Start
 
@@ -183,8 +184,9 @@ async fn create_booking(Json(dto): Json<BookingDto>) -> Result<Json<Booking>, Er
 | Valid-by-construction aggregates | Yes (core goal) | No (not primary) | No |
 | Composable rule algebra (and/or/when) | Yes (core feature) | No / limited | Partial (predicate-based) |
 | Structured error paths for APIs | Yes | Partial (varies) | No |
-| Async validation w/ context | ✅ Yes | No | No |
-| Type-state validation tracking | ✅ Yes | No | Partial |
+| Async validation w/ context | ✅ v0.5 | No | No |
+| Type-state validation tracking | ✅ v0.6 | No | Partial |
+| OpenAPI schema generation | ✅ v0.7-v0.8 | No | No |
 | Error envelope integration | Yes (optional) | No | No |
 
 ### When to use domainstack
@@ -404,12 +406,13 @@ domainstack-actix = "1.0"   # For Actix-web framework
 
 ## Crates
 
-This repository contains nine crates:
+This repository contains ten crates:
 
 **Core:**
 - **[domainstack](./domainstack/)** - Core validation library with composable rules
 - **[domainstack-derive](./domainstack/domainstack-derive/)** - Derive macro for `#[derive(Validate)]`
 - **[domainstack-envelope](./domainstack/domainstack-envelope/)** - error-envelope integration for HTTP APIs
+- **[domainstack-schema](./domainstack/domainstack-schema/)** - OpenAPI 3.0 schema generation (v0.7-v0.8)
 
 **Framework Adapters:**
 - **[domainstack-http](./domainstack/domainstack-http/)** - Framework-agnostic HTTP helpers
@@ -528,6 +531,64 @@ fn send_email(email: Email<Validated>) {
 ```
 
 **Benefits:** Zero runtime cost, compile-time safety, self-documenting APIs.
+
+#### OpenAPI Schema Generation (v0.7-v0.8)
+
+Auto-generate OpenAPI 3.0 documentation from your domain types:
+
+```rust
+use domainstack_schema::{OpenApiBuilder, Schema, ToSchema};
+use serde_json::json;
+
+struct User {
+    email: String,
+    age: u8,
+    name: String,
+}
+
+impl ToSchema for User {
+    fn schema_name() -> &'static str { "User" }
+
+    fn schema() -> Schema {
+        Schema::object()
+            .property("email", Schema::string()
+                .format("email")
+                .example(json!("user@example.com")))
+            .property("age", Schema::integer()
+                .minimum(18)
+                .maximum(120))
+            .property("name", Schema::string()
+                .min_length(1)
+                .max_length(100))
+            .required(&["email", "age", "name"])
+    }
+}
+
+// Generate OpenAPI spec
+let spec = OpenApiBuilder::new("User API", "1.0.0")
+    .description("User management API")
+    .register::<User>()
+    .build();
+
+println!("{}", spec.to_json().unwrap());
+// → Complete OpenAPI 3.0 JSON with schemas, constraints, examples
+```
+
+**What you get:**
+- **Interactive docs** - Swagger UI, ReDoc, Postman collections
+- **Client generation** - TypeScript, Python, Java clients (via openapi-generator)
+- **Contract testing** - Frontend/backend validation agreement
+- **API gateway integration** - Kong, AWS API Gateway, Traefik
+- **Single source of truth** - Change Rust validation, docs update automatically
+
+**Features (v0.8):**
+- Schema composition (anyOf/allOf/oneOf)
+- Rich metadata (default, example, examples)
+- Request/response modifiers (readOnly, writeOnly, deprecated)
+- Vendor extensions for non-mappable validations
+- Type-safe fluent API
+
+See [domainstack-schema/OPENAPI_CAPABILITIES.md](./domainstack/domainstack-schema/OPENAPI_CAPABILITIES.md) for complete documentation.
 
 ### 31 Built-in Validation Rules
 
@@ -655,6 +716,11 @@ cargo run --example async_sqlite --features async
 
 # v0.6 examples (phantom types)
 cargo run --example phantom_types --features regex
+
+# v0.7-v0.8 examples (OpenAPI schema generation)
+cd domainstack-schema
+cargo run --example user_api
+cargo run --example v08_features
 
 # Framework examples
 cd examples-axum && cargo run    # Axum booking service

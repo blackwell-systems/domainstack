@@ -8,7 +8,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-domainstack = { version = "0.4", features = ["derive"] }
+domainstack = { version = "1.0", features = ["derive"] }
 ```
 
 Use the derive macro:

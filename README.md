@@ -380,26 +380,26 @@ See [domainstack-axum](./domainstack/domainstack-axum/) and [domainstack-actix](
 ```toml
 [dependencies]
 # Core library only
-domainstack = "0.4"
+domainstack = "1.0"
 
 # With derive macro (recommended)
-domainstack = { version = "0.4", features = ["derive"] }
+domainstack = { version = "1.0", features = ["derive"] }
 
 # With regex validation (adds regex dependency for email/URL/pattern matching)
-domainstack = { version = "0.4", features = ["derive", "regex"] }
+domainstack = { version = "1.0", features = ["derive", "regex"] }
 
 # With async validation (for database uniqueness checks, external APIs)
-domainstack = { version = "0.4", features = ["async"] }
+domainstack = { version = "1.0", features = ["async"] }
 
 # All features
-domainstack = { version = "0.4", features = ["derive", "regex", "async"] }
+domainstack = { version = "1.0", features = ["derive", "regex", "async"] }
 
 # Optional: HTTP error mapping
-domainstack-envelope = "0.4"
+domainstack-envelope = "1.0"
 
 # Optional: Framework adapters
-domainstack-axum = "0.4"    # For Axum web framework
-domainstack-actix = "0.4"   # For Actix-web framework
+domainstack-axum = "1.0"    # For Axum web framework
+domainstack-actix = "1.0"   # For Actix-web framework
 ```
 
 ## Crates

@@ -20,8 +20,8 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-domainstack = "0.4"
-domainstack-http = "0.4"
+domainstack = "1.0"
+domainstack-http = "1.0"
 ```
 
 ## Types

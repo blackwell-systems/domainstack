@@ -8,8 +8,8 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-domainstack = "0.4"
-domainstack-envelope = "0.4"
+domainstack = "1.0"
+domainstack-envelope = "1.0"
 ```
 
 Convert validation errors to error-envelope format:

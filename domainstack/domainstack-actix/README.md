@@ -40,8 +40,8 @@ async fn main() -> std::io::Result<()> {
 
 ```toml
 [dependencies]
-domainstack-actix = "0.4"
-domainstack = { version = "0.3", features = ["derive"] }
+domainstack-actix = "1.0"
+domainstack = { version = "1.0", features = ["derive"] }
 ```
 
 ## What You Get

@@ -32,13 +32,13 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-domainstack = "0.4"
+domainstack = "1.0"
 
 # Optional: enable regex-based validation (email, url, matches_regex)
-domainstack = { version = "0.4", features = ["regex"] }
+domainstack = { version = "1.0", features = ["regex"] }
 
 # Optional: enable derive macro
-domainstack = { version = "0.4", features = ["derive"] }
+domainstack = { version = "1.0", features = ["derive"] }
 ```
 
 ## Examples

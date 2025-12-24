@@ -84,20 +84,20 @@ Add to your `Cargo.toml`:
 ```toml
 [dependencies]
 # Core library only
-domainstack = "0.4"
+domainstack = "1.0"
 
 # With derive macro support (recommended)
-domainstack = { version = "0.4", features = ["derive"] }
+domainstack = { version = "1.0", features = ["derive"] }
 
 # With regex validation (email, URL, pattern matching)
-domainstack = { version = "0.4", features = ["derive", "regex"] }
+domainstack = { version = "1.0", features = ["derive", "regex"] }
 
 # With error-envelope integration for HTTP APIs
-domainstack-envelope = "0.4"
+domainstack-envelope = "1.0"
 
 # Framework adapters
-domainstack-axum = "0.4"    # For Axum
-domainstack-actix = "0.4"   # For Actix-web
+domainstack-axum = "1.0"    # For Axum
+domainstack-actix = "1.0"   # For Actix-web
 ```
 
 ## Built-in Rules

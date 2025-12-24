@@ -31,8 +31,8 @@ let app = Router::new().route("/users", post(create_user));
 
 ```toml
 [dependencies]
-domainstack-axum = "0.4"
-domainstack = { version = "0.3", features = ["derive"] }
+domainstack-axum = "1.0"
+domainstack = { version = "1.0", features = ["derive"] }
 ```
 
 ## What You Get

@@ -40,33 +40,34 @@ That means:
 ```rust
 use domainstack::prelude::*;
 use domainstack::Validate;
+use domainstack_derive::ToSchema;
 
 // Email with custom validation
-#[derive(Debug, Clone, Validate)]
+#[derive(Debug, Clone, Validate, ToSchema)]
 struct Email {
     #[validate(length(min = 5, max = 255))]
     value: String,
 }
 
 // Nested validation with automatic path prefixing
-#[derive(Debug, Validate)]
+#[derive(Debug, Validate, ToSchema)]
 struct User {
     #[validate(length(min = 2, max = 50))]
     name: String,
-    
+
     #[validate(range(min = 18, max = 120))]
     age: u8,
-    
+
     #[validate(nested)]  // Validates email, errors appear as "email.value"
     email: Email,
 }
 
 // Collection validation with array indices
-#[derive(Debug, Validate)]
+#[derive(Debug, Validate, ToSchema)]
 struct Team {
     #[validate(length(min = 1, max = 50))]
     team_name: String,
-    
+
     #[validate(each(nested))]  // Validates each member, errors like "members[0].name"
     members: Vec<User>,
 }
@@ -87,7 +88,7 @@ fn main() {
             },
         ],
     };
-    
+
     match team.validate() {
         Ok(_) => println!("✓ Team is valid"),
         Err(e) => {
@@ -100,6 +101,12 @@ fn main() {
             //   [members[1].age] out_of_range - Must be between 18 and 120
         }
     }
+
+    // Auto-generate OpenAPI schema from validation rules (zero duplication!)
+    let user_schema = User::schema();
+    // → name: { type: "string", minLength: 2, maxLength: 50 }
+    // → age: { type: "integer", minimum: 18, maximum: 120 }
+    // → email: { $ref: "#/components/schemas/Email" }
 }
 ```
 

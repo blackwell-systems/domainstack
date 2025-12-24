@@ -485,9 +485,10 @@ mod tests {
 
     #[test]
     fn test_domain_json_missing_fields() {
-        let rocket = rocket::build()
-            .mount("/", routes![create_user])
-            .register("/", catchers![bad_request_catcher, unprocessable_entity_catcher]);
+        let rocket = rocket::build().mount("/", routes![create_user]).register(
+            "/",
+            catchers![bad_request_catcher, unprocessable_entity_catcher],
+        );
         let client = Client::tracked(rocket).expect("valid rocket instance");
 
         // Missing email and age fields
@@ -554,9 +555,9 @@ mod tests {
     ) -> Result<Json<User>, ErrorResponse> {
         // Simulate some business logic that could fail
         if user.domain.age < 21 {
-            return Err(ErrorResponse(Box::new(
-                error_envelope::Error::bad_request("Must be 21 or older"),
-            )));
+            return Err(ErrorResponse(Box::new(error_envelope::Error::bad_request(
+                "Must be 21 or older",
+            ))));
         }
         Ok(Json(user.domain))
     }
@@ -591,9 +592,10 @@ mod tests {
 
     #[test]
     fn test_error_response_format() {
-        let rocket = rocket::build()
-            .mount("/", routes![create_user])
-            .register("/", catchers![bad_request_catcher, unprocessable_entity_catcher]);
+        let rocket = rocket::build().mount("/", routes![create_user]).register(
+            "/",
+            catchers![bad_request_catcher, unprocessable_entity_catcher],
+        );
         let client = Client::tracked(rocket).expect("valid rocket instance");
 
         let response = client

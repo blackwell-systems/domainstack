@@ -441,6 +441,121 @@ This project has **multiple README files** for different audiences:
 - **[Publishing Guide](./PUBLISHING.md)** - How to publish to crates.io
 - **[Coverage Guide](./COVERAGE.md)** - Running coverage locally
 
+## Key Features
+
+### 🎯 Core Capabilities
+
+- **31 Validation Rules** - String, numeric, collection validation out of the box
+- **Composable Rules** - Combine with `.and()`, `.or()`, `.when()` for complex logic
+- **Nested Validation** - Automatic path tracking for deeply nested structures
+- **Collection Validation** - Array indices in error paths (`items[0].field`)
+- **Builder Customization** - Customize error codes, messages, and metadata
+
+### 🔥 Advanced Features (v0.5+)
+
+#### Async Validation
+
+Perform database queries, API calls, and I/O operations in validation:
+
+```rust
+use domainstack::{AsyncValidate, ValidationContext, ValidationError};
+use async_trait::async_trait;
+
+#[async_trait]
+impl AsyncValidate for UserRegistration {
+    async fn validate_async(&self, ctx: &ValidationContext) -> Result<(), ValidationError> {
+        let db = ctx.get_resource::<Database>("db")?;
+
+        // Check email uniqueness in database
+        if db.email_exists(&self.email).await {
+            return Err(ValidationError::single(
+                Path::from("email"),
+                "email_taken",
+                "Email is already registered"
+            ));
+        }
+        Ok(())
+    }
+}
+```
+
+**Use cases:** Database uniqueness checks, external API validation, rate limiting, cross-service validation.
+
+#### Cross-Field Validation
+
+Validate relationships between multiple fields:
+
+```rust
+#[derive(Validate)]
+#[validate(
+    check = "self.password == self.password_confirmation",
+    code = "passwords_mismatch",
+    message = "Passwords must match"
+)]
+struct RegisterForm {
+    #[validate(length(min = 8))]
+    password: String,
+    password_confirmation: String,
+}
+```
+
+**Use cases:** Password confirmation, date ranges, mutually exclusive fields, conditional business rules.
+
+#### Type-State Validation (v0.6+)
+
+Compile-time guarantees with phantom types:
+
+```rust
+use domainstack::typestate::{Validated, Unvalidated};
+use std::marker::PhantomData;
+
+pub struct Email<State = Unvalidated> {
+    value: String,
+    _state: PhantomData<State>,
+}
+
+impl Email<Unvalidated> {
+    pub fn validate(self) -> Result<Email<Validated>, ValidationError> {
+        validate("email", self.value.as_str(), &rules::email())?;
+        Ok(Email { value: self.value, _state: PhantomData })
+    }
+}
+
+// Only accept validated emails!
+fn send_email(email: Email<Validated>) {
+    // Compiler GUARANTEES email is validated!
+}
+```
+
+**Benefits:** Zero runtime cost, compile-time safety, self-documenting APIs.
+
+### 📚 31 Built-in Validation Rules
+
+**String Rules (15):**
+- Length: `non_empty()`, `min_len()`, `max_len()`, `length()`, `len_chars()`
+- Format: `email()`, `url()`, `matches_regex()`
+- Content: `alpha_only()`, `alphanumeric()`, `numeric_string()`, `ascii()`
+- Patterns: `contains()`, `starts_with()`, `ends_with()`, `non_blank()`, `no_whitespace()`
+
+**Numeric Rules (9):**
+- Comparison: `min()`, `max()`, `range()`
+- Sign: `positive()`, `negative()`, `non_zero()`
+- Special: `finite()` (for floats), `multiple_of()`
+
+**Choice Rules (3):**
+- `equals()`, `not_equals()`, `one_of()`
+
+**Collection Rules (3):**
+- `min_items()`, `max_items()`, `unique()`
+
+**Combinators:**
+- `.and()` - Both rules must pass
+- `.or()` - Either rule must pass
+- `.when()` - Conditional validation
+- `.code()`, `.message()`, `.meta()` - Customize errors
+
+See [Rules Reference](./docs/RULES.md) for complete documentation and examples.
+
 ## Examples
 
 ### Basic Validation
@@ -466,10 +581,10 @@ impl Username {
 struct Booking {
     #[validate(nested)]
     guest: Guest,
-    
+
     #[validate(each(nested))]
     rooms: Vec<Room>,
-    
+
     #[validate(range(min = 1, max = 30))]
     nights: u8,
 }
@@ -483,7 +598,7 @@ use domainstack_envelope::IntoEnvelopeError;
 async fn create_user(Json(user): Json<User>) -> Result<Json<User>, Error> {
     user.validate()
         .map_err(|e| e.into_envelope_error())?;  // One line!
-    
+
     // ... save user ...
     Ok(Json(user))
 }
@@ -514,16 +629,36 @@ Error response with field-level details:
 cd domainstack
 
 # v0.1 examples (manual validation)
-cargo run --example email_primitive
-cargo run --example booking_aggregate
+cargo run --example email_primitive --features regex
+cargo run --example booking_aggregate --features regex
+cargo run --example age_primitive
 
 # v0.2 examples (derive macro)
 cargo run --example v2_basic
 cargo run --example v2_nested
+cargo run --example v2_collections
+cargo run --example v2_custom
 
 # v0.3 examples (HTTP integration)
 cargo run --example v3_error_envelope_basic
 cargo run --example v3_error_envelope_nested
+
+# v0.4 examples (builder customization)
+cargo run --example v4_builder_customization
+
+# v0.5 examples (cross-field validation)
+cargo run --example v5_cross_field_validation
+
+# v0.5 examples (async validation)
+cargo run --example async_validation --features async
+cargo run --example async_sqlite --features async
+
+# v0.6 examples (phantom types)
+cargo run --example phantom_types --features regex
+
+# Framework examples
+cd examples-axum && cargo run    # Axum booking service
+cd examples-actix && cargo run   # Actix-web booking service
 ```
 
 ## Testing
@@ -531,13 +666,16 @@ cargo run --example v3_error_envelope_nested
 ```bash
 cd domainstack
 
-# Run all tests (89 tests across all crates)
-cargo test --all
+# Run all tests (149 unit + doc tests across all crates)
+cargo test --all-features
 
 # Test specific crate
-cargo test -p domainstack
+cargo test -p domainstack --all-features
 cargo test -p domainstack-derive
 cargo test -p domainstack-envelope
+
+# Run with coverage
+cargo llvm-cov --all-features --workspace --html
 ```
 
 ## License

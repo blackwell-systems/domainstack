@@ -180,14 +180,24 @@ async fn create_booking(Json(dto): Json<BookingDto>) -> Result<Json<Booking>, Er
 
 | Capability / Focus | domainstack | validator / garde / validify | nutype |
 |-------------------|-------------|------------------------------|--------|
+| **Core Philosophy** |
 | Primary focus | Domain-first + boundary | DTO-first validation | Validated primitives |
 | Valid-by-construction aggregates | Yes (core goal) | No (not primary) | No |
+| Zero dependencies (core) | Yes | No (serde, regex, etc.) | Yes |
+| **Validation Features** |
+| Built-in validation rules | 37 (string, numeric, collection, date/time) | ~20-30 (varies) | Predicate-based |
 | Composable rule algebra (and/or/when) | Yes (core feature) | No / limited | Partial (predicate-based) |
+| Cross-field validation | Yes | Yes | No |
+| Collection validation (unique, min/max items) | Yes | Partial | No |
+| Date/time validation (past, future, age) | Yes (chrono feature) | Limited | No |
+| **Advanced Capabilities** |
 | Structured error paths for APIs | Yes | Partial (varies) | No |
 | Async validation w/ context | Yes | No | No |
 | Type-state validation tracking | Yes | No | Partial |
-| OpenAPI schema generation | Yes | No | No |
+| **Integration** |
+| OpenAPI schema generation | Yes (auto-derive) | No | No |
 | Error envelope integration | Yes (optional) | No | No |
+| Framework adapters (Axum, Actix) | Yes | Varies by crate | No |
 
 ### When to use domainstack
 

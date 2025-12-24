@@ -33,6 +33,13 @@ This document explores improvements that would be possible in a major version bu
    - **Fixed:** Feature flags unified under `regex` (removed `email` alias)
    - All improvements done without breaking changes!
 
+5. **✅ Extended Rule Library (Unreleased - v0.5.0)**
+   - **String Semantics (4 rules):** `non_blank()`, `no_whitespace()`, `ascii()`, `len_chars()`
+   - **Choice/Membership (3 rules):** `equals()`, `not_equals()`, `one_of()`
+   - **Collection Validation (3 rules):** `min_items()`, `max_items()`, `unique()`
+   - 10 high-value rules added with zero breaking changes!
+   - 131 unit tests + 52 doctests all passing
+
 ### Current Status
 
 **v0.4.0 Achievements:**
@@ -42,14 +49,20 @@ This document explores improvements that would be possible in a major version bu
 - Feature flag consistency ✅
 - Zero breaking changes ✅
 
-**v0.5.0 Achievements:**
+**v0.5.0 Achievements (Unreleased):**
 - Cross-field validation ✅
 - Conditional validation ✅
 - Password confirmation patterns ✅
 - Date range validation ✅
+- **Extended Rule Library (10 new rules):** ✅
+  - String semantics: `non_blank()`, `no_whitespace()`, `ascii()`, `len_chars()`
+  - Choice/membership: `equals()`, `not_equals()`, `one_of()`
+  - Collection validation: `min_items()`, `max_items()`, `unique()`
+- All 131 unit tests + 52 doctests passing ✅
 
 **What This Means:**
-- We've implemented 3 of the P0/P1 features WITHOUT breaking changes
+- We've implemented 4 of the P0/P1 features WITHOUT breaking changes
+- Extended the validation rule library with 10 high-value rules
 - The architecture is more flexible than initially thought
 - Breaking changes may not be needed for most desired features!
 
@@ -850,17 +863,26 @@ let schema = schema_for!(User);
 - ✅ Conditional validation (v0.5.0)
 - ✅ Better error context (built-in)
 - ✅ Rule system improvements (v0.4.0)
+- ✅ Extended rule library - 10 new validation rules (v0.5.0)
+  - String semantics: `non_blank()`, `no_whitespace()`, `ascii()`, `len_chars()`
+  - Choice/membership: `equals()`, `not_equals()`, `one_of()`
+  - Collection validation: `min_items()`, `max_items()`, `unique()`
 
 **All without breaking backward compatibility!** 🎉
 
 ### Revised Strategy
 
 1. **v0.4.0** - ✅ Done! Builder pattern, rule improvements, zero breaking changes
-2. **v0.5.0** - ✅ Done! Cross-field validation, conditional validation
-3. **v0.6.0** - Collection rules, choice/membership, string semantics
-4. **v0.7.0** - Async validation (new trait, no breaking changes)
+2. **v0.5.0** - ✅ Done! Cross-field validation, conditional validation, extended rule library (10 new rules)
+   - String semantics: `non_blank()`, `no_whitespace()`, `ascii()`, `len_chars()`
+   - Choice/membership: `equals()`, `not_equals()`, `one_of()`
+   - Collection validation: `min_items()`, `max_items()`, `unique()`
+3. **v0.6.0** - Async validation (new trait, no breaking changes)
+4. **v0.7.0** - Additional domain helpers and advanced features
 5. **v1.0.0** - Stabilize, maybe fix Box::leak() (only real breaking change needed)
 
 **Key Insight:** Most desired features can be added without breaking changes. The architecture is more flexible than initially thought. Breaking changes should be reserved for true architectural improvements (like Box::leak removal) that can't be done compatibly.
+
+**Achievement Unlocked:** We've added 10 high-value validation rules (string semantics, choice/membership, collection validation) in complexity order - all with zero breaking changes and comprehensive test coverage (131 unit tests + 52 doctests)!
 
 **The features are exciting, AND we kept user trust.**

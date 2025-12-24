@@ -37,6 +37,7 @@ impl Email<Unvalidated> {
     /// Validate the email and transition to validated state.
     ///
     /// Returns `Email<Validated>` on success, or `ValidationError` on failure.
+    #[allow(clippy::result_large_err)]
     pub fn validate(self) -> Result<Email<Validated>, ValidationError> {
         validate("email", self.value.as_str(), &rules::email())?;
         Ok(Email {
@@ -82,6 +83,7 @@ impl UserRegistration<Unvalidated> {
     /// Validate all fields and transition to validated state.
     ///
     /// Accumulates all validation errors across all fields.
+    #[allow(clippy::result_large_err)]
     pub fn validate(self) -> Result<UserRegistration<Validated>, ValidationError> {
         let mut errors = ValidationError::default();
 

@@ -33,3 +33,7 @@ path = "v3_error_envelope_basic.rs"
 [[example]]
 name = "v3_error_envelope_nested"
 path = "v3_error_envelope_nested.rs"
+
+[[example]]
+name = "v4_builder_customization"
+path = "v4_builder_customization.rs"

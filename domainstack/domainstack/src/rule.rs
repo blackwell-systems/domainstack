@@ -79,6 +79,77 @@ impl<T: ?Sized + 'static> Rule<T> {
         (self.inner)(value)
     }
 
+    /// Customize the error code for validation failures.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use domainstack::prelude::*;
+    ///
+    /// let rule = rules::min_len(5).code("email_too_short");
+    /// let err = rule.apply("hi");
+    /// assert_eq!(err.violations[0].code, "email_too_short");
+    /// ```
+    pub fn code(self, code: &'static str) -> Rule<T> {
+        Rule::new(move |value: &T| {
+            let mut err = self.apply(value);
+            for violation in &mut err.violations {
+                violation.code = code;
+            }
+            err
+        })
+    }
+
+    /// Customize the error message for validation failures.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use domainstack::prelude::*;
+    ///
+    /// let rule = rules::min_len(5).message("Email too short");
+    /// let err = rule.apply("hi");
+    /// assert_eq!(err.violations[0].message, "Email too short");
+    /// ```
+    pub fn message(self, msg: impl Into<String> + Clone + Send + Sync + 'static) -> Rule<T> {
+        Rule::new(move |value: &T| {
+            let mut err = self.apply(value);
+            let message = msg.clone().into();
+            for violation in &mut err.violations {
+                violation.message = message.clone();
+            }
+            err
+        })
+    }
+
+    /// Add metadata to validation errors.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use domainstack::prelude::*;
+    ///
+    /// let rule = rules::min_len(5)
+    ///     .meta("hint", "Use at least 5 characters");
+    ///
+    /// let err = rule.apply("hi");
+    /// assert_eq!(err.violations[0].meta.get("hint"), Some("Use at least 5 characters"));
+    /// ```
+    pub fn meta(
+        self,
+        key: &'static str,
+        value: impl Into<String> + Clone + Send + Sync + 'static,
+    ) -> Rule<T> {
+        Rule::new(move |val: &T| {
+            let mut err = self.apply(val);
+            let v = value.clone().into();
+            for violation in &mut err.violations {
+                violation.meta.insert(key, v.clone());
+            }
+            err
+        })
+    }
+
     pub fn and(self, other: Rule<T>) -> Rule<T> {
         Rule::new(move |value| {
             let mut err = self.apply(value);

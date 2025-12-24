@@ -25,22 +25,22 @@ This document provides a comprehensive reference of OpenAPI 3.0 features support
 
 | Component | Support Level | Notes |
 |-----------|--------------|-------|
-| **openapi** | ✅ Full | Fixed at "3.0.0" |
-| **info** | ✅ Partial | Title, version, description only |
-| **servers** | ❌ None | Out of scope |
-| **paths** | ❌ None | Out of scope - use framework adapters |
-| **components/schemas** | ✅ Full | **Core focus of this crate** |
-| **components/responses** | ❌ None | Out of scope |
-| **components/parameters** | ❌ None | Out of scope |
-| **components/examples** | ❌ None | Out of scope |
-| **components/requestBodies** | ❌ None | Out of scope |
-| **components/headers** | ❌ None | Out of scope |
-| **components/securitySchemes** | ❌ None | Out of scope |
-| **components/links** | ❌ None | Out of scope |
-| **components/callbacks** | ❌ None | Out of scope |
-| **security** | ❌ None | Out of scope |
-| **tags** | ❌ None | Out of scope |
-| **externalDocs** | ❌ None | Out of scope |
+| **openapi** | Full | Fixed at "3.0.0" |
+| **info** | Partial | Title, version, description only |
+| **servers** | None | Out of scope |
+| **paths** | None | Out of scope - use framework adapters |
+| **components/schemas** | Full | **Core focus of this crate** |
+| **components/responses** | None | Out of scope |
+| **components/parameters** | None | Out of scope |
+| **components/examples** | None | Out of scope |
+| **components/requestBodies** | None | Out of scope |
+| **components/headers** | None | Out of scope |
+| **components/securitySchemes** | None | Out of scope |
+| **components/links** | None | Out of scope |
+| **components/callbacks** | None | Out of scope |
+| **security** | None | Out of scope |
+| **tags** | None | Out of scope |
+| **externalDocs** | None | Out of scope |
 
 **Summary:** This crate focuses exclusively on **schema generation** (components/schemas). For full API documentation, integrate with framework-specific tools.
 
@@ -52,23 +52,23 @@ This document provides a comprehensive reference of OpenAPI 3.0 features support
 
 | Feature | Support | API | Example |
 |---------|---------|-----|---------|
-| **type: string** | ✅ Full | `Schema::string()` | Basic string type |
-| **type: number** | ✅ Full | `Schema::number()` | Floating point numbers |
-| **type: integer** | ✅ Full | `Schema::integer()` | Integer numbers |
-| **type: boolean** | ✅ Full | `Schema::boolean()` | Boolean values |
-| **type: array** | ✅ Full | `Schema::array(items)` | Arrays with item schema |
-| **type: object** | ✅ Full | `Schema::object()` | Objects with properties |
-| **type: null** | ⚠️ Partial | Use `Option<T>` | Via nullable in JSON |
+| **type: string** | Full | `Schema::string()` | Basic string type |
+| **type: number** | Full | `Schema::number()` | Floating point numbers |
+| **type: integer** | Full | `Schema::integer()` | Integer numbers |
+| **type: boolean** | Full | `Schema::boolean()` | Boolean values |
+| **type: array** | Full | `Schema::array(items)` | Arrays with item schema |
+| **type: object** | Full | `Schema::object()` | Objects with properties |
+| **type: null** | Partial | Use `Option<T>` | Via nullable in JSON |
 
 #### String Constraints
 
 | Constraint | Support | API | OpenAPI Field |
 |------------|---------|-----|---------------|
-| **minLength** | ✅ Full | `.min_length(n)` | `minLength` |
-| **maxLength** | ✅ Full | `.max_length(n)` | `maxLength` |
-| **pattern** | ✅ Full | `.pattern(regex)` | `pattern` |
-| **format** | ✅ Full | `.format(format)` | `format` |
-| **enum** | ✅ Full | `.enum_values(&[...])` | `enum` |
+| **minLength** | Full | `.min_length(n)` | `minLength` |
+| **maxLength** | Full | `.max_length(n)` | `maxLength` |
+| **pattern** | Full | `.pattern(regex)` | `pattern` |
+| **format** | Full | `.format(format)` | `format` |
+| **enum** | Full | `.enum_values(&[...])` | `enum` |
 
 **Supported formats:** `email`, `date`, `date-time`, `password`, `uuid`, `uri`, `hostname`, `ipv4`, `ipv6`, `byte`, `binary`, or custom.
 
@@ -76,11 +76,11 @@ This document provides a comprehensive reference of OpenAPI 3.0 features support
 
 | Constraint | Support | API | OpenAPI Field |
 |------------|---------|-----|---------------|
-| **minimum** | ✅ Full | `.minimum(n)` | `minimum` |
-| **maximum** | ✅ Full | `.maximum(n)` | `maximum` |
-| **exclusiveMinimum** | ❌ None | - | Not supported |
-| **exclusiveMaximum** | ❌ None | - | Not supported |
-| **multipleOf** | ✅ Full | `.multiple_of(n)` | `multipleOf` |
+| **minimum** | Full | `.minimum(n)` | `minimum` |
+| **maximum** | Full | `.maximum(n)` | `maximum` |
+| **exclusiveMinimum** | None | - | Not supported |
+| **exclusiveMaximum** | None | - | Not supported |
+| **multipleOf** | Full | `.multiple_of(n)` | `multipleOf` |
 
 **Workaround for exclusive:** Use `minimum(n + 1)` for integers, document in description.
 
@@ -88,56 +88,56 @@ This document provides a comprehensive reference of OpenAPI 3.0 features support
 
 | Constraint | Support | API | OpenAPI Field |
 |------------|---------|-----|---------------|
-| **items** | ✅ Full | `Schema::array(schema)` | `items` |
-| **minItems** | ✅ Full | `.min_items(n)` | `minItems` |
-| **maxItems** | ✅ Full | `.max_items(n)` | `maxItems` |
-| **uniqueItems** | ✅ Full | `.unique_items(true)` | `uniqueItems` |
-| **contains** | ❌ None | - | Not supported |
+| **items** | Full | `Schema::array(schema)` | `items` |
+| **minItems** | Full | `.min_items(n)` | `minItems` |
+| **maxItems** | Full | `.max_items(n)` | `maxItems` |
+| **uniqueItems** | Full | `.unique_items(true)` | `uniqueItems` |
+| **contains** | None | - | Not supported |
 
 #### Object Constraints
 
 | Constraint | Support | API | OpenAPI Field |
 |------------|---------|-----|---------------|
-| **properties** | ✅ Full | `.property(name, schema)` | `properties` |
-| **required** | ✅ Full | `.required(&[...])` | `required` |
-| **additionalProperties** | ⚠️ Partial | Manual JSON | Limited support |
-| **minProperties** | ❌ None | - | Not supported |
-| **maxProperties** | ❌ None | - | Not supported |
-| **propertyNames** | ❌ None | - | Not supported |
-| **patternProperties** | ❌ None | - | Not supported |
+| **properties** | Full | `.property(name, schema)` | `properties` |
+| **required** | Full | `.required(&[...])` | `required` |
+| **additionalProperties** | Partial | Manual JSON | Limited support |
+| **minProperties** | None | - | Not supported |
+| **maxProperties** | None | - | Not supported |
+| **propertyNames** | None | - | Not supported |
+| **patternProperties** | None | - | Not supported |
 
 #### Schema Composition (v0.8+)
 
 | Feature | Support | API | OpenAPI Field |
 |---------|---------|-----|---------------|
-| **anyOf** | ✅ Full | `Schema::any_of(vec![...])` | `anyOf` |
-| **allOf** | ✅ Full | `Schema::all_of(vec![...])` | `allOf` |
-| **oneOf** | ✅ Full | `Schema::one_of(vec![...])` | `oneOf` |
-| **not** | ❌ None | - | Not supported |
+| **anyOf** | Full | `Schema::any_of(vec![...])` | `anyOf` |
+| **allOf** | Full | `Schema::all_of(vec![...])` | `allOf` |
+| **oneOf** | Full | `Schema::one_of(vec![...])` | `oneOf` |
+| **not** | None | - | Not supported |
 
 #### Schema Metadata (v0.8+)
 
 | Feature | Support | API | OpenAPI Field |
 |---------|---------|-----|---------------|
-| **title** | ⚠️ Via name | Schema name becomes title | Implicit |
-| **description** | ✅ Full | `.description(text)` | `description` |
-| **default** | ✅ Full | `.default(value)` | `default` |
-| **example** | ✅ Full | `.example(value)` | `example` |
-| **examples** | ✅ Full | `.examples(vec![...])` | `examples` |
-| **deprecated** | ✅ Full | `.deprecated(true)` | `deprecated` |
-| **readOnly** | ✅ Full | `.read_only(true)` | `readOnly` |
-| **writeOnly** | ✅ Full | `.write_only(true)` | `writeOnly` |
-| **externalDocs** | ❌ None | - | Not supported |
+| **title** | Via name | Schema name becomes title | Implicit |
+| **description** | Full | `.description(text)` | `description` |
+| **default** | Full | `.default(value)` | `default` |
+| **example** | Full | `.example(value)` | `example` |
+| **examples** | Full | `.examples(vec![...])` | `examples` |
+| **deprecated** | Full | `.deprecated(true)` | `deprecated` |
+| **readOnly** | Full | `.read_only(true)` | `readOnly` |
+| **writeOnly** | Full | `.write_only(true)` | `writeOnly` |
+| **externalDocs** | None | - | Not supported |
 
 #### Advanced Features
 
 | Feature | Support | API | OpenAPI Field |
 |---------|---------|-----|---------------|
-| **$ref** | ✅ Full | `Schema::reference(name)` | `$ref` |
-| **discriminator** | ❌ None | - | Not supported |
-| **xml** | ❌ None | - | Not supported |
-| **nullable** | ⚠️ Via Option | Use Rust `Option<T>` | Implicit |
-| **Vendor Extensions (x-*)** | ✅ Full | `.extension(key, value)` | Custom `x-*` fields |
+| **$ref** | Full | `Schema::reference(name)` | `$ref` |
+| **discriminator** | None | - | Not supported |
+| **xml** | None | - | Not supported |
+| **nullable** | Via Option | Use Rust `Option<T>` | Implicit |
+| **Vendor Extensions (x-*)** | Full | `.extension(key, value)` | Custom `x-*` fields |
 
 ---
 
@@ -674,7 +674,7 @@ let billing = Schema::object()
 ### 1. Schema Naming
 
 ```rust
-// ✅ GOOD: Clear, consistent naming
+// GOOD: Clear, consistent naming
 impl ToSchema for User {
     fn schema_name() -> &'static str { "User" }  // Singular, PascalCase
 }
@@ -683,7 +683,7 @@ impl ToSchema for UserSettings {
     fn schema_name() -> &'static str { "UserSettings" }
 }
 
-// ❌ BAD: Inconsistent naming
+// BAD: Inconsistent naming
 fn schema_name() -> &'static str { "user" }  // lowercase
 fn schema_name() -> &'static str { "Users" }  // Plural
 fn schema_name() -> &'static str { "user_settings" }  // snake_case
@@ -692,7 +692,7 @@ fn schema_name() -> &'static str { "user_settings" }  // snake_case
 ### 2. Description Quality
 
 ```rust
-// ✅ GOOD: Descriptive, helpful
+// GOOD: Descriptive, helpful
 Schema::string()
     .format("email")
     .description("User's primary email address for login and notifications")
@@ -702,7 +702,7 @@ Schema::integer()
     .maximum(5)
     .description("Priority level: 0 (lowest) to 5 (critical)")
 
-// ❌ BAD: Redundant or missing
+// BAD: Redundant or missing
 Schema::string()
     .description("Email")  // Just restates the field name
 
@@ -715,12 +715,12 @@ Schema::integer()
 ### 3. Use Appropriate Types
 
 ```rust
-// ✅ GOOD: Semantic types
+// GOOD: Semantic types
 let id = Schema::string().format("uuid");
 let created_at = Schema::string().format("date-time");
 let price = Schema::number();  // Can have decimals
 
-// ❌ BAD: Generic types
+// BAD: Generic types
 let id = Schema::string();  // Missing format hint
 let created_at = Schema::string();  // Missing format
 let price = Schema::integer();  // Loses cents!
@@ -729,7 +729,7 @@ let price = Schema::integer();  // Loses cents!
 ### 4. Required vs Optional Fields
 
 ```rust
-// ✅ GOOD: Clear requirements
+// GOOD: Clear requirements
 Schema::object()
     .property("id", Schema::string())          // Required
     .property("email", Schema::string())       // Required
@@ -737,7 +737,7 @@ Schema::object()
     .property("middleName", Schema::string())  // Optional
     .required(&["id", "email"])  // Explicit list
 
-// ❌ BAD: Everything required or unclear
+// BAD: Everything required or unclear
 Schema::object()
     // ... properties ...
     .required(&["id", "email", "phone", "middleName"])  // Too strict
@@ -751,7 +751,7 @@ Schema::object()
 ### 5. readOnly vs writeOnly
 
 ```rust
-// ✅ GOOD: Appropriate modifiers
+// GOOD: Appropriate modifiers
 Schema::object()
     .property("id",
         Schema::string()
@@ -765,7 +765,7 @@ Schema::object()
         Schema::string()  // Both read and write
     )
 
-// ❌ BAD: Contradictory modifiers
+// BAD: Contradictory modifiers
 Schema::string()
     .read_only(true)
     .write_only(true)  // Impossible! Can't be both
@@ -774,12 +774,12 @@ Schema::string()
 ### 6. Vendor Extensions Naming
 
 ```rust
-// ✅ GOOD: Prefixed with x-, clear purpose
+// GOOD: Prefixed with x-, clear purpose
 .extension("x-domainstack-validations", json!({ /* ... */ }))
 .extension("x-ui-hints", json!({ /* ... */ }))
 .extension("x-api-gateway-config", json!({ /* ... */ }))
 
-// ❌ BAD: Missing x- prefix (invalid OpenAPI)
+// BAD: Missing x- prefix (invalid OpenAPI)
 .extension("custom-data", json!({ /* ... */ }))  // Must start with x-
 .extension("validation", json!({ /* ... */ }))   // Reserved word
 ```
@@ -787,7 +787,7 @@ Schema::string()
 ### 7. Examples for Better DX
 
 ```rust
-// ✅ GOOD: Realistic, helpful examples
+// GOOD: Realistic, helpful examples
 Schema::string()
     .format("email")
     .example(json!("user@example.com"))
@@ -802,7 +802,7 @@ Schema::object()
         ])
     )
 
-// ❌ BAD: Unhelpful examples
+// BAD: Unhelpful examples
 Schema::string()
     .format("email")
     .example(json!("string"))  // Not a real email!
@@ -1092,22 +1092,22 @@ fn main() {
 
 ### What Gets Validated at Compile Time
 
-- ✅ Schema structure (correct types)
-- ✅ Method chaining correctness
-- ✅ ToSchema trait implementation
+- Schema structure (correct types)
+- Method chaining correctness
+- ToSchema trait implementation
 
 ### What Gets Validated at Runtime
 
-- ⚠️ Example values matching schema constraints (not enforced - your responsibility)
-- ⚠️ Reference validity (schema name exists)
-- ⚠️ Required fields are defined as properties
+- Example values matching schema constraints (not enforced - your responsibility)
+- Reference validity (schema name exists)
+- Required fields are defined as properties
 
 ### What You Need to Validate Manually
 
-- ❌ Examples match constraints
-- ❌ Descriptions are helpful
-- ❌ All referenced schemas are registered
-- ❌ Vendor extension structure
+- Examples match constraints
+- Descriptions are helpful
+- All referenced schemas are registered
+- Vendor extension structure
 
 **Recommendation:** Always run generated OpenAPI through a validator like [Swagger Editor](https://editor.swagger.io/) or `openapi-spec-validator`.
 

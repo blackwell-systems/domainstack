@@ -592,13 +592,13 @@ See [domainstack-schema/OPENAPI_CAPABILITIES.md](./domainstack/domainstack-schem
 
 ### 31 Built-in Validation Rules
 
-**String Rules (15):**
+**String Rules (17):**
 - Length: `non_empty()`, `min_len()`, `max_len()`, `length()`, `len_chars()`
 - Format: `email()`, `url()`, `matches_regex()`
 - Content: `alpha_only()`, `alphanumeric()`, `numeric_string()`, `ascii()`
 - Patterns: `contains()`, `starts_with()`, `ends_with()`, `non_blank()`, `no_whitespace()`
 
-**Numeric Rules (9):**
+**Numeric Rules (8):**
 - Comparison: `min()`, `max()`, `range()`
 - Sign: `positive()`, `negative()`, `non_zero()`
 - Special: `finite()` (for floats), `multiple_of()`

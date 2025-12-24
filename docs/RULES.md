@@ -1,6 +1,6 @@
 # Validation Rules Reference
 
-**Complete reference for all 31 built-in validation rules in domainstack.**
+**Complete reference for all 37 built-in validation rules in domainstack.**
 
 ---
 
@@ -8,11 +8,12 @@
 
 | Category | Count | Rules |
 |----------|-------|-------|
-| **String** | 17 | `email`†, `non_empty`, `min_len`, `max_len`, `length`, `url`†, `alphanumeric`, `alpha_only`, `numeric_string`, `contains`, `starts_with`, `ends_with`, `matches_regex`†, `non_blank`‡, `no_whitespace`‡, `ascii`‡, `len_chars`‡ |
-| **Numeric** | 8 | `range`, `min`, `max`, `positive`, `negative`, `multiple_of`, `finite`‡, `non_zero`‡ |
-| **Choice** | 3 | `equals`‡, `not_equals`‡, `one_of`‡ |
-| **Collection** | 3 | `min_items`‡, `max_items`‡, `unique`‡ |
-| **Total** | **31** | †Requires `regex` feature |
+| **String** | 17 | `email`†, `non_empty`, `min_len`, `max_len`, `length`, `url`†, `alphanumeric`, `alpha_only`, `numeric_string`, `contains`, `starts_with`, `ends_with`, `matches_regex`†, `non_blank`, `no_whitespace`, `ascii`, `len_chars` |
+| **Numeric** | 8 | `range`, `min`, `max`, `positive`, `negative`, `multiple_of`, `finite`, `non_zero` |
+| **Choice** | 3 | `equals`, `not_equals`, `one_of` |
+| **Collection** | 4 | `min_items`, `max_items`, `unique`, `non_empty_items` |
+| **Date/Time** | 5 | `past`★, `future`★, `before`★, `after`★, `age_range`★ |
+| **Total** | **37** | †Requires `regex` feature ★Requires `chrono` feature |
 
 ---
 
@@ -541,7 +542,7 @@ assert!(!rule.apply(&"banned").is_empty());
 
 ---
 
-## Collection Rules (3 rules)
+## Collection Rules (4 rules)
 
 ### `min_items<T>(min: usize)`
 Validates that a collection has at least the minimum number of items.
@@ -591,6 +592,192 @@ assert!(!rule.apply(&[1, 2, 2, 3]).is_empty()); // duplicate 2
 - **Meta:** `{"duplicates": "1"}`
 - **Use Cases:** Unique tags, no duplicate selections
 - **Performance:** Uses HashSet for O(n) duplicate detection
+
+---
+
+### `non_empty_items()`
+Validates that all string items in a collection are non-empty.
+
+```rust
+let rule = rules::non_empty_items();
+
+// Valid - all items are non-empty
+let tags = vec!["tag1".to_string(), "tag2".to_string(), "tag3".to_string()];
+assert!(rule.apply(&tags).is_empty());
+
+// Invalid - contains empty string
+let invalid_tags = vec!["tag1".to_string(), "".to_string(), "tag3".to_string()];
+assert!(!rule.apply(&invalid_tags).is_empty()); // empty string at index 1
+```
+
+- **Error Code:** `empty_item`
+- **Message:** `"All items must be non-empty (found {count} empty items)"`
+- **Meta:** `{"empty_count": "1", "indices": "[1]"}`
+- **Use Cases:** Tags, keywords, any list where empty strings are not allowed
+- **Type:** Works with `Vec<String>` and `&[String]`
+
+**Common pattern - combine with other collection rules:**
+
+```rust
+// Tags must have items, be unique, and non-empty
+let rule = rules::min_items(1)
+    .and(rules::unique())
+    .and(rules::non_empty_items());
+
+let tags = vec!["rust".to_string(), "validation".to_string()];
+assert!(rule.apply(&tags).is_empty());
+```
+
+---
+
+## Date/Time Rules (5 rules)
+
+**Requires `chrono` feature flag**
+
+Date and time validation rules for temporal invariants - birth dates, event scheduling, deadlines, age verification, and temporal ranges.
+
+### `past()`
+Validates that a datetime is in the past (before now).
+
+```rust
+use chrono::{Utc, Duration};
+
+let rule = rules::past();
+
+let yesterday = Utc::now() - Duration::days(1);
+assert!(rule.apply(&yesterday).is_empty());
+
+let tomorrow = Utc::now() + Duration::days(1);
+assert!(!rule.apply(&tomorrow).is_empty());
+```
+
+- **Error Code:** `not_in_past`
+- **Message:** `"Must be in the past"`
+- **Use Cases:** Birth dates, historical events, completed tasks
+
+---
+
+### `future()`
+Validates that a datetime is in the future (after now).
+
+```rust
+use chrono::{Utc, Duration};
+
+let rule = rules::future();
+
+let tomorrow = Utc::now() + Duration::days(1);
+assert!(rule.apply(&tomorrow).is_empty());
+
+let yesterday = Utc::now() - Duration::days(1);
+assert!(!rule.apply(&yesterday).is_empty());
+```
+
+- **Error Code:** `not_in_future`
+- **Message:** `"Must be in the future"`
+- **Use Cases:** Event dates, deadlines, scheduled tasks
+
+---
+
+### `before(limit: DateTime<Utc>)`
+Validates that a datetime is before the specified datetime.
+
+```rust
+use chrono::{Utc, NaiveDate};
+
+let deadline = NaiveDate::from_ymd_opt(2025, 12, 31)
+    .unwrap()
+    .and_hms_opt(23, 59, 59)
+    .unwrap()
+    .and_utc();
+
+let rule = rules::before(deadline);
+
+let valid = NaiveDate::from_ymd_opt(2025, 6, 15)
+    .unwrap()
+    .and_hms_opt(12, 0, 0)
+    .unwrap()
+    .and_utc();
+assert!(rule.apply(&valid).is_empty());
+```
+
+- **Error Code:** `not_before`
+- **Message:** `"Must be before {limit}"`
+- **Meta:** `{"limit": "2025-12-31T23:59:59Z"}`
+- **Use Cases:** Event must occur before deadline, temporal constraints
+
+---
+
+### `after(limit: DateTime<Utc>)`
+Validates that a datetime is after the specified datetime.
+
+```rust
+use chrono::{Utc, NaiveDate};
+
+let start_date = NaiveDate::from_ymd_opt(2025, 1, 1)
+    .unwrap()
+    .and_hms_opt(0, 0, 0)
+    .unwrap()
+    .and_utc();
+
+let rule = rules::after(start_date);
+
+let valid = NaiveDate::from_ymd_opt(2025, 6, 15)
+    .unwrap()
+    .and_hms_opt(12, 0, 0)
+    .unwrap()
+    .and_utc();
+assert!(rule.apply(&valid).is_empty());
+```
+
+- **Error Code:** `not_after`
+- **Message:** `"Must be after {limit}"`
+- **Meta:** `{"limit": "2025-01-01T00:00:00Z"}`
+- **Use Cases:** Event must occur after start date, temporal ranges
+
+---
+
+### `age_range(min: u32, max: u32)`
+Validates that a birth date corresponds to an age within the specified range.
+
+```rust
+use chrono::{NaiveDate, Utc};
+
+let rule = rules::age_range(18, 120);
+
+// Person born 25 years ago is valid
+let birth_date = NaiveDate::from_ymd_opt(
+    Utc::now().year() - 25,
+    6,
+    15
+).unwrap();
+assert!(rule.apply(&birth_date).is_empty());
+
+// Person born 10 years ago is invalid (under 18)
+let too_young = NaiveDate::from_ymd_opt(
+    Utc::now().year() - 10,
+    6,
+    15
+).unwrap();
+assert!(!rule.apply(&too_young).is_empty());
+```
+
+- **Error Code:** `age_out_of_range`
+- **Message:** `"Age must be between {min} and {max} years"`
+- **Meta:** `{"min": "18", "max": "120", "age": "10"}`
+- **Use Cases:** Age verification, eligibility checks, demographic validation
+
+**Common pattern - temporal range validation:**
+
+```rust
+// Event must be within a specific window
+let start = Utc::now();
+let end = Utc::now() + Duration::days(30);
+
+let rule = rules::after(start).and(rules::before(end));
+
+let event = Utc::now() + Duration::days(15);
+assert!(rule.apply(&event).is_empty()); // within window
+```
 
 ---
 
@@ -644,13 +831,24 @@ let rule = rules::max_len(100).when(is_premium);
 
 ```toml
 [dependencies]
-domainstack = { version = "0.4", features = ["email", "regex"] }
+# Basic validation (zero dependencies)
+domainstack = "0.4"
+
+# With regex rules
+domainstack = { version = "0.4", features = ["regex"] }
+
+# With date/time rules
+domainstack = { version = "0.4", features = ["chrono"] }
+
+# All features
+domainstack = { version = "0.4", features = ["regex", "chrono"] }
 ```
 
-- `email` - Enables `email()` rule with regex validation
-- `regex` - Enables `url()` (improved), `matches_regex()`
+**Available features:**
+- `regex` - Enables `email()`, `url()`, `matches_regex()` (adds regex + once_cell dependencies)
+- `chrono` - Enables date/time rules: `past()`, `future()`, `before()`, `after()`, `age_range()` (adds chrono dependency)
 
-Without features, core has **zero dependencies**.
+**Without features, core has zero dependencies.**
 
 ---
 

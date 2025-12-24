@@ -448,7 +448,7 @@ This project has **multiple README files** for different audiences:
 
 ### Core Capabilities
 
-- **31 Validation Rules** - String, numeric, collection validation out of the box
+- **37 Validation Rules** - String, numeric, collection, and date/time validation out of the box
 - **Composable Rules** - Combine with `.and()`, `.or()`, `.when()` for complex logic
 - **Nested Validation** - Automatic path tracking for deeply nested structures
 - **Collection Validation** - Array indices in error paths (`items[0].field`)
@@ -613,7 +613,7 @@ impl ToSchema for CustomType {
 
 See [domainstack-schema/OPENAPI_CAPABILITIES.md](./domainstack/domainstack-schema/OPENAPI_CAPABILITIES.md) for complete documentation.
 
-### 31 Built-in Validation Rules
+### 37 Built-in Validation Rules
 
 **String Rules (17):**
 - Length: `non_empty()`, `min_len()`, `max_len()`, `length()`, `len_chars()`
@@ -646,8 +646,12 @@ struct BlogPost {
 **Choice Rules (3):**
 - `equals()`, `not_equals()`, `one_of()`
 
-**Collection Rules (3):**
-- `min_items()`, `max_items()`, `unique()`
+**Collection Rules (4):**
+- `min_items()`, `max_items()`, `unique()`, `non_empty_items()`
+
+**Date/Time Rules (5):** (requires `chrono` feature)
+- Temporal: `past()`, `future()`, `before()`, `after()`
+- Age: `age_range()`
 
 **Combinators:**
 - `.and()` - Both rules must pass

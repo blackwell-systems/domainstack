@@ -71,6 +71,62 @@ struct BlogPost {
 - `each(length(min, max))`, `each(range(min, max))`
 - Error paths include array indices: `tags[0]`, `emails[1]`, etc.
 
+#### New Validation Rules (domainstack)
+
+**Collection Rule: `non_empty_items()`**
+
+Validates that all string items in a collection are non-empty:
+
+```rust
+use domainstack::prelude::*;
+
+let rule = rules::non_empty_items();
+let tags = vec!["rust".to_string(), "validation".to_string()];
+assert!(rule.apply(&tags).is_empty());
+
+let invalid = vec!["rust".to_string(), "".to_string()];
+assert!(!rule.apply(&invalid).is_empty()); // Error: empty item at index 1
+```
+
+**Use cases**: Tags, keywords, categories - any list where empty strings are not allowed.
+
+**Date/Time Rules (requires `chrono` feature)**
+
+Five new temporal validation rules for date/time invariants:
+
+```rust
+use domainstack::prelude::*;
+use chrono::{Utc, Duration, NaiveDate};
+
+// Temporal validation
+let past_rule = rules::past();      // Must be in the past
+let future_rule = rules::future();  // Must be in the future
+
+let yesterday = Utc::now() - Duration::days(1);
+assert!(past_rule.apply(&yesterday).is_empty());
+
+// Temporal ranges
+let deadline = Utc::now() + Duration::days(30);
+let before_rule = rules::before(deadline);
+let after_rule = rules::after(Utc::now());
+
+// Age verification from birth date
+let age_rule = rules::age_range(18, 120);
+let birth_date = NaiveDate::from_ymd_opt(2000, 6, 15).unwrap();
+assert!(age_rule.apply(&birth_date).is_empty()); // Age: 25
+```
+
+**Rules added**:
+- `past()` - Validates datetime is in the past
+- `future()` - Validates datetime is in the future
+- `before(limit)` - Validates datetime is before limit
+- `after(limit)` - Validates datetime is after limit
+- `age_range(min, max)` - Validates age from birth date
+
+**Use cases**: Birth dates, event scheduling, deadlines, age verification, temporal constraints.
+
+**Feature flag**: Add `features = ["chrono"]` to enable date/time rules.
+
 **Automatic Rule → Schema Mappings:**
 - `email()` → `format: "email"`
 - `url()` → `format: "uri"`

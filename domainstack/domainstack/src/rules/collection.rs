@@ -132,6 +132,68 @@ where
     })
 }
 
+/// Validates that all string items in a collection are non-empty.
+///
+/// This is useful for ensuring no empty strings exist in a `Vec<String>`.
+/// Commonly used for tags, keywords, or any list where empty strings are not allowed.
+///
+/// # Examples
+///
+/// ```
+/// use domainstack::prelude::*;
+///
+/// let rule = rules::non_empty_items();
+///
+/// // Valid - all items are non-empty
+/// let tags = vec!["tag1".to_string(), "tag2".to_string(), "tag3".to_string()];
+/// assert!(rule.apply(&tags).is_empty());
+///
+/// let tags = vec!["rust".to_string(), "validation".to_string()];
+/// assert!(rule.apply(&tags).is_empty());
+///
+/// // Invalid - contains empty string
+/// let invalid_tags = vec!["tag1".to_string(), "".to_string(), "tag3".to_string()];
+/// assert!(!rule.apply(&invalid_tags).is_empty()); // empty string at index 1
+///
+/// let invalid_tags = vec!["".to_string(), "tag2".to_string()];
+/// assert!(!rule.apply(&invalid_tags).is_empty()); // empty string at index 0
+/// ```
+///
+/// # Error Code
+/// - Code: `empty_item`
+/// - Message: `"All items must be non-empty (found {count} empty items)"`
+/// - Meta: `{"empty_count": "2", "indices": "[0, 2]"}`
+pub fn non_empty_items() -> Rule<[String]> {
+    Rule::new(|value: &[String], ctx: &RuleContext| {
+        let mut empty_indices = Vec::new();
+
+        for (i, item) in value.iter().enumerate() {
+            if item.is_empty() {
+                empty_indices.push(i);
+            }
+        }
+
+        if !empty_indices.is_empty() {
+            let count = empty_indices.len();
+            let mut err = ValidationError::single(
+                ctx.full_path(),
+                "empty_item",
+                format!("All items must be non-empty (found {} empty items)", count),
+            );
+            err.violations[0]
+                .meta
+                .insert("empty_count", count.to_string());
+            err.violations[0].meta.insert(
+                "indices",
+                format!("[{}]", empty_indices.iter().map(|i| i.to_string()).collect::<Vec<_>>().join(", ")),
+            );
+            err
+        } else {
+            ValidationError::default()
+        }
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -259,5 +321,84 @@ mod tests {
         let result = rule.apply(&["rust", "rust"]);
         assert!(!result.is_empty());
         assert_eq!(result.violations[0].code, "duplicate_items");
+    }
+
+    #[test]
+    fn test_non_empty_items_valid() {
+        let rule = non_empty_items();
+
+        // Vec<String> works
+        let tags = vec!["tag1".to_string(), "tag2".to_string(), "tag3".to_string()];
+        assert!(rule.apply(&tags).is_empty());
+
+        let tags = vec!["a".to_string()];
+        assert!(rule.apply(&tags).is_empty());
+
+        let tags = vec!["rust".to_string(), "validation".to_string()];
+        assert!(rule.apply(&tags).is_empty());
+
+        // Empty collection is valid (no empty items)
+        assert!(rule.apply(&Vec::<String>::new()).is_empty());
+    }
+
+    #[test]
+    fn test_non_empty_items_invalid() {
+        let rule = non_empty_items();
+
+        // Single empty string
+        let tags = vec!["tag1".to_string(), "".to_string(), "tag3".to_string()];
+        let result = rule.apply(&tags);
+        assert!(!result.is_empty());
+        assert_eq!(result.violations[0].code, "empty_item");
+        assert_eq!(result.violations[0].meta.get("empty_count"), Some("1"));
+        assert!(result.violations[0]
+            .meta
+            .get("indices")
+            .unwrap()
+            .contains("1"));
+
+        // Multiple empty strings
+        let tags = vec!["".to_string(), "tag2".to_string(), "".to_string(), "tag4".to_string()];
+        let result = rule.apply(&tags);
+        assert!(!result.is_empty());
+        assert_eq!(result.violations[0].meta.get("empty_count"), Some("2"));
+
+        // All empty
+        let tags = vec!["".to_string(), "".to_string(), "".to_string()];
+        let result = rule.apply(&tags);
+        assert!(!result.is_empty());
+        assert_eq!(result.violations[0].meta.get("empty_count"), Some("3"));
+
+        // Vec<String> with empty
+        let invalid_tags = vec!["rust".to_string(), "".to_string()];
+        let result = rule.apply(&invalid_tags);
+        assert!(!result.is_empty());
+        assert_eq!(result.violations[0].code, "empty_item");
+    }
+
+    #[test]
+    fn test_non_empty_items_composition() {
+        // Realistic: tags must have items, be unique, and non-empty
+        let rule = min_items(1).and(unique()).and(non_empty_items());
+
+        let tags = vec!["rust".to_string(), "validation".to_string()];
+        assert!(rule.apply(&tags).is_empty());
+
+        // Fails min_items
+        let result = rule.apply(&Vec::<String>::new());
+        assert!(!result.is_empty());
+        assert_eq!(result.violations[0].code, "too_few_items");
+
+        // Fails unique
+        let tags = vec!["rust".to_string(), "rust".to_string()];
+        let result = rule.apply(&tags);
+        assert!(!result.is_empty());
+        assert_eq!(result.violations[0].code, "duplicate_items");
+
+        // Fails non_empty_items
+        let tags = vec!["rust".to_string(), "".to_string()];
+        let result = rule.apply(&tags);
+        assert!(!result.is_empty());
+        assert_eq!(result.violations[0].code, "empty_item");
     }
 }

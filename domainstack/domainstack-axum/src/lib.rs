@@ -71,18 +71,44 @@ impl IntoResponse for ErrorResponse {
     }
 }
 
+pub struct ValidatedJson<Dto>(pub Dto);
+
+#[axum::async_trait]
+impl<Dto, S> FromRequest<S> for ValidatedJson<Dto>
+where
+    Dto: serde::de::DeserializeOwned + domainstack::Validate,
+    S: Send + Sync,
+{
+    type Rejection = ErrorResponse;
+
+    async fn from_request(req: Request, state: &S) -> Result<Self, Self::Rejection> {
+        let Json(dto) = Json::<Dto>::from_request(req, state).await.map_err(|e| {
+            ErrorResponse(error_envelope::Error::bad_request(format!(
+                "Invalid JSON: {}",
+                e
+            )))
+        })?;
+
+        dto.validate()
+            .map(|_| ValidatedJson(dto))
+            .map_err(|e| {
+                use domainstack_envelope::IntoEnvelopeError;
+                ErrorResponse(e.into_envelope_error())
+            })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use axum::{routing::post, Router};
     use domainstack::{prelude::*, Validate};
 
-    #[derive(Debug, Clone, Validate, serde::Deserialize)]
+    // DTOs used with DomainJson are just serde shapes
+    // Validation happens during TryFrom conversion to domain
+    #[derive(Debug, Clone, serde::Deserialize)]
     struct UserDto {
-        #[validate(length(min = 2, max = 50))]
         name: String,
-
-        #[validate(range(min = 18, max = 120))]
         age: u8,
     }
 
@@ -228,5 +254,75 @@ mod tests {
             .await;
 
         response.assert_status_ok();
+    }
+
+    // ValidatedJson tests - DTOs that derive Validate
+    #[derive(Debug, Clone, Validate, serde::Deserialize, serde::Serialize)]
+    struct ValidatedUserDto {
+        #[validate(length(min = 2, max = 50))]
+        name: String,
+
+        #[validate(range(min = 18, max = 120))]
+        age: u8,
+    }
+
+    async fn accept_validated_dto(
+        ValidatedJson(dto): ValidatedJson<ValidatedUserDto>,
+    ) -> Json<ValidatedUserDto> {
+        Json(dto)
+    }
+
+    #[tokio::test]
+    async fn test_validated_json_valid() {
+        let app = Router::new().route("/", post(accept_validated_dto));
+
+        let server = axum_test::TestServer::new(app).unwrap();
+
+        let response = server
+            .post("/")
+            .json(&serde_json::json!({"name": "Alice", "age": 30}))
+            .await;
+
+        response.assert_status_ok();
+        let body: ValidatedUserDto = response.json();
+        assert_eq!(body.name, "Alice");
+        assert_eq!(body.age, 30);
+    }
+
+    #[tokio::test]
+    async fn test_validated_json_invalid() {
+        let app = Router::new().route("/", post(accept_validated_dto));
+
+        let server = axum_test::TestServer::new(app).unwrap();
+
+        let response = server
+            .post("/")
+            .json(&serde_json::json!({"name": "A", "age": 200}))
+            .await;
+
+        response.assert_status_bad_request();
+
+        let body: serde_json::Value = response.json();
+        assert_eq!(
+            body["message"].as_str().unwrap(),
+            "Validation failed with 2 errors"
+        );
+
+        let details = body["details"].as_object().unwrap();
+        let fields = details["fields"].as_object().unwrap();
+
+        assert!(fields.contains_key("name"));
+        assert!(fields.contains_key("age"));
+    }
+
+    #[tokio::test]
+    async fn test_validated_json_malformed_json() {
+        let app = Router::new().route("/", post(accept_validated_dto));
+
+        let server = axum_test::TestServer::new(app).unwrap();
+
+        let response = server.post("/").text("{invalid json").await;
+
+        response.assert_status_bad_request();
     }
 }

@@ -93,6 +93,60 @@ Implements `IntoResponse` for `error_envelope::Error` with structured field-leve
 }
 ```
 
+## When to Use Which Extractor
+
+### `DomainJson<T, Dto>` - Domain-First (Recommended)
+
+**Validation happens during DTO→Domain conversion** (`TryFrom`).
+
+```rust
+type UserJson = DomainJson<User, UserDto>;
+
+async fn create_user(
+    UserJson { domain: user, .. }: UserJson
+) -> Result<Json<User>, ErrorResponse> {
+    // user is valid domain object
+    Ok(Json(save_user(user).await?))
+}
+```
+
+**Use when:**
+- You have domain models with business invariants
+- You want valid-by-construction types  
+- You need domain logic separate from HTTP concerns
+- You'll add async validation later (database checks, uniqueness, etc.)
+
+**DTOs don't need `#[derive(Validate)]`** - validation lives in `TryFrom`.
+
+### `ValidatedJson<Dto>` - DTO-First
+
+**Validation happens on the DTO immediately after deserialization**.
+
+```rust
+use domainstack::Validate;
+
+#[derive(Deserialize, Validate)]
+struct QuickDto {
+    #[validate(length(min = 2, max = 50))]
+    name: String,
+}
+
+async fn quick_endpoint(
+    ValidatedJson(dto): ValidatedJson<QuickDto>
+) -> Json<QuickDto> {
+    // dto has been validated, but not converted to domain
+    Json(dto)
+}
+```
+
+**Use when:**
+- You're building simple CRUD endpoints
+- You don't need domain conversion
+- You want request-shape validation only
+- DTOs are your domain (for simple services)
+
+**DTOs must `#[derive(Validate)]`** - validation attributes drive behavior.
+
 ## Usage Patterns
 
 ### 1. Type Alias Pattern (Recommended)

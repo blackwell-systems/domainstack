@@ -78,18 +78,45 @@ impl std::fmt::Display for ErrorResponse {
     }
 }
 
+pub struct ValidatedJson<Dto>(pub Dto);
+
+impl<Dto> FromRequest for ValidatedJson<Dto>
+where
+    Dto: serde::de::DeserializeOwned + domainstack::Validate,
+{
+    type Error = ErrorResponse;
+    type Future = Ready<Result<Self, Self::Error>>;
+
+    fn from_request(req: &HttpRequest, payload: &mut actix_web::dev::Payload) -> Self::Future {
+        let json_fut = web::Json::<Dto>::from_request(req, payload);
+
+        ready(match futures::executor::block_on(json_fut) {
+            Ok(web::Json(dto)) => dto
+                .validate()
+                .map(|_| ValidatedJson(dto))
+                .map_err(|e| {
+                    use domainstack_envelope::IntoEnvelopeError;
+                    ErrorResponse(e.into_envelope_error())
+                }),
+            Err(e) => Err(ErrorResponse(error_envelope::Error::bad_request(format!(
+                "Invalid JSON: {}",
+                e
+            )))),
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use actix_web::{test, web, App};
     use domainstack::{prelude::*, Validate};
 
-    #[derive(Debug, Clone, Validate, serde::Deserialize)]
+    // DTOs used with DomainJson are just serde shapes
+    // Validation happens during TryFrom conversion to domain
+    #[derive(Debug, Clone, serde::Deserialize)]
     struct UserDto {
-        #[validate(length(min = 2, max = 50))]
         name: String,
-
-        #[validate(range(min = 18, max = 120))]
         age: u8,
     }
 
@@ -237,5 +264,80 @@ mod tests {
 
         let resp = test::call_service(&app, req).await;
         assert_eq!(resp.status(), 200);
+    }
+
+    // ValidatedJson tests - DTOs that derive Validate
+    #[derive(Debug, Clone, Validate, serde::Deserialize, serde::Serialize)]
+    struct ValidatedUserDto {
+        #[validate(length(min = 2, max = 50))]
+        name: String,
+
+        #[validate(range(min = 18, max = 120))]
+        age: u8,
+    }
+
+    async fn accept_validated_dto(
+        ValidatedJson(dto): ValidatedJson<ValidatedUserDto>,
+    ) -> web::Json<ValidatedUserDto> {
+        web::Json(dto)
+    }
+
+    #[actix_rt::test]
+    async fn test_validated_json_valid() {
+        let app = test::init_service(App::new().route("/", web::post().to(accept_validated_dto)))
+            .await;
+
+        let req = test::TestRequest::post()
+            .uri("/")
+            .set_json(serde_json::json!({"name": "Alice", "age": 30}))
+            .to_request();
+
+        let resp = test::call_service(&app, req).await;
+        assert_eq!(resp.status(), 200);
+
+        let body: ValidatedUserDto = test::read_body_json(resp).await;
+        assert_eq!(body.name, "Alice");
+        assert_eq!(body.age, 30);
+    }
+
+    #[actix_rt::test]
+    async fn test_validated_json_invalid() {
+        let app = test::init_service(App::new().route("/", web::post().to(accept_validated_dto)))
+            .await;
+
+        let req = test::TestRequest::post()
+            .uri("/")
+            .set_json(serde_json::json!({"name": "A", "age": 200}))
+            .to_request();
+
+        let resp = test::call_service(&app, req).await;
+        assert_eq!(resp.status(), 400);
+
+        let body: serde_json::Value = test::read_body_json(resp).await;
+        assert_eq!(
+            body["message"].as_str().unwrap(),
+            "Validation failed with 2 errors"
+        );
+
+        let details = body["details"].as_object().unwrap();
+        let fields = details["fields"].as_object().unwrap();
+
+        assert!(fields.contains_key("name"));
+        assert!(fields.contains_key("age"));
+    }
+
+    #[actix_rt::test]
+    async fn test_validated_json_malformed_json() {
+        let app = test::init_service(App::new().route("/", web::post().to(accept_validated_dto)))
+            .await;
+
+        let req = test::TestRequest::post()
+            .uri("/")
+            .set_payload("{invalid json")
+            .insert_header(("content-type", "application/json"))
+            .to_request();
+
+        let resp = test::call_service(&app, req).await;
+        assert_eq!(resp.status(), 400);
     }
 }

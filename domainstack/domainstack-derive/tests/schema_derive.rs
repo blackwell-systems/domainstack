@@ -1,3 +1,6 @@
+// Suppress dead_code warnings for test data structures
+#![allow(dead_code)]
+
 use domainstack_derive::ToSchema;
 use domainstack_schema::{OpenApiBuilder, ToSchema as ToSchemaTrait};
 use serde_json;

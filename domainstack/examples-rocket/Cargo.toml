@@ -6,7 +6,7 @@ rust-version = "1.76"
 publish = false
 
 [[example]]
-name = "booking"
+name = "booking-rocket"
 path = "booking.rs"
 
 [dependencies]

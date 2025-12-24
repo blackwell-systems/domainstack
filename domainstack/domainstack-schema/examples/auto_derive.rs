@@ -8,8 +8,11 @@
 //! cargo run --example auto_derive
 //! ```
 
+// Suppress dead_code warnings for demonstration structs
+#![allow(dead_code)]
+
 use domainstack_derive::ToSchema;
-use domainstack_schema::{OpenApiBuilder, ToSchema as ToSchemaTrait};
+use domainstack_schema::OpenApiBuilder;
 
 // ================================
 // Basic Example: User Registration

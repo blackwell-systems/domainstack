@@ -1,5 +1,8 @@
 //! Test that Validate and ToSchema work together with unified rich syntax
 
+// Suppress dead_code warnings for test data structures
+#![allow(dead_code)]
+
 use domainstack::prelude::*;
 use domainstack_derive::{ToSchema, Validate};
 use domainstack_schema::ToSchema as ToSchemaTrait;

@@ -470,4 +470,151 @@ mod tests {
         assert!(body.contains("VALIDATION"));
         assert!(body.contains("name"));
     }
+
+    #[catch(422)]
+    fn unprocessable_entity_catcher(req: &Request) -> ErrorResponse {
+        // Extract the error from the request local cache if it exists
+        req.local_cache(|| None::<ErrorResponse>)
+            .clone()
+            .unwrap_or_else(|| {
+                ErrorResponse(Box::new(error_envelope::Error::bad_request(
+                    "Unprocessable Entity",
+                )))
+            })
+    }
+
+    #[test]
+    fn test_domain_json_missing_fields() {
+        let rocket = rocket::build()
+            .mount("/", routes![create_user])
+            .register("/", catchers![bad_request_catcher, unprocessable_entity_catcher]);
+        let client = Client::tracked(rocket).expect("valid rocket instance");
+
+        // Missing email and age fields
+        let response = client
+            .post("/users")
+            .header(ContentType::JSON)
+            .body(r#"{"name":"Alice"}"#)
+            .dispatch();
+
+        // With the catcher registered, it returns the actual error status (400)
+        assert_eq!(response.status(), Status::BadRequest);
+        let body = response.into_string().unwrap();
+        assert!(body.contains("Invalid JSON") || body.contains("missing field"));
+    }
+
+    #[test]
+    fn test_validated_json_malformed_json() {
+        let rocket = rocket::build()
+            .mount("/", routes![update_user])
+            .register("/", catchers![bad_request_catcher]);
+        let client = Client::tracked(rocket).expect("valid rocket instance");
+
+        let response = client
+            .post("/users/1/update")
+            .header(ContentType::JSON)
+            .body(r#"{"invalid json"#)
+            .dispatch();
+
+        assert_eq!(response.status(), Status::BadRequest);
+        let body = response.into_string().unwrap();
+        assert!(body.contains("Invalid JSON"));
+    }
+
+    // Test type alias pattern
+    type CreateUserJson = DomainJson<User, CreateUserDto>;
+
+    #[post("/users/alias", data = "<user>")]
+    fn create_user_with_alias(user: CreateUserJson) -> Json<User> {
+        Json(user.domain)
+    }
+
+    #[test]
+    fn test_type_alias_pattern() {
+        let rocket = rocket::build()
+            .mount("/", routes![create_user_with_alias])
+            .register("/", catchers![bad_request_catcher]);
+        let client = Client::tracked(rocket).expect("valid rocket instance");
+
+        let response = client
+            .post("/users/alias")
+            .header(ContentType::JSON)
+            .body(r#"{"name":"Bob","email":"bob@example.com","age":25}"#)
+            .dispatch();
+
+        assert_eq!(response.status(), Status::Ok);
+        let body = response.into_string().unwrap();
+        assert!(body.contains("Bob"));
+        assert!(body.contains("bob@example.com"));
+    }
+
+    #[post("/users/result", data = "<user>")]
+    fn create_user_result_style(
+        user: DomainJson<User, CreateUserDto>,
+    ) -> Result<Json<User>, ErrorResponse> {
+        // Simulate some business logic that could fail
+        if user.domain.age < 21 {
+            return Err(ErrorResponse(Box::new(
+                error_envelope::Error::bad_request("Must be 21 or older"),
+            )));
+        }
+        Ok(Json(user.domain))
+    }
+
+    #[test]
+    fn test_result_style_handler() {
+        let rocket = rocket::build()
+            .mount("/", routes![create_user_result_style])
+            .register("/", catchers![bad_request_catcher]);
+        let client = Client::tracked(rocket).expect("valid rocket instance");
+
+        // Test successful case
+        let response = client
+            .post("/users/result")
+            .header(ContentType::JSON)
+            .body(r#"{"name":"Charlie","email":"charlie@example.com","age":25}"#)
+            .dispatch();
+
+        assert_eq!(response.status(), Status::Ok);
+
+        // Test business logic failure
+        let response = client
+            .post("/users/result")
+            .header(ContentType::JSON)
+            .body(r#"{"name":"David","email":"david@example.com","age":20}"#)
+            .dispatch();
+
+        assert_eq!(response.status(), Status::BadRequest);
+        let body = response.into_string().unwrap();
+        assert!(body.contains("Must be 21 or older"));
+    }
+
+    #[test]
+    fn test_error_response_format() {
+        let rocket = rocket::build()
+            .mount("/", routes![create_user])
+            .register("/", catchers![bad_request_catcher, unprocessable_entity_catcher]);
+        let client = Client::tracked(rocket).expect("valid rocket instance");
+
+        let response = client
+            .post("/users")
+            .header(ContentType::JSON)
+            .body(r#"{"name":"X","email":"invalid","age":10}"#)
+            .dispatch();
+
+        assert_eq!(response.status(), Status::BadRequest);
+        let body = response.into_string().unwrap();
+
+        // Verify RFC 9457-style error format
+        let error: serde_json::Value = serde_json::from_str(&body).expect("Failed to parse JSON");
+        assert_eq!(error["code"], "VALIDATION_FAILED");
+        assert!(error["message"].as_str().unwrap().contains("errors"));
+
+        // Verify field errors are present
+        let fields = &error["details"]["fields"];
+        assert!(fields.is_object());
+        assert!(fields.get("name").is_some());
+        assert!(fields.get("email").is_some());
+        assert!(fields.get("age").is_some());
+    }
 }

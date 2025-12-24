@@ -891,6 +891,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "domainstack-examples-rocket"
+version = "0.4.0"
+dependencies = [
+ "domainstack",
+ "domainstack-envelope",
+ "domainstack-rocket",
+ "error-envelope",
+ "rocket",
+ "serde",
+ "serde_json",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
 name = "domainstack-http"
 version = "0.4.0"
 dependencies = [

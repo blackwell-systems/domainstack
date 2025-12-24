@@ -35,6 +35,7 @@ mod tests {
     struct Email(#[allow(dead_code)] String);
 
     impl Email {
+        #[allow(clippy::result_large_err)]
         pub fn new(raw: String) -> Result<Self, ValidationError> {
             let rule = rules::min_len(5).and(rules::max_len(255));
             validate("email", raw.as_str(), &rule)?;

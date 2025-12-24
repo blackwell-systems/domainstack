@@ -439,7 +439,7 @@ This project has **multiple README files** for different audiences:
 - **[API Guide](./docs/api-guide.md)** - Complete API documentation
 - **[Rules Reference](./docs/RULES.md)** - All validation rules
 - **[Architecture](./docs/architecture.md)** - System design and data flow
-- **[Examples](./domainstack/examples/)** - 9 runnable examples
+- **[Examples](./domainstack/domainstack-examples/)** - 9 runnable examples
 - **[API Documentation](https://docs.rs/domainstack)** - Generated API reference
 - **[Publishing Guide](./PUBLISHING.md)** - How to publish to crates.io
 - **[Coverage Guide](./COVERAGE.md)** - Running coverage locally

@@ -236,53 +236,41 @@ struct ApiCredentials {
 // Collection Item Validation (each)
 // ===================================
 
-/// Article with validated primitive collections using each(rule)
+/// Article with string collections
 ///
-/// This demonstrates the powerful each(rule) feature - ANY validation rule
-/// can be applied to items in a Vec<T>, not just nested types!
+/// Note: The ToSchema derive macro currently doesn't support parsing
+/// each(rule) syntax. For collection item validation, use manual ToSchema impl.
 #[derive(ToSchema)]
-#[schema(description = "Article with validated collections")]
+#[schema(description = "Article with collections")]
 struct Article {
     #[validate(min_len = 1)]
     #[validate(max_len = 200)]
     #[schema(description = "Article title", example = "Rust Best Practices")]
     title: String,
 
-    /// Validate each email in the author list
-    /// Generates: items: { type: "string", format: "email" }
-    #[validate(each(email))]
+    /// Author email addresses
     #[validate(min_items = 1)]
     #[validate(max_items = 5)]
     #[schema(description = "Author email addresses")]
     author_emails: Vec<String>,
 
-    /// Validate each tag's length (1-50 chars)
-    /// Generates: items: { type: "string", minLength: 1, maxLength: 50 }
-    #[validate(each(length(min = 1, max = 50)))]
-    #[schema(description = "Content tags")]
+    /// Content tags
+    #[schema(description = "Content tags", example = r#"["rust", "validation"]"#)]
     tags: Vec<String>,
 
-    /// Validate each URL format
-    /// Generates: items: { type: "string", format: "uri" }
-    #[validate(each(url))]
+    /// Related article links
     #[schema(description = "Related article links")]
     related_links: Vec<String>,
 
-    /// Validate each keyword is alphanumeric
-    /// Generates: items: { type: "string", pattern: "^[a-zA-Z0-9]*$" }
-    #[validate(each(alphanumeric))]
+    /// SEO keywords
     #[schema(description = "SEO keywords")]
     keywords: Vec<String>,
 
-    /// Validate each rating is in range 1-5
-    /// Generates: items: { type: "integer", minimum: 1, maximum: 5 }
-    #[validate(each(range(min = 1, max = 5)))]
+    /// User ratings (1-5 stars)
     #[schema(description = "User ratings (1-5 stars)")]
     ratings: Vec<u8>,
 
-    /// Validate each view count is positive
-    /// Generates: items: { type: "integer", minimum: 0 }
-    #[validate(each(range(min = 0, max = 1000000)))]
+    /// Daily view counts
     #[schema(description = "Daily view counts")]
     daily_views: Vec<u32>,
 }

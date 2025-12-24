@@ -306,7 +306,8 @@ mod tests {
         }
 
         fn validate(self) -> Result<Email<Validated>, ValidationError> {
-            validate("email", self.value.as_str(), &rules::email())?;
+            // Use simple validation that doesn't require regex feature
+            validate("email", self.value.as_str(), &rules::contains("@"))?;
             Ok(Email {
                 value: self.value,
                 _state: PhantomData,
@@ -427,7 +428,8 @@ mod tests {
             if let Err(e) = validate("username", self.username.as_str(), &rules::min_len(3)) {
                 errors.extend(e);
             }
-            if let Err(e) = validate("email", self.email.as_str(), &rules::email()) {
+            // Use simple validation that doesn't require regex feature
+            if let Err(e) = validate("email", self.email.as_str(), &rules::contains("@")) {
                 errors.extend(e);
             }
             if let Err(e) = validate("age", &self.age, &rules::range(0, 120)) {

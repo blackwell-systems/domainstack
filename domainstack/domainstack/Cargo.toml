@@ -40,6 +40,10 @@ required-features = ["async"]
 name = "async_sqlite"
 required-features = ["async"]
 
+[[example]]
+name = "phantom_types"
+required-features = ["regex"]
+
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
 # Disable default features to avoid pulling in unnecessary database drivers (mysql, postgres)

@@ -596,6 +596,7 @@ mod tests {
     use super::*;
 
     #[test]
+    #[cfg(feature = "regex")]
     fn test_email_valid() {
         let rule = email();
         assert!(rule.apply("user@example.com").is_empty());
@@ -603,6 +604,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "regex")]
     fn test_email_invalid() {
         let rule = email();
 
@@ -688,6 +690,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "regex")]
     fn test_url_valid() {
         let rule = url();
         assert!(rule.apply("https://example.com").is_empty());
@@ -697,6 +700,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "regex")]
     fn test_url_invalid() {
         let rule = url();
 

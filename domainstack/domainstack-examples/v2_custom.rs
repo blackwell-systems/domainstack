@@ -3,6 +3,7 @@ use domainstack::Validate;
 
 #[allow(unknown_lints)]
 #[allow(clippy::manual_is_multiple_of)]
+#[allow(clippy::result_large_err)]
 fn validate_even(value: &u8) -> Result<(), ValidationError> {
     if value % 2 == 0 {
         Ok(())
@@ -15,6 +16,7 @@ fn validate_even(value: &u8) -> Result<(), ValidationError> {
     }
 }
 
+#[allow(clippy::result_large_err)]
 fn validate_positive_balance(value: &i32) -> Result<(), ValidationError> {
     if *value >= 0 {
         Ok(())
@@ -27,6 +29,7 @@ fn validate_positive_balance(value: &i32) -> Result<(), ValidationError> {
     }
 }
 
+#[allow(clippy::result_large_err)]
 fn validate_strong_password(value: &str) -> Result<(), ValidationError> {
     let mut errors = ValidationError::new();
 

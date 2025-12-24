@@ -1,15 +1,12 @@
 //! Test that Validate and ToSchema work together with unified rich syntax
 
-// Suppress dead_code warnings for test data structures
-#![allow(dead_code)]
-
 use domainstack::prelude::*;
 use domainstack_derive::{ToSchema, Validate};
 use domainstack_schema::ToSchema as ToSchemaTrait;
-use serde_json;
 
 // Test basic usage with both macros
 #[derive(Validate, ToSchema)]
+#[allow(dead_code)]
 struct User {
     #[validate(email)]
     #[validate(max_len = 255)]
@@ -110,6 +107,7 @@ fn test_schema_generation_works() {
 
 // Test with optional fields - simpler version without validation on Option
 #[derive(Validate, ToSchema)]
+#[allow(dead_code)]
 struct Profile {
     #[validate(email)]
     email: String,
@@ -142,6 +140,7 @@ fn test_optional_fields() {
 
 // Test string pattern rules
 #[derive(Validate, ToSchema)]
+#[allow(dead_code)]
 struct PatternTest {
     #[validate(ascii)]
     ascii_field: String,
@@ -190,6 +189,7 @@ fn test_pattern_validations() {
 
 // Test numeric rules
 #[derive(Validate, ToSchema)]
+#[allow(dead_code)]
 struct NumericTest {
     #[validate(positive)]
     score: i32,

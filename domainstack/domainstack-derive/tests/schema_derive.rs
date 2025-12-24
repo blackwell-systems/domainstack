@@ -1,12 +1,9 @@
-// Suppress dead_code warnings for test data structures
-#![allow(dead_code)]
-
 use domainstack_derive::ToSchema;
 use domainstack_schema::{OpenApiBuilder, ToSchema as ToSchemaTrait};
-use serde_json;
 
 // Test basic ToSchema derivation
 #[derive(ToSchema)]
+#[allow(dead_code)]
 struct SimpleUser {
     #[validate(email)]
     #[validate(max_len = 255)]
@@ -53,6 +50,7 @@ fn test_simple_schema_derivation() {
 
 // Test optional fields
 #[derive(ToSchema)]
+#[allow(dead_code)]
 struct UserWithOptional {
     #[validate(email)]
     email: String,
@@ -84,6 +82,7 @@ fn test_optional_fields() {
 
 // Test nested types
 #[derive(ToSchema)]
+#[allow(dead_code)]
 struct Address {
     #[validate(min_len = 1)]
     #[validate(max_len = 100)]
@@ -95,6 +94,7 @@ struct Address {
 }
 
 #[derive(ToSchema)]
+#[allow(dead_code)]
 struct UserWithAddress {
     #[validate(email)]
     email: String,
@@ -115,6 +115,7 @@ fn test_nested_types() {
 
 // Test collections
 #[derive(ToSchema)]
+#[allow(dead_code)]
 struct Team {
     #[validate(min_len = 1)]
     #[validate(max_len = 50)]
@@ -145,6 +146,7 @@ fn test_collections() {
 
 // Test schema hints
 #[derive(ToSchema)]
+#[allow(dead_code)]
 #[schema(description = "Product in the catalog")]
 struct Product {
     #[validate(min_len = 1)]
@@ -192,6 +194,7 @@ fn test_openapi_builder_integration() {
 
 // Test string pattern rules
 #[derive(ToSchema)]
+#[allow(dead_code)]
 struct PatternTest {
     #[validate(alphanumeric)]
     #[schema(description = "Alphanumeric only")]

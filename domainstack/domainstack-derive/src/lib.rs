@@ -32,6 +32,14 @@ enum ValidationRule {
     Custom(String),
 }
 
+#[derive(Debug, Clone)]
+struct StructValidation {
+    check: String,
+    code: Option<String>,
+    message: Option<String>,
+    when: Option<String>,
+}
+
 #[derive(Debug)]
 #[allow(dead_code)]
 struct FieldValidation {
@@ -64,6 +72,9 @@ fn generate_validate_impl(input: &DeriveInput) -> syn::Result<proc_macro2::Token
         }
     };
 
+    // Parse struct-level validation checks
+    let struct_validations = parse_struct_attributes(input)?;
+
     // Parse validation rules for each field
     let mut field_validations = Vec::new();
     for field in fields {
@@ -81,14 +92,21 @@ fn generate_validate_impl(input: &DeriveInput) -> syn::Result<proc_macro2::Token
     }
 
     // Generate validation code for each field
-    let validation_code = field_validations.iter().map(generate_field_validation);
+    let field_validation_code = field_validations.iter().map(generate_field_validation);
+
+    // Generate validation code for struct-level checks
+    let struct_validation_code = struct_validations.iter().map(generate_struct_validation);
 
     let expanded = quote! {
         impl #impl_generics domainstack::Validate for #name #ty_generics #where_clause {
             fn validate(&self) -> Result<(), domainstack::ValidationError> {
                 let mut err = domainstack::ValidationError::default();
 
-                #(#validation_code)*
+                // Field-level validations
+                #(#field_validation_code)*
+
+                // Struct-level validations (cross-field checks)
+                #(#struct_validation_code)*
 
                 if err.is_empty() { Ok(()) } else { Err(err) }
             }
@@ -96,6 +114,69 @@ fn generate_validate_impl(input: &DeriveInput) -> syn::Result<proc_macro2::Token
     };
 
     Ok(expanded)
+}
+
+fn parse_struct_attributes(input: &DeriveInput) -> syn::Result<Vec<StructValidation>> {
+    let mut validations = Vec::new();
+
+    for attr in &input.attrs {
+        if !attr.path().is_ident("validate") {
+            continue;
+        }
+
+        let validation = parse_struct_validate_attribute(attr)?;
+        validations.push(validation);
+    }
+
+    Ok(validations)
+}
+
+fn parse_struct_validate_attribute(attr: &Attribute) -> syn::Result<StructValidation> {
+    let meta = &attr.meta;
+
+    match meta {
+        Meta::List(list) => {
+            let nested: syn::punctuated::Punctuated<Meta, syn::Token![,]> =
+                list.parse_args_with(syn::punctuated::Punctuated::parse_terminated)?;
+
+            let mut check = None;
+            let mut code = None;
+            let mut message = None;
+            let mut when = None;
+
+            for meta in nested {
+                match meta {
+                    Meta::NameValue(nv) => {
+                        if nv.path.is_ident("check") {
+                            check = Some(parse_string_lit(&nv.value)?);
+                        } else if nv.path.is_ident("code") {
+                            code = Some(parse_string_lit(&nv.value)?);
+                        } else if nv.path.is_ident("message") {
+                            message = Some(parse_string_lit(&nv.value)?);
+                        } else if nv.path.is_ident("when") {
+                            when = Some(parse_string_lit(&nv.value)?);
+                        }
+                    }
+                    _ => return Err(syn::Error::new_spanned(meta, "Expected name = value")),
+                }
+            }
+
+            let check = check.ok_or_else(|| {
+                syn::Error::new_spanned(attr, "Struct-level validation requires 'check' parameter")
+            })?;
+
+            Ok(StructValidation {
+                check,
+                code,
+                message,
+                when,
+            })
+        }
+        _ => Err(syn::Error::new_spanned(
+            attr,
+            "Struct-level validation requires #[validate(check = \"...\", ...)]",
+        )),
+    }
 }
 
 fn parse_field_attributes(field: &Field) -> syn::Result<Vec<ValidationRule>> {
@@ -453,5 +534,34 @@ fn generate_custom_validation(
         if let Err(e) = #fn_path(&self.#field_name) {
             err.extend(e.prefixed(#field_name_str));
         }
+    }
+}
+
+fn generate_struct_validation(sv: &StructValidation) -> proc_macro2::TokenStream {
+    let check_expr: proc_macro2::TokenStream = sv.check.parse().unwrap();
+    let code = sv.code.as_deref().unwrap_or("cross_field_validation_failed");
+    let message = sv.message.as_deref().unwrap_or("Cross-field validation failed");
+
+    let validation_code = quote! {
+        if !(#check_expr) {
+            err.violations.push(domainstack::Violation {
+                path: domainstack::Path::root(),
+                code: #code,
+                message: #message.to_string(),
+                meta: domainstack::Meta::default(),
+            });
+        }
+    };
+
+    // Wrap in conditional if 'when' is specified
+    if let Some(when_expr) = &sv.when {
+        let when_tokens: proc_macro2::TokenStream = when_expr.parse().unwrap();
+        quote! {
+            if #when_tokens {
+                #validation_code
+            }
+        }
+    } else {
+        validation_code
     }
 }

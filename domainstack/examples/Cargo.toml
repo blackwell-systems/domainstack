@@ -37,3 +37,7 @@ path = "v3_error_envelope_nested.rs"
 [[example]]
 name = "v4_builder_customization"
 path = "v4_builder_customization.rs"
+
+[[example]]
+name = "v5_cross_field_validation"
+path = "v5_cross_field_validation.rs"

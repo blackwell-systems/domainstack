@@ -77,6 +77,64 @@ fn min_len_with_context(min: usize) -> Rule<str> {
 - Better debugging with contextual information
 - Improved user experience with specific, actionable errors
 
+#### Cross-Field Validation
+Added struct-level validation to check relationships between multiple fields:
+
+```rust
+use domainstack_derive::Validate;
+
+#[derive(Validate)]
+#[validate(
+    check = "self.password == self.password_confirmation",
+    code = "passwords_mismatch",
+    message = "Passwords must match"
+)]
+struct RegisterForm {
+    #[validate(length(min = 8))]
+    password: String,
+    password_confirmation: String,
+}
+```
+
+**Features:**
+- **Basic cross-field checks**: Compare multiple fields (e.g., password confirmation, date ranges)
+- **Conditional validation**: Use `when` parameter to apply checks conditionally
+- **Multiple checks**: Apply multiple struct-level validations
+- **Custom error messages**: Specify code and message for each check
+
+**Examples:**
+```rust
+// Date range validation
+#[validate(
+    check = "self.end_date > self.start_date",
+    code = "invalid_date_range",
+    message = "End date must be after start date"
+)]
+
+// Conditional validation
+#[validate(
+    check = "self.total >= self.minimum_order",
+    code = "below_minimum",
+    message = "Order below minimum",
+    when = "self.requires_minimum"
+)]
+
+// Multiple checks
+#[validate(check = "self.a == self.b", message = "A must equal B")]
+#[validate(check = "self.b == self.c", message = "B must equal C")]
+```
+
+**Use Cases:**
+- Password confirmation matching
+- Date range validation (end > start)
+- Mutually exclusive fields (discount code OR percentage, not both)
+- Conditional business rules
+- Complex field relationships
+
+**New Test Coverage:**
+- 15 new integration tests covering all cross-field scenarios
+- Example: `v5_cross_field_validation.rs` with 10 demonstrations
+
 #### Documentation Improvements
 - Added 30+ runnable doctests to public APIs (`ValidationError`, `Rule`, `Path`, all rules)
 - Documented `Box::leak()` memory behavior in `Path::parse()` with usage guidance
@@ -95,7 +153,7 @@ fn min_len_with_context(min: usize) -> Rule<str> {
 
 - Improved error messages for all new validation rules
 - Enhanced inline documentation across core types
-- All existing tests passing (177 total: 128 unit + 39 doctests + framework tests)
+- All tests passing (192 total: 143 unit/integration + 39 doctests + 10 framework tests)
 
 ### Breaking Changes
 - **Rule function signature changed**: All rules now receive `RuleContext` as second parameter

@@ -416,7 +416,7 @@ domainstack-actix = "1.0"   # For Actix-web framework
 
 ## Crates
 
-This repository contains **10 workspace members** (7 publishable crates, 3 example crates):
+This repository contains **12 workspace members** (8 publishable crates, 4 example crates):
 
 **Core (Publishable):**
 - **[domainstack](./domainstack/)** - Core validation library with composable rules
@@ -428,11 +428,13 @@ This repository contains **10 workspace members** (7 publishable crates, 3 examp
 - **[domainstack-http](./domainstack/domainstack-http/)** - Framework-agnostic HTTP helpers
 - **[domainstack-axum](./domainstack/domainstack-axum/)** - Axum extractor and response implementations
 - **[domainstack-actix](./domainstack/domainstack-actix/)** - Actix-web extractor and response implementations
+- **[domainstack-rocket](./domainstack/domainstack-rocket/)** - Rocket request guard and response implementations
 
 **Examples (Not Published):**
 - **[domainstack-examples](./domainstack/domainstack-examples/)** - Core validation examples
 - **[examples-axum](./domainstack/examples-axum/)** - Axum booking service example
 - **[examples-actix](./domainstack/examples-actix/)** - Actix-web booking service example
+- **[examples-rocket](./domainstack/examples-rocket/)** - Rocket booking service example
 
 ## Documentation
 

@@ -75,7 +75,7 @@ After the initial publish, the automated GitHub Actions workflow will handle rel
 4. Create and push tag: `git tag v1.X.Y && git push origin v1.X.Y`
 5. GitHub Actions will automatically:
    - Create a GitHub release
-   - Publish all seven crates to crates.io in the correct order
+   - Publish all eight crates to crates.io in the correct order
 
 **Note:** domainstack-schema may have a different version number (currently v0.8.0) - manage its releases separately if needed.
 
@@ -90,10 +90,11 @@ Always publish in this order (respecting dependency chain):
 5. **domainstack-schema** - Depends on domainstack
 6. **domainstack-axum** - Depends on domainstack + domainstack-http
 7. **domainstack-actix** - Depends on domainstack + domainstack-http
+8. **domainstack-rocket** - Depends on domainstack + domainstack-http
 
 **Parallel publishing (Step 3):** Crates 3-5 can be published in parallel since they only depend on domainstack.
 
-**Parallel publishing (Step 4):** Crates 6-7 can be published in parallel since they have the same dependencies.
+**Parallel publishing (Step 4):** Crates 6-8 can be published in parallel since they have the same dependencies.
 
 ## Version Synchronization
 

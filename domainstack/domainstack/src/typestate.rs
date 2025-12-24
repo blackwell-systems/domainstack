@@ -31,7 +31,7 @@
 //!
 //!     // Transform to validated state
 //!     pub fn validate(self) -> Result<Email<Validated>, ValidationError> {
-//!         validate("email", self.value.as_str(), &rules::email())?;
+//!         validate("email", self.value.as_str(), &rules::contains("@"))?;
 //!         Ok(Email {
 //!             value: self.value,
 //!             _state: PhantomData,
@@ -92,7 +92,7 @@
 //!         if let Err(e) = validate("username", self.username.as_str(), &rules::min_len(3)) {
 //!             errors.extend(e);
 //!         }
-//!         if let Err(e) = validate("email", self.email.as_str(), &rules::email()) {
+//!         if let Err(e) = validate("email", self.email.as_str(), &rules::contains("@")) {
 //!             errors.extend(e);
 //!         }
 //!         if let Err(e) = validate("age", &self.age, &rules::range(0, 120)) {
@@ -268,7 +268,7 @@ pub struct Unvalidated;
 ///
 /// impl Email<Unvalidated> {
 ///     pub fn validate(self) -> Result<Email<Validated>, ValidationError> {
-///         validate("email", self.value.as_str(), &rules::email())?;
+///         validate("email", self.value.as_str(), &rules::contains("@"))?;
 ///         Ok(Email {
 ///             value: self.value,
 ///             _state: PhantomData,

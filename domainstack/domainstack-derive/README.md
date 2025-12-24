@@ -104,8 +104,36 @@ Both `Validate` and `ToSchema` support these validation rules:
 
 **Composite Rules:**
 - `#[validate(nested)]` - Validate nested struct
-- `#[validate(each(nested))]` - Validate each item in collection
+- `#[validate(each(nested))]` - Validate each item in collection (for nested types)
+- `#[validate(each(rule))]` - Validate each item with any rule (for primitives)
 - `#[validate(custom = "function")]` - Custom validation function
+
+**Collection Item Validation:**
+
+The `each(rule)` syntax allows validating each item in a collection:
+
+```rust
+#[derive(Validate)]
+struct BlogPost {
+    // Validate each email in the list
+    #[validate(each(email))]
+    author_emails: Vec<String>,
+
+    // Validate each tag length
+    #[validate(each(length(min = 1, max = 50)))]
+    tags: Vec<String>,
+
+    // Validate each URL
+    #[validate(each(url))]
+    related_links: Vec<String>,
+
+    // Validate each item is alphanumeric
+    #[validate(each(alphanumeric))]
+    keywords: Vec<String>,
+}
+```
+
+Error paths include array indices: `tags[0]`, `author_emails[1]`, etc.
 
 **Legacy Syntax (Still Supported):**
 - `#[validate(length(min = a, max = b))]` - String length (prefer `min_len`/`max_len`)

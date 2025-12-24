@@ -44,6 +44,33 @@ user.validate()?;  // ✓ Validates email format, length, age range
 // - required: ["email", "age"]  (nickname excluded)
 ```
 
+#### Collection Item Validation with `each(rule)` (domainstack-derive)
+
+**NEW**: Validate each item in a collection with any validation rule:
+
+```rust
+#[derive(Validate)]
+struct BlogPost {
+    // Validate each email in the list
+    #[validate(each(email))]
+    author_emails: Vec<String>,
+
+    // Validate each tag length
+    #[validate(each(length(min = 1, max = 50)))]
+    tags: Vec<String>,
+
+    // Validate each URL
+    #[validate(each(url))]
+    related_links: Vec<String>,
+}
+```
+
+**Previously**, `each()` only supported `each(nested)` for nested types. Now it supports **any validation rule**:
+- `each(email)`, `each(url)`, `each(alphanumeric)`, etc.
+- `each(min_len = n)`, `each(max_len = n)`
+- `each(length(min, max))`, `each(range(min, max))`
+- Error paths include array indices: `tags[0]`, `emails[1]`, etc.
+
 **Automatic Rule → Schema Mappings:**
 - `email()` → `format: "email"`
 - `url()` → `format: "uri"`

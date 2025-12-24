@@ -6,77 +6,15 @@ This document explores improvements that would be possible in a major version bu
 
 ---
 
-## ✅ Implementation Progress (v0.4.0 - v0.5.0)
-
-### Already Implemented WITHOUT Breaking Changes! 🎉
-
-1. **✅ Builder Pattern for Rules (v0.4.0)**
-   - Implemented via `.with_message()`, `.with_code()`, `.with_meta()`
-   - Fully backward compatible - rules still work without customization
-   - No breaking changes required!
-
-2. **✅ Cross-Field Validation (v0.5.0)**
-   - Implemented via `#[validate(check = "expr", code = "...", message = "...")]`
-   - Conditional validation via `when = "predicate"`
-   - Examples in `examples/v5_cross_field_validation.rs`
-   - Added as new feature, zero breaking changes!
-
-3. **✅ Better Error Context (v0.3.0+)**
-   - `RuleContext` already exists and provides field paths
-   - Context-aware error messages working
-   - This was built into the system from the start!
-
-4. **✅ Rule System Improvements (v0.4.0)**
-   - **Fixed:** NaN handling with new `finite()` rule + `FiniteCheck` trait
-   - **Fixed:** Added `non_zero()` rule for better numeric validation
-   - **Fixed:** Regex caching with `once_cell` - EMAIL_REGEX and URL_REGEX are static
-   - **Fixed:** Feature flags unified under `regex` (removed `email` alias)
-   - All improvements done without breaking changes!
-
-5. **✅ Extended Rule Library (Unreleased - v0.5.0)**
-   - **String Semantics (4 rules):** `non_blank()`, `no_whitespace()`, `ascii()`, `len_chars()`
-   - **Choice/Membership (3 rules):** `equals()`, `not_equals()`, `one_of()`
-   - **Collection Validation (3 rules):** `min_items()`, `max_items()`, `unique()`
-   - 10 high-value rules added with zero breaking changes!
-   - 131 unit tests + 52 doctests all passing
-
-### Current Status
-
-**v0.4.0 Achievements:**
-- Builder-style customization ✅
-- Float edge case handling ✅
-- Regex performance optimization ✅
-- Feature flag consistency ✅
-- Zero breaking changes ✅
-
-**v0.5.0 Achievements (Unreleased):**
-- Cross-field validation ✅
-- Conditional validation ✅
-- Password confirmation patterns ✅
-- Date range validation ✅
-- **Extended Rule Library (10 new rules):** ✅
-  - String semantics: `non_blank()`, `no_whitespace()`, `ascii()`, `len_chars()`
-  - Choice/membership: `equals()`, `not_equals()`, `one_of()`
-  - Collection validation: `min_items()`, `max_items()`, `unique()`
-- All 131 unit tests + 52 doctests passing ✅
-
-**What This Means:**
-- We've implemented 4 of the P0/P1 features WITHOUT breaking changes
-- Extended the validation rule library with 10 high-value rules
-- The architecture is more flexible than initially thought
-- Breaking changes may not be needed for most desired features!
-
----
-
 ## Current Constraints
 
-In v0.4.0, we maintained **100% backward compatibility** with v0.3.0. This means:
-- ✅ No API changes to existing functions
-- ✅ No signature changes
-- ✅ No behavior changes
-- ✅ Only additions allowed
+In v0.4.0+, we maintain **100% backward compatibility**. This means:
+- No API changes to existing functions
+- No signature changes
+- No behavior changes
+- Only additions allowed
 
-**Result:** Safe, but not optimal.
+**Result:** Safe, but limits some optimizations.
 
 ---
 
@@ -648,50 +586,16 @@ let schema = schema_for!(User);
 
 | Change | Impact | Complexity | User Demand | Priority | Status |
 |--------|--------|------------|-------------|----------|--------|
-| ~~Builder pattern for rules~~ | 🔥🔥🔥 | Medium | Very High | **P0** | ✅ v0.4.0 |
 | Async validation | 🔥🔥🔥 | High | Very High | **P0** | 📋 Planned |
-| ~~Cross-field validation~~ | 🔥🔥 | Medium | High | **P1** | ✅ v0.5.0 |
-| Remove Box::leak() | 🔥🔥 | High | Medium | **P1** | 📋 Planned |
 | Phantom types for validation state | 🔥🔥 | Low | Medium | **P2** | 📋 Planned |
-| ~~Conditional validation~~ | 🔥🔥 | Medium | Medium | **P2** | ✅ v0.5.0 |
-| ~~Better error messages~~ | 🔥🔥🔥 | Medium | High | **P1** | ✅ v0.3.0+ |
 | Schema generation | 🔥🔥 | High | Medium | **P2** | 📋 Planned |
 | SmallVec optimization | 🔥 | Low | Low | **P3** | 📋 Planned |
 | Const generics | 🔥 | Medium | Low | **P3** | 📋 Planned |
 | HashMap for metadata | 🔥 | Low | Low | **P3** | 📋 Planned |
 
-**Legend:**
-- ✅ = Implemented (no breaking changes needed!)
-- 📋 = Planned for future versions
-
 ---
 
 ## Recommended v1.0.0 Feature Set
-
-### ✅ Already Completed (v0.4.0 - v0.5.0)
-
-1. **~~Builder Pattern for Rules~~** (v0.4.0)
-   - ✅ Custom error messages via `.with_message()`
-   - ✅ Custom error codes via `.with_code()`
-   - ✅ Additional metadata via `.with_meta()`
-   - ✅ Backward compatible - no breaking changes!
-
-2. **~~Cross-Field Validation~~** (v0.5.0)
-   - ✅ `#[validate(check = "expr")]` attribute
-   - ✅ Field relationship enforcement
-   - ✅ Business rule validation
-
-3. **~~Better Error Messages~~** (v0.3.0+)
-   - ✅ Context-aware messages via `RuleContext`
-   - ✅ Includes field names and paths
-   - ✅ Built into system from start
-
-4. **~~Conditional Validation~~** (v0.5.0)
-   - ✅ `#[validate(when = "predicate")]`
-   - ✅ Polymorphic validation
-   - ✅ Business logic support
-
-### Still Needed for v1.0.0
 
 #### Must Have (P0)
 
@@ -701,21 +605,14 @@ let schema = schema_for!(User);
    - External API validation
    - Validation context passing
 
-#### Should Have (P1)
-
-2. **Remove Box::leak()**
-   - Use `Arc<str>` for path segments
-   - Better memory profile
-   - More idiomatic Rust
-
 #### Nice to Have (P2)
 
-3. **Phantom Types**
+2. **Phantom Types**
    - Compile-time validation guarantees
    - Type-safe state tracking
    - Optional adoption
 
-4. **Schema Generation**
+3. **Schema Generation**
    - OpenAPI integration
    - JSON Schema export
    - TypeScript type generation
@@ -736,37 +633,29 @@ let schema = schema_for!(User);
 - High migration cost
 - Risky
 
-### Option 2: Gradual (v0.5 → v0.9 → v1.0)
+### Option 2: Gradual (Recommended)
 
 **Recommended Approach:**
 
-#### v0.5.0 - Async Validation
+#### v0.6.0 - Async Validation
 - Add `AsyncValidate` trait
 - Add validation context
 - **Breaking:** None (new feature)
 
-#### v0.6.0 - Builder Pattern
-- Add builders for all rules
-- Keep existing functions working
-- **Breaking:** None (parallel APIs)
-
-#### v0.7.0 - Cross-Field Validation
-- Add `#[validate(check = "fn")]` attribute
-- **Breaking:** None (new feature)
-
-#### v0.8.0 - Better Error Context
-- Add `RuleContext` to rules
-- **Breaking:** Optional (use new API or old)
+#### v0.7.0 - Additional domain helpers
+- Performance optimizations
+- Additional utilities
+- **Breaking:** None (new features)
 
 #### v0.9.0 - Deprecations
-- Deprecate old APIs
+- Deprecate old APIs if needed
 - Add migration warnings
 - **Breaking:** None (warnings only)
 
-#### v1.0.0 - Clean Up
-- Remove deprecated APIs
+#### v1.0.0 - Stabilize
 - Finalize stable API
-- **Breaking:** Only removes deprecated items
+- Clean up any deprecated items
+- **Breaking:** Only removes deprecated items (if any)
 
 ---
 
@@ -791,52 +680,20 @@ let schema = schema_for!(User);
 
 ## Recommendation
 
-### For v0.4.0 (Now)
-✅ Ship as-is with no breaking changes
-✅ Focus on adoption and feedback
+### Current Status
+- Focus on adding features without breaking changes
+- Maintain backward compatibility
+- Gather feedback from users
 
-### For v0.5.0-v0.9.0 (Next 6-12 months)
-✅ Add new features gradually (async, builders, cross-field)
-✅ Keep backward compatibility
-✅ Gather feedback from users
+### For v1.0.0
+- Finalize stable API
+- Minimal to no breaking changes expected
+- Declare production-ready
 
-### For v1.0.0 (12+ months out)
-✅ Clean up deprecated APIs
-✅ Stabilize with breaking changes if needed
-✅ Declare production-ready
-
-**Philosophy:** Move fast, but carry users with you. Breaking changes are acceptable in v1.0, but only after proving value in v0.x releases.
+**Philosophy:** Move fast, but carry users with you. Most desired features can be added without breaking changes.
 
 ---
 
 ## Conclusion
 
-**Update (v0.5.0):** It turns out we didn't need breaking changes! We've successfully implemented:
-- ✅ Builder pattern for rules (v0.4.0)
-- ✅ Cross-field validation (v0.5.0)
-- ✅ Conditional validation (v0.5.0)
-- ✅ Better error context (built-in)
-- ✅ Rule system improvements (v0.4.0)
-- ✅ Extended rule library - 10 new validation rules (v0.5.0)
-  - String semantics: `non_blank()`, `no_whitespace()`, `ascii()`, `len_chars()`
-  - Choice/membership: `equals()`, `not_equals()`, `one_of()`
-  - Collection validation: `min_items()`, `max_items()`, `unique()`
-
-**All without breaking backward compatibility!** 🎉
-
-### Revised Strategy
-
-1. **v0.4.0** - ✅ Done! Builder pattern, rule improvements, zero breaking changes
-2. **v0.5.0** - ✅ Done! Cross-field validation, conditional validation, extended rule library (10 new rules)
-   - String semantics: `non_blank()`, `no_whitespace()`, `ascii()`, `len_chars()`
-   - Choice/membership: `equals()`, `not_equals()`, `one_of()`
-   - Collection validation: `min_items()`, `max_items()`, `unique()`
-3. **v0.6.0** - Async validation (new trait, no breaking changes)
-4. **v0.7.0** - Additional domain helpers and advanced features
-5. **v1.0.0** - Stabilize API (no breaking changes expected)
-
-**Key Insight:** Most desired features can be added without breaking changes. The architecture is more flexible than initially thought. We've successfully improved memory management (Arc<str> for paths) while maintaining backward compatibility.
-
-**Achievement Unlocked:** We've added 10 high-value validation rules (string semantics, choice/membership, collection validation) in complexity order - all with zero breaking changes and comprehensive test coverage (131 unit tests + 52 doctests)!
-
-**The features are exciting, AND we kept user trust.**
+The architecture is flexible enough to add most desired features without breaking changes. Breaking changes should be reserved for true architectural improvements that provide significant value and cannot be done compatibly.

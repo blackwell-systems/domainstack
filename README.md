@@ -729,23 +729,33 @@ See [Rules Reference](./docs/RULES.md) for complete documentation and examples.
 
 ## Examples
 
-### Basic Validation
+### Derive Macro (Recommended)
+
+Most validation is declarative with `#[derive(Validate)]`:
 
 ```rust
-use domainstack::prelude::*;
+#[derive(Debug, Validate)]
+struct User {
+    #[validate(length(min = 3, max = 20))]
+    #[validate(alphanumeric)]
+    username: String,
 
-struct Username(String);
+    #[validate(email)]
+    #[validate(max_len = 255)]
+    email: String,
 
-impl Username {
-    pub fn new(raw: String) -> Result<Self, ValidationError> {
-        let rule = rules::min_len(3).and(rules::max_len(20));
-        validate("username", raw.as_str(), &rule)?;
-        Ok(Self(raw))
-    }
+    #[validate(range(min = 18, max = 120))]
+    age: u8,
 }
+
+// Validate all fields at once
+let user = User { username, email, age };
+user.validate()?;  // ✓ Validates all constraints
 ```
 
-### Derive Macro
+### Nested Validation
+
+Compose complex domain models with automatic path tracking:
 
 ```rust
 #[derive(Debug, Validate)]
@@ -759,6 +769,8 @@ struct Booking {
     #[validate(range(min = 1, max = 30))]
     nights: u8,
 }
+
+// Errors include full paths: "rooms[0].adults", "guest.email.value"
 ```
 
 ### Collection Item Validation
@@ -796,6 +808,31 @@ Error paths include array indices for precise error tracking:
 - `author_emails[0]` - "Invalid email format"
 - `tags[2]` - "Must be at most 50 characters"
 - `related_links[1]` - "Invalid URL format"
+
+### Manual Validation (For Primitives & Fine-Grained Control)
+
+For newtype wrappers or custom logic, use manual validation:
+
+```rust
+use domainstack::prelude::*;
+
+struct Username(String);
+
+impl Username {
+    pub fn new(raw: String) -> Result<Self, ValidationError> {
+        let rule = rules::min_len(3)
+            .and(rules::max_len(20))
+            .and(rules::alphanumeric());
+        validate("username", raw.as_str(), &rule)?;
+        Ok(Self(raw))
+    }
+}
+```
+
+**When to use manual:**
+- Newtype wrappers (tuple structs like `Email(String)`)
+- Custom validation logic beyond declarative rules
+- Fine-grained error message control
 
 ## Running Examples
 

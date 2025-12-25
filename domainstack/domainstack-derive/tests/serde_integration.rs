@@ -1,5 +1,7 @@
 //! Test ValidateOnDeserialize macro - validates during deserialization
 
+#![cfg(feature = "serde")]
+
 use domainstack::Validate;
 use domainstack_derive::ValidateOnDeserialize;
 

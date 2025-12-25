@@ -19,26 +19,28 @@ It's built for the boundary you actually live at:
 Most validation crates ask: **"Is this DTO valid?"**
 domainstack asks: **"How do I safely construct domain models from untrusted input—and report failures with a consistent error contract?"**
 
-### Two validation gates:
+### Two validation gates
 
-1. **Gate 1: DTO → Domain** (untrusted → trusted) - Parse and validate incoming data into domain types
-2. **Gate 2: Async/context validation** (optional) - DB/API checks like uniqueness, rate limits, authorization
+**Gate 1: DTO → Domain** (untrusted → trusted) — Parse + validate incoming data into domain types
+
+**Gate 2: Async/context validation** (optional) — After Gate 1 succeeds, run DB/API checks like uniqueness, rate limits, authorization
 
 ## What that gives you
 
-- **Domain-first modeling**: invalid states are hard/impossible to represent
+- **Domain-first modeling**: make invalid states difficult (or impossible) to represent
 - **Composable rule algebra**: reusable rules with `.and()`, `.or()`, `.when()`
 - **Structured error paths**: `rooms[0].adults`, `guest.email.value` (UI-friendly)
 - **Async validation with context**: DB/API checks like uniqueness, rate limits
 - **Cross-field validation**: invariants like password confirmation, date ranges
 - **Type-state tracking**: phantom types to enforce "validated" at compile time
-- **Schema + client parity**: generate OpenAPI and TypeScript/Zod from the same Rust rules
+- **Schema + client parity**: generate OpenAPI (and TypeScript/Zod via CLI) from the same Rust rules
 - **Framework adapters**: one-line boundary extraction (Axum / Actix / Rocket)
 - **Lean core**: zero-deps base, opt-in features for regex / async / chrono / serde
 
 ### Why domainstack over validator/garde/etc.?
 
-**validator** and **garde** focus on "Is this struct valid?" domainstack focuses on **DTO → Domain conversion** with field-level error paths designed for APIs. It provides composable rules as values, async validation with context (DB/API checks), and framework adapters that automatically convert validation errors into structured HTTP responses. If you need valid-by-construction domain types with errors that map cleanly to forms and clients, domainstack is purpose-built for that.
+validator and garde focus on "Is this struct valid?"
+domainstack focuses on DTO → Domain conversion with field-level paths designed for APIs, rules as values, optional async validation with context, and adapters that map validation errors into structured HTTP responses. If you want valid-by-construction domain types with errors that map cleanly to forms and clients, domainstack is purpose-built for that.
 
 ## Table of Contents
 

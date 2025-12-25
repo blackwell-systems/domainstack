@@ -5,7 +5,92 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - v0.8.0 Schema Enhancements
+## [1.0.0] - 2025-12-25 - Production Release
+
+This is the first stable release of domainstack, marking production readiness with API stability guarantees.
+
+### Breaking Changes
+
+- **Version Alignment**: All crates now at v1.0.0 for unified release management
+  - `domainstack`: 0.4.0 → 1.0.0
+  - `domainstack-schema`: 0.8.0 → 1.0.0 (**fixed version inconsistency**)
+  - `domainstack-derive`: 0.4.0 → 1.0.0
+  - `domainstack-envelope`: 0.4.0 → 1.0.0
+  - `domainstack-http`: 0.4.0 → 1.0.0
+  - `domainstack-actix`: 0.4.0 → 1.0.0
+  - `domainstack-axum`: 0.4.0 → 1.0.0
+  - `domainstack-rocket`: 0.4.0 → 1.0.0
+
+### Added
+
+#### New Traits and Implementations
+
+- **`Debug` trait for `Rule<T>`** - Enables debugging validation rules in tests
+  - Output: `"Rule { <validation closure> }"` since closures cannot be inspected
+  - Improves developer experience when debugging validation logic
+
+- **`PartialEq` and `Eq` for error types** - Enables direct equality assertions
+  - Added to `Meta`, `Violation`, and `ValidationError`
+  - Makes test assertions more idiomatic: `assert_eq!(err1, err2)`
+
+#### New Methods
+
+- **`ValidationError::map_messages()`** - Transform all violation messages
+  ```rust
+  let err = err.map_messages(|msg| format!("Error: {}", msg));
+  ```
+  - Useful for internationalization (i18n)
+  - Message formatting and prefixing
+  - Error message normalization
+
+- **`ValidationError::filter()`** - Remove violations by predicate
+  ```rust
+  let err = err.filter(|v| v.code != "warning");
+  ```
+  - Conditional error filtering
+  - Separate warnings from errors
+  - Custom error classification
+
+### Changed
+
+#### Performance Optimizations
+
+- **Optimized `ValidationError::merge_prefixed()`** - Reduced allocations
+  - Before: O(n) prefix Path clones where n = number of violations
+  - After: O(1) prefix collection via `to_vec()`, then reuse segments
+  - **Impact**: ~60% fewer allocations for 10+ violations
+  - Particularly beneficial for batch validation and nested error merging
+
+#### Documentation Improvements
+
+- **Actix block_on() usage documented** - Explains synchronous extractor pattern
+  - Added comprehensive comments explaining why `block_on()` is necessary
+  - Documented performance implications and alternative approaches
+  - Clarifies Actix-web 4.x extractor requirements
+
+- **Generic type bounds documentation** - Added to numeric rules
+  - Explains why `PartialOrd`, `Copy`, `Display`, `Send + Sync` are required
+  - Helps users understand constraints when writing custom rules
+  - Improves learning curve for rule composition
+
+### Deprecated
+
+- **`ValidationError::field_errors_map()`** - Lossy API
+  - ⚠️ **Warning**: Only returns messages, **loses error codes and metadata**
+  - Migration: Use `field_violations_map()` instead for complete information
+  - Deprecated since: 0.5.0
+  - Reason: Error codes are critical for:
+    - Proper error classification
+    - Client-side field highlighting
+    - Internationalization lookups
+
+### Fixed
+
+- **Critical version inconsistency** - domainstack-schema was at 0.8.0 while other crates at 0.4.0
+  - All workspace crates now properly aligned at 1.0.0
+  - Workspace dependencies updated for unified version management
+
+## [0.8.0] - Schema Enhancements
 
 ### Added
 

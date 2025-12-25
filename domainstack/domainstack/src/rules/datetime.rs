@@ -190,23 +190,24 @@ pub fn after(limit: DateTime<Utc>) -> Rule<DateTime<Utc>> {
 ///
 /// ```
 /// use domainstack::prelude::*;
-/// use chrono::{NaiveDate, Utc};
+/// use chrono::{NaiveDate, Utc, Datelike};
 ///
 /// let rule = rules::age_range(18, 120);
 ///
 /// // Someone born 25 years ago is valid (18-120)
+/// let today = Utc::now().date_naive();
 /// let birth_date = NaiveDate::from_ymd_opt(
-///     Utc::now().year() - 25,
-///     Utc::now().month(),
-///     Utc::now().day()
+///     today.year() - 25,
+///     today.month(),
+///     today.day()
 /// ).unwrap();
 /// assert!(rule.apply(&birth_date).is_empty());
 ///
 /// // Someone born 10 years ago is invalid (under 18)
 /// let too_young = NaiveDate::from_ymd_opt(
-///     Utc::now().year() - 10,
-///     Utc::now().month(),
-///     Utc::now().day()
+///     today.year() - 10,
+///     today.month(),
+///     today.day()
 /// ).unwrap();
 /// assert!(!rule.apply(&too_young).is_empty());
 /// ```

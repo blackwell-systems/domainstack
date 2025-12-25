@@ -784,7 +784,7 @@ cargo llvm-cov --all-features --workspace --html
 
 </details>
 
-## Crates
+## 📦 Crates
 
 This repository contains **12 workspace members** (8 publishable crates, 4 example crates):
 

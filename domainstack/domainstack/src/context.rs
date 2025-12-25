@@ -163,3 +163,80 @@ impl Default for RuleContext {
         Self::anonymous()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_root_context() {
+        let ctx = RuleContext::root("username");
+        assert_eq!(ctx.field_name, Some("username".into()));
+        assert_eq!(ctx.parent_path.to_string(), "");
+        assert_eq!(ctx.value_debug, None);
+    }
+
+    #[test]
+    fn test_anonymous_context() {
+        let ctx = RuleContext::anonymous();
+        assert_eq!(ctx.field_name, None);
+        assert_eq!(ctx.parent_path.to_string(), "");
+    }
+
+    #[test]
+    fn test_child_context_with_named_parent() {
+        let parent = RuleContext::root("user");
+        let child = parent.child("email");
+        assert_eq!(child.field_name, Some("email".into()));
+        assert_eq!(child.parent_path.to_string(), "user");
+    }
+
+    #[test]
+    fn test_child_context_with_anonymous_parent() {
+        let parent = RuleContext::anonymous();
+        let child = parent.child("email");
+        assert_eq!(child.field_name, Some("email".into()));
+        assert_eq!(child.parent_path.to_string(), "");
+    }
+
+    #[test]
+    fn test_with_value_debug() {
+        let ctx = RuleContext::root("age").with_value_debug("42");
+        assert_eq!(ctx.value_debug, Some("42".to_string()));
+    }
+
+    #[test]
+    fn test_full_path_root_field() {
+        let ctx = RuleContext::root("email");
+        assert_eq!(ctx.full_path().to_string(), "email");
+    }
+
+    #[test]
+    fn test_full_path_nested_field() {
+        let parent = RuleContext::root("user");
+        let child = parent.child("email");
+        assert_eq!(child.full_path().to_string(), "user.email");
+    }
+
+    #[test]
+    fn test_full_path_anonymous() {
+        let ctx = RuleContext::anonymous();
+        assert_eq!(ctx.full_path().to_string(), "");
+    }
+
+    #[test]
+    fn test_default_context() {
+        let ctx = RuleContext::default();
+        assert_eq!(ctx.field_name, None);
+        assert_eq!(ctx.parent_path.to_string(), "");
+    }
+
+    #[test]
+    fn test_deeply_nested_context() {
+        let root = RuleContext::root("team");
+        let member = root.child("members");
+        let user = member.child("user");
+        let email = user.child("email");
+        assert_eq!(email.full_path().to_string(), "team.members.user.email");
+    }
+}

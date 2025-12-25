@@ -187,3 +187,334 @@ fn escape_regex(pattern: &str) -> String {
     let pattern = pattern.strip_suffix('$').unwrap_or(pattern);
     pattern.to_string()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_generate_base_type_primitives() {
+        assert_eq!(generate_base_type(&FieldType::String), "z.string()");
+        assert_eq!(generate_base_type(&FieldType::Bool), "z.boolean()");
+        assert_eq!(generate_base_type(&FieldType::U8), "z.number()");
+        assert_eq!(generate_base_type(&FieldType::I32), "z.number()");
+        assert_eq!(generate_base_type(&FieldType::F64), "z.number()");
+    }
+
+    #[test]
+    fn test_generate_base_type_large_integers() {
+        let result = generate_base_type(&FieldType::U64);
+        assert!(result.contains("z.number()"));
+        assert!(result.contains("Warning"));
+        assert!(result.contains("precision"));
+
+        let result = generate_base_type(&FieldType::I128);
+        assert!(result.contains("z.number()"));
+        assert!(result.contains("Warning"));
+    }
+
+    #[test]
+    fn test_generate_base_type_option() {
+        let result = generate_base_type(&FieldType::Option(Box::new(FieldType::String)));
+        assert_eq!(result, "z.string()");
+
+        let result = generate_base_type(&FieldType::Option(Box::new(FieldType::U32)));
+        assert_eq!(result, "z.number()");
+    }
+
+    #[test]
+    fn test_generate_base_type_vec() {
+        let result = generate_base_type(&FieldType::Vec(Box::new(FieldType::String)));
+        assert_eq!(result, "z.array(z.string())");
+
+        let result = generate_base_type(&FieldType::Vec(Box::new(FieldType::U32)));
+        assert_eq!(result, "z.array(z.number())");
+    }
+
+    #[test]
+    fn test_generate_base_type_custom() {
+        let result = generate_base_type(&FieldType::Custom("User".to_string()));
+        assert_eq!(result, "UserSchema /* Custom type */");
+    }
+
+    #[test]
+    fn test_string_validation_rules() {
+        let mut output = String::new();
+
+        generate_validation_rule(&mut output, &ValidationRule::Email, &FieldType::String).unwrap();
+        assert_eq!(output, ".email()");
+
+        output.clear();
+        generate_validation_rule(&mut output, &ValidationRule::Url, &FieldType::String).unwrap();
+        assert_eq!(output, ".url()");
+
+        output.clear();
+        generate_validation_rule(&mut output, &ValidationRule::MinLen(5), &FieldType::String)
+            .unwrap();
+        assert_eq!(output, ".min(5)");
+
+        output.clear();
+        generate_validation_rule(
+            &mut output,
+            &ValidationRule::MaxLen(100),
+            &FieldType::String,
+        )
+        .unwrap();
+        assert_eq!(output, ".max(100)");
+    }
+
+    #[test]
+    fn test_length_validation() {
+        let mut output = String::new();
+        generate_validation_rule(
+            &mut output,
+            &ValidationRule::Length { min: 3, max: 20 },
+            &FieldType::String,
+        )
+        .unwrap();
+        assert_eq!(output, ".min(3).max(20)");
+    }
+
+    #[test]
+    fn test_string_pattern_rules() {
+        let mut output = String::new();
+
+        generate_validation_rule(
+            &mut output,
+            &ValidationRule::Alphanumeric,
+            &FieldType::String,
+        )
+        .unwrap();
+        assert!(output.contains(".regex(/^[a-zA-Z0-9]*$/)"));
+
+        output.clear();
+        generate_validation_rule(&mut output, &ValidationRule::AlphaOnly, &FieldType::String)
+            .unwrap();
+        assert!(output.contains(".regex(/^[a-zA-Z]*$/)"));
+
+        output.clear();
+        generate_validation_rule(
+            &mut output,
+            &ValidationRule::NumericString,
+            &FieldType::String,
+        )
+        .unwrap();
+        assert!(output.contains(".regex(/^[0-9]*$/)"));
+    }
+
+    #[test]
+    fn test_string_content_rules() {
+        let mut output = String::new();
+
+        generate_validation_rule(
+            &mut output,
+            &ValidationRule::StartsWith("https://".to_string()),
+            &FieldType::String,
+        )
+        .unwrap();
+        assert_eq!(output, ".startsWith(\"https://\")");
+
+        output.clear();
+        generate_validation_rule(
+            &mut output,
+            &ValidationRule::EndsWith(".com".to_string()),
+            &FieldType::String,
+        )
+        .unwrap();
+        assert_eq!(output, ".endsWith(\".com\")");
+
+        output.clear();
+        generate_validation_rule(
+            &mut output,
+            &ValidationRule::Contains("example".to_string()),
+            &FieldType::String,
+        )
+        .unwrap();
+        assert_eq!(output, ".includes(\"example\")");
+    }
+
+    #[test]
+    fn test_numeric_validation_rules() {
+        let mut output = String::new();
+
+        generate_validation_rule(
+            &mut output,
+            &ValidationRule::Range {
+                min: "18".to_string(),
+                max: "120".to_string(),
+            },
+            &FieldType::U8,
+        )
+        .unwrap();
+        assert_eq!(output, ".min(18).max(120)");
+
+        output.clear();
+        generate_validation_rule(
+            &mut output,
+            &ValidationRule::Min("0".to_string()),
+            &FieldType::I32,
+        )
+        .unwrap();
+        assert_eq!(output, ".min(0)");
+
+        output.clear();
+        generate_validation_rule(
+            &mut output,
+            &ValidationRule::Max("100".to_string()),
+            &FieldType::I32,
+        )
+        .unwrap();
+        assert_eq!(output, ".max(100)");
+
+        output.clear();
+        generate_validation_rule(&mut output, &ValidationRule::Positive, &FieldType::I32).unwrap();
+        assert_eq!(output, ".positive()");
+
+        output.clear();
+        generate_validation_rule(&mut output, &ValidationRule::Negative, &FieldType::I32).unwrap();
+        assert_eq!(output, ".negative()");
+    }
+
+    #[test]
+    fn test_non_zero_validation() {
+        let mut output = String::new();
+        generate_validation_rule(&mut output, &ValidationRule::NonZero, &FieldType::I32).unwrap();
+        assert!(output.contains(".refine"));
+        assert!(output.contains("n !== 0"));
+        assert!(output.contains("Must be non-zero"));
+    }
+
+    #[test]
+    fn test_multiple_of_validation() {
+        let mut output = String::new();
+        generate_validation_rule(
+            &mut output,
+            &ValidationRule::MultipleOf("5".to_string()),
+            &FieldType::I32,
+        )
+        .unwrap();
+        assert_eq!(output, ".multipleOf(5)");
+    }
+
+    #[test]
+    fn test_finite_validation() {
+        let mut output = String::new();
+        generate_validation_rule(&mut output, &ValidationRule::Finite, &FieldType::F64).unwrap();
+        assert_eq!(output, ".finite()");
+    }
+
+    #[test]
+    fn test_custom_validation() {
+        let mut output = String::new();
+        generate_validation_rule(
+            &mut output,
+            &ValidationRule::Custom("my_validator".to_string()),
+            &FieldType::String,
+        )
+        .unwrap();
+        assert!(output.contains("Custom validation"));
+        assert!(output.contains("my_validator"));
+        assert!(output.contains("not supported"));
+    }
+
+    #[test]
+    fn test_escape_string() {
+        assert_eq!(escape_string("hello"), "hello");
+        assert_eq!(escape_string("hello\\world"), "hello\\\\world");
+        assert_eq!(escape_string("hello\"world"), "hello\\\"world");
+        assert_eq!(escape_string("hello\nworld"), "hello\\nworld");
+        assert_eq!(escape_string("hello\tworld"), "hello\\tworld");
+    }
+
+    #[test]
+    fn test_escape_regex() {
+        assert_eq!(escape_regex("^[a-z]+$"), "[a-z]+");
+        assert_eq!(escape_regex("^[a-z]+"), "[a-z]+");
+        assert_eq!(escape_regex("[a-z]+$"), "[a-z]+");
+        assert_eq!(escape_regex("[a-z]+"), "[a-z]+");
+    }
+
+    #[test]
+    fn test_field_schema_with_validations() {
+        let mut output = String::new();
+        let field = ParsedField {
+            name: "email".to_string(),
+            ty: FieldType::String,
+            validation_rules: vec![ValidationRule::Email, ValidationRule::MaxLen(255)],
+        };
+
+        generate_field_schema(&mut output, &field).unwrap();
+        assert_eq!(output, "z.string().email().max(255)");
+    }
+
+    #[test]
+    fn test_field_schema_optional_with_validations() {
+        let mut output = String::new();
+        let field = ParsedField {
+            name: "website".to_string(),
+            ty: FieldType::Option(Box::new(FieldType::String)),
+            validation_rules: vec![ValidationRule::Url],
+        };
+
+        generate_field_schema(&mut output, &field).unwrap();
+        assert_eq!(output, "z.string().url().optional()");
+    }
+
+    #[test]
+    fn test_field_schema_multiple_rules() {
+        let mut output = String::new();
+        let field = ParsedField {
+            name: "username".to_string(),
+            ty: FieldType::String,
+            validation_rules: vec![
+                ValidationRule::Length { min: 3, max: 20 },
+                ValidationRule::Alphanumeric,
+            ],
+        };
+
+        generate_field_schema(&mut output, &field).unwrap();
+        assert!(output.contains("z.string()"));
+        assert!(output.contains(".min(3).max(20)"));
+        assert!(output.contains(".regex(/^[a-zA-Z0-9]*$/)"));
+    }
+
+    #[test]
+    fn test_generate_complete_schema() {
+        let types = vec![ParsedType {
+            name: "User".to_string(),
+            fields: vec![
+                ParsedField {
+                    name: "email".to_string(),
+                    ty: FieldType::String,
+                    validation_rules: vec![ValidationRule::Email],
+                },
+                ParsedField {
+                    name: "age".to_string(),
+                    ty: FieldType::U8,
+                    validation_rules: vec![ValidationRule::Range {
+                        min: "18".to_string(),
+                        max: "120".to_string(),
+                    }],
+                },
+            ],
+        }];
+
+        let result = generate(&types).unwrap();
+
+        // Check header
+        assert!(result.contains("AUTO-GENERATED"));
+        assert!(result.contains("DO NOT EDIT"));
+
+        // Check imports
+        assert!(result.contains("import { z } from \"zod\""));
+
+        // Check schema
+        assert!(result.contains("export const UserSchema = z.object({"));
+        assert!(result.contains("email: z.string().email()"));
+        assert!(result.contains("age: z.number().min(18).max(120)"));
+        assert!(result.contains("});"));
+
+        // Check type export
+        assert!(result.contains("export type User = z.infer<typeof UserSchema>"));
+    }
+}

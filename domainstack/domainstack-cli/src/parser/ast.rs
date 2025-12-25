@@ -155,3 +155,243 @@ fn parse_field_type(ty: &Type) -> Result<FieldType> {
         _ => Ok(FieldType::Custom("Unknown".to_string())),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_field_type_primitives() {
+        let code = "struct Test { field: String }";
+        let file = syn::parse_str::<syn::File>(code).unwrap();
+        if let syn::Item::Struct(s) = &file.items[0] {
+            if let syn::Fields::Named(fields) = &s.fields {
+                let field = fields.named.first().unwrap();
+                let field_type = parse_field_type(&field.ty).unwrap();
+                assert!(matches!(field_type, FieldType::String));
+            }
+        }
+    }
+
+    #[test]
+    fn test_parse_field_type_numbers() {
+        let test_cases = vec![
+            ("u8", FieldType::U8),
+            ("u16", FieldType::U16),
+            ("u32", FieldType::U32),
+            ("u64", FieldType::U64),
+            ("i32", FieldType::I32),
+            ("f32", FieldType::F32),
+            ("f64", FieldType::F64),
+        ];
+
+        for (type_name, expected) in test_cases {
+            let code = format!("struct Test {{ field: {} }}", type_name);
+            let file = syn::parse_str::<syn::File>(&code).unwrap();
+            if let syn::Item::Struct(s) = &file.items[0] {
+                if let syn::Fields::Named(fields) = &s.fields {
+                    let field = fields.named.first().unwrap();
+                    let field_type = parse_field_type(&field.ty).unwrap();
+                    assert_eq!(
+                        std::mem::discriminant(&field_type),
+                        std::mem::discriminant(&expected),
+                        "Failed for type: {}",
+                        type_name
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_parse_field_type_option() {
+        let code = "struct Test { field: Option<String> }";
+        let file = syn::parse_str::<syn::File>(code).unwrap();
+        if let syn::Item::Struct(s) = &file.items[0] {
+            if let syn::Fields::Named(fields) = &s.fields {
+                let field = fields.named.first().unwrap();
+                let field_type = parse_field_type(&field.ty).unwrap();
+                match field_type {
+                    FieldType::Option(inner) => {
+                        assert!(matches!(*inner, FieldType::String));
+                    }
+                    _ => panic!("Expected Option type"),
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_parse_field_type_vec() {
+        let code = "struct Test { field: Vec<String> }";
+        let file = syn::parse_str::<syn::File>(code).unwrap();
+        if let syn::Item::Struct(s) = &file.items[0] {
+            if let syn::Fields::Named(fields) = &s.fields {
+                let field = fields.named.first().unwrap();
+                let field_type = parse_field_type(&field.ty).unwrap();
+                match field_type {
+                    FieldType::Vec(inner) => {
+                        assert!(matches!(*inner, FieldType::String));
+                    }
+                    _ => panic!("Expected Vec type"),
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_parse_field_type_custom() {
+        let code = "struct Test { field: CustomType }";
+        let file = syn::parse_str::<syn::File>(code).unwrap();
+        if let syn::Item::Struct(s) = &file.items[0] {
+            if let syn::Fields::Named(fields) = &s.fields {
+                let field = fields.named.first().unwrap();
+                let field_type = parse_field_type(&field.ty).unwrap();
+                match field_type {
+                    FieldType::Custom(name) => {
+                        assert_eq!(name, "CustomType");
+                    }
+                    _ => panic!("Expected Custom type"),
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_has_validate_derive_positive() {
+        let code = r#"
+            #[derive(Validate)]
+            struct User {
+                email: String,
+            }
+        "#;
+        let file = syn::parse_str::<syn::File>(code).unwrap();
+        if let syn::Item::Struct(s) = &file.items[0] {
+            assert!(has_validate_derive(s));
+        }
+    }
+
+    #[test]
+    fn test_has_validate_derive_negative() {
+        let code = r#"
+            #[derive(Debug, Clone)]
+            struct User {
+                email: String,
+            }
+        "#;
+        let file = syn::parse_str::<syn::File>(code).unwrap();
+        if let syn::Item::Struct(s) = &file.items[0] {
+            assert!(!has_validate_derive(s));
+        }
+    }
+
+    #[test]
+    fn test_has_validate_derive_multiple_derives() {
+        let code = r#"
+            #[derive(Debug, Validate, Clone)]
+            struct User {
+                email: String,
+            }
+        "#;
+        let file = syn::parse_str::<syn::File>(code).unwrap();
+        if let syn::Item::Struct(s) = &file.items[0] {
+            assert!(has_validate_derive(s));
+        }
+    }
+
+    #[test]
+    fn test_extract_validated_types_single_type() {
+        let code = r#"
+            use domainstack::Validate;
+
+            #[derive(Validate)]
+            struct User {
+                #[validate(email)]
+                email: String,
+            }
+        "#;
+
+        let file = syn::parse_str::<syn::File>(code).unwrap();
+        let types = extract_validated_types(&file).unwrap();
+
+        assert_eq!(types.len(), 1);
+        assert_eq!(types[0].name, "User");
+        assert_eq!(types[0].fields.len(), 1);
+        assert_eq!(types[0].fields[0].name, "email");
+    }
+
+    #[test]
+    fn test_extract_validated_types_multiple_types() {
+        let code = r#"
+            #[derive(Validate)]
+            struct User {
+                email: String,
+            }
+
+            #[derive(Validate)]
+            struct Post {
+                title: String,
+            }
+
+            #[derive(Debug)]
+            struct Comment {
+                text: String,
+            }
+        "#;
+
+        let file = syn::parse_str::<syn::File>(code).unwrap();
+        let types = extract_validated_types(&file).unwrap();
+
+        assert_eq!(types.len(), 2);
+        assert_eq!(types[0].name, "User");
+        assert_eq!(types[1].name, "Post");
+    }
+
+    #[test]
+    fn test_extract_validated_types_no_validate() {
+        let code = r#"
+            #[derive(Debug)]
+            struct User {
+                email: String,
+            }
+        "#;
+
+        let file = syn::parse_str::<syn::File>(code).unwrap();
+        let types = extract_validated_types(&file).unwrap();
+
+        assert_eq!(types.len(), 0);
+    }
+
+    #[test]
+    fn test_parse_struct_with_multiple_fields() {
+        let code = r#"
+            #[derive(Validate)]
+            struct User {
+                #[validate(email)]
+                email: String,
+
+                #[validate(range(min = 18, max = 120))]
+                age: u8,
+
+                #[validate(url)]
+                website: Option<String>,
+            }
+        "#;
+
+        let file = syn::parse_str::<syn::File>(code).unwrap();
+        let types = extract_validated_types(&file).unwrap();
+
+        assert_eq!(types.len(), 1);
+        let user_type = &types[0];
+
+        assert_eq!(user_type.fields.len(), 3);
+        assert_eq!(user_type.fields[0].name, "email");
+        assert_eq!(user_type.fields[1].name, "age");
+        assert_eq!(user_type.fields[2].name, "website");
+
+        // Check types
+        assert!(matches!(user_type.fields[0].ty, FieldType::String));
+        assert!(matches!(user_type.fields[1].ty, FieldType::U8));
+        assert!(matches!(user_type.fields[2].ty, FieldType::Option(_)));
+    }
+}

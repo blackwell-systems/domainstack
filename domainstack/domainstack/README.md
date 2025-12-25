@@ -221,6 +221,7 @@ The recommended approach enforces validation at domain boundaries:
 
 ```rust
 use domainstack::prelude::*;
+use domainstack::Validate;
 use serde::Deserialize;
 
 // DTO - Public, for deserialization
@@ -232,14 +233,67 @@ pub struct UserDto {
 }
 
 // Domain - Private fields, enforced validity
+#[derive(Debug, Validate)]
 pub struct User {
+    #[validate(length(min = 2, max = 50))]
     name: String,     // Private!
+
+    #[validate(range(min = 18, max = 120))]
     age: u8,
+
+    #[validate(nested)]
     email: Email,
 }
 
 impl User {
     // Smart constructor - validation enforced here
+    pub fn new(name: String, age: u8, email_raw: String) -> Result<Self, ValidationError> {
+        let email = Email::new(email_raw).map_err(|e| e.prefixed("email"))?;
+
+        let user = Self { name, age, email };
+        user.validate()?;  // One line - validates all fields!
+        Ok(user)
+    }
+
+    // Getters only - no setters
+    pub fn name(&self) -> &str { &self.name }
+    pub fn age(&self) -> u8 { self.age }
+    pub fn email(&self) -> &Email { &self.email }
+}
+
+// Conversion at boundary
+impl TryFrom<UserDto> for User {
+    type Error = ValidationError;
+
+    fn try_from(dto: UserDto) -> Result<Self, Self::Error> {
+        User::new(dto.name, dto.age, dto.email)
+    }
+}
+
+// HTTP handler
+async fn create_user(Json(dto): Json<UserDto>) -> Result<Json<User>, Error> {
+    let user = User::try_from(dto)
+        .map_err(|e| e.into_envelope_error())?;
+    // user is GUARANTEED valid here - no need to check!
+    Ok(Json(user))
+}
+```
+
+**Key Points**:
+- DTOs are public for deserialization
+- Domain types have private fields
+- `#[derive(Validate)]` eliminates manual error accumulation boilerplate
+- Validation happens in constructors with a single `.validate()` call
+- `TryFrom` enforces validation at boundary
+- Invalid domain objects cannot exist
+
+<details>
+<summary>Manual validation (when you need fine-grained control)</summary>
+
+If you need custom error messages or conditional logic, use the manual approach:
+
+```rust
+impl User {
     pub fn new(name: String, age: u8, email: String) -> Result<Self, ValidationError> {
         let mut err = ValidationError::new();
 
@@ -266,37 +320,10 @@ impl User {
 
         Ok(Self { name, age, email })
     }
-    
-    // Getters only - no setters
-    pub fn name(&self) -> &str { &self.name }
-    pub fn age(&self) -> u8 { self.age }
-    pub fn email(&self) -> &Email { &self.email }
-}
-
-// Conversion at boundary
-impl TryFrom<UserDto> for User {
-    type Error = ValidationError;
-    
-    fn try_from(dto: UserDto) -> Result<Self, Self::Error> {
-        User::new(dto.name, dto.age, dto.email)
-    }
-}
-
-// HTTP handler
-async fn create_user(Json(dto): Json<UserDto>) -> Result<Json<User>, Error> {
-    let user = User::try_from(dto)
-        .map_err(|e| e.into_envelope_error())?;
-    // user is GUARANTEED valid here - no need to check!
-    Ok(Json(user))
 }
 ```
 
-**Key Points**:
-- DTOs are public for deserialization
-- Domain types have private fields
-- Validation happens in constructors
-- `TryFrom` enforces validation at boundary
-- Invalid domain objects cannot exist
+</details>
 
 ### HTTP Integration (Optional Adapter)
 

@@ -33,6 +33,7 @@ That means:
 - **Async validation** - Database uniqueness checks with context passing
 - **Type-state tracking** - Compile-time guarantees with phantom types
 - **Auto-derived OpenAPI schemas** - Write validation rules once, get OpenAPI 3.0 schemas automatically (zero duplication)
+- **Serde integration** - Validate automatically during JSON/YAML deserialization with `#[derive(ValidateOnDeserialize)]`
 
 ## Quick Start
 
@@ -47,6 +48,9 @@ struct Email {
     #[validate(length(min = 5, max = 255))]
     value: String,
 }
+
+// Or use ValidateOnDeserialize to validate automatically during JSON parsing:
+// #[derive(ValidateOnDeserialize)] - see "Serde Integration" section below
 
 // Nested validation with automatic path prefixing
 #[derive(Debug, Validate, ToSchema)]
@@ -429,7 +433,7 @@ async fn create_user(
 - `From` impls - `?` operator works with `ValidationError` and `error_envelope::Error`
 - **Identical APIs** - Same pattern across both frameworks
 
-See [domainstack-axum](https://docs.rs/domainstack-axum) and [domainstack-actix](https://docs.rs/domainstack-actix) for complete documentation.
+See [domainstack-axum](./domainstack/domainstack-axum/) and [domainstack-actix](./domainstack/domainstack-actix/) for complete documentation.
 
 ## Installation
 
@@ -459,12 +463,16 @@ domainstack = { version = "1.0", features = ["derive", "regex", "async", "chrono
 | `regex` | Email, URL, and pattern matching rules | `regex`, `once_cell` |
 | `async` | Async validation with context passing | `async-trait` |
 | `chrono` | Date/time validation rules (past, future, age_range) | `chrono` |
+| `serde` | **NEW!** Automatic validation during deserialization with `#[derive(ValidateOnDeserialize)]` | `serde` (also enables `derive`) |
 
 **Examples:**
 
 ```toml
 # Web API with validation and derive macros
 domainstack = { version = "1.0", features = ["derive", "regex"] }
+
+# Serde integration - validate automatically during JSON deserialization
+domainstack = { version = "1.0", features = ["serde", "regex"] }
 
 # Async validation for database checks
 domainstack = { version = "1.0", features = ["derive", "async"] }
@@ -521,6 +529,52 @@ serde = { version = "1", features = ["derive"] }
 - **Builder Customization** - Customize error codes, messages, and metadata
 
 ### Advanced Features
+
+#### Serde Integration - Validate on Deserialize ⚡
+
+**NEW!** Automatically validate during JSON/YAML deserialization with a single derive:
+
+```rust
+use domainstack_derive::ValidateOnDeserialize;
+
+#[derive(ValidateOnDeserialize, Debug)]
+struct User {
+    #[validate(email)]
+    #[validate(max_len = 255)]
+    email: String,
+
+    #[validate(range(min = 18, max = 120))]
+    age: u8,
+}
+
+// Single step: deserialize + validate automatically
+let user: User = serde_json::from_str(json)?;
+// ↑ If this succeeds, user is guaranteed valid!
+```
+
+**Benefits:**
+- ✅ **Single step** - No separate `.validate()` call needed
+- ✅ **Better errors** - "age must be between 18 and 120" vs "expected u8"
+- ✅ **Type safety** - If you have `User`, it's guaranteed valid
+- ✅ **Serde compatible** - Works with `#[serde(rename)]`, `#[serde(default)]`, etc.
+
+**Use cases:** API request parsing, configuration file loading, message queue consumers, CLI argument validation.
+
+**Example with serde attributes:**
+```rust
+#[derive(ValidateOnDeserialize)]
+#[serde(rename_all = "camelCase")]
+struct Config {
+    #[validate(range(min = 1024, max = 65535))]
+    server_port: u16,
+
+    #[serde(default = "default_workers")]
+    #[validate(range(min = 1, max = 128))]
+    worker_threads: u8,
+}
+```
+
+See [`examples/serde_validation.rs`](https://github.com/blackwell-systems/domainstack/blob/main/domainstack/domainstack/examples/serde_validation.rs) for complete examples.
 
 #### Async Validation
 
@@ -677,7 +731,7 @@ impl ToSchema for CustomType {
 - Vendor extensions for non-mappable validations
 - Type-safe fluent API
 
-See [domainstack-schema/OPENAPI_CAPABILITIES.md](https://github.com/blackwell-systems/domainstack/blob/main/domainstack/domainstack-schema/OPENAPI_CAPABILITIES.md) for complete documentation.
+See [domainstack-schema/OPENAPI_CAPABILITIES.md](./domainstack/domainstack-schema/OPENAPI_CAPABILITIES.md) for complete documentation.
 
 ### 37 Built-in Validation Rules
 
@@ -725,7 +779,7 @@ struct BlogPost {
 - `.when()` - Conditional validation
 - `.code()`, `.message()`, `.meta()` - Customize errors
 
-See [Rules Reference](https://github.com/blackwell-systems/domainstack/blob/main/docs/RULES.md) for complete documentation and examples.
+See [Rules Reference](./docs/RULES.md) for complete documentation and examples.
 
 ## Examples
 
@@ -914,22 +968,22 @@ cargo llvm-cov --all-features --workspace --html
 This repository contains **12 workspace members** (8 publishable crates, 4 example crates):
 
 **Core (Publishable):**
-- **[domainstack](https://crates.io/crates/domainstack)** - Core validation library with composable rules
-- **[domainstack-derive](https://crates.io/crates/domainstack-derive)** - Derive macro for `#[derive(Validate)]`
-- **[domainstack-envelope](https://crates.io/crates/domainstack-envelope)** - error-envelope integration for HTTP APIs
-- **[domainstack-schema](https://crates.io/crates/domainstack-schema)** - OpenAPI 3.0 schema generation
+- **[domainstack](./domainstack/)** - Core validation library with composable rules
+- **[domainstack-derive](./domainstack/domainstack-derive/)** - Derive macro for `#[derive(Validate)]`
+- **[domainstack-envelope](./domainstack/domainstack-envelope/)** - error-envelope integration for HTTP APIs
+- **[domainstack-schema](./domainstack/domainstack-schema/)** - OpenAPI 3.0 schema generation
 
 **Framework Adapters (Publishable):**
-- **[domainstack-http](https://crates.io/crates/domainstack-http)** - Framework-agnostic HTTP helpers
-- **[domainstack-axum](https://crates.io/crates/domainstack-axum)** - Axum extractor and response implementations
-- **[domainstack-actix](https://crates.io/crates/domainstack-actix)** - Actix-web extractor and response implementations
-- **[domainstack-rocket](https://crates.io/crates/domainstack-rocket)** - Rocket request guard and response implementations
+- **[domainstack-http](./domainstack/domainstack-http/)** - Framework-agnostic HTTP helpers
+- **[domainstack-axum](./domainstack/domainstack-axum/)** - Axum extractor and response implementations
+- **[domainstack-actix](./domainstack/domainstack-actix/)** - Actix-web extractor and response implementations
+- **[domainstack-rocket](./domainstack/domainstack-rocket/)** - Rocket request guard and response implementations
 
 **Examples (Available in Repository):**
-- **[domainstack-examples](https://github.com/blackwell-systems/domainstack/tree/main/domainstack/domainstack-examples)** - Core validation examples
-- **[examples-axum](https://github.com/blackwell-systems/domainstack/tree/main/domainstack/examples-axum)** - Axum booking service example
-- **[examples-actix](https://github.com/blackwell-systems/domainstack/tree/main/domainstack/examples-actix)** - Actix-web booking service example
-- **[examples-rocket](https://github.com/blackwell-systems/domainstack/tree/main/domainstack/examples-rocket)** - Rocket booking service example
+- **[domainstack-examples](./domainstack/domainstack-examples/)** - Core validation examples
+- **[examples-axum](./domainstack/examples-axum/)** - Axum booking service example
+- **[examples-actix](./domainstack/examples-actix/)** - Actix-web booking service example
+- **[examples-rocket](./domainstack/examples-rocket/)** - Rocket booking service example
 
 **Note:** Example crates are not published to crates.io but are included in the [GitHub repository](https://github.com/blackwell-systems/domainstack). Clone the repo to run them locally.
 
@@ -945,14 +999,14 @@ This project has **multiple README files** for different audiences:
 
 ### Additional Documentation
 
-- **[API Guide](https://github.com/blackwell-systems/domainstack/blob/main/domainstack/domainstack/docs/api-guide.md)** - Complete API documentation
-- **[Rules Reference](https://github.com/blackwell-systems/domainstack/blob/main/domainstack/domainstack/docs/RULES.md)** - All validation rules
-- **[Architecture](https://github.com/blackwell-systems/domainstack/blob/main/domainstack/domainstack/docs/architecture.md)** - System design and data flow
-- **[OpenAPI Schema Derivation](https://github.com/blackwell-systems/domainstack/blob/main/domainstack/domainstack/docs/SCHEMA_DERIVATION.md)** - OpenAPI 3.0 schema generation guide
-- **[Examples](https://github.com/blackwell-systems/domainstack/tree/main/domainstack/domainstack-examples)** - 9 runnable examples
+- **[API Guide](./domainstack/domainstack/docs/api-guide.md)** - Complete API documentation
+- **[Rules Reference](./domainstack/domainstack/docs/RULES.md)** - All validation rules
+- **[Architecture](./domainstack/domainstack/docs/architecture.md)** - System design and data flow
+- **[OpenAPI Schema Derivation](./domainstack/domainstack/docs/SCHEMA_DERIVATION.md)** - OpenAPI 3.0 schema generation guide
+- **[Examples](./domainstack/domainstack-examples/)** - 9 runnable examples
 - **[API Documentation](https://docs.rs/domainstack)** - Generated API reference
-- **[Publishing Guide](https://github.com/blackwell-systems/domainstack/blob/main/PUBLISHING.md)** - How to publish to crates.io
-- **[Coverage Guide](https://github.com/blackwell-systems/domainstack/blob/main/COVERAGE.md)** - Running coverage locally
+- **[Publishing Guide](./PUBLISHING.md)** - How to publish to crates.io
+- **[Coverage Guide](./COVERAGE.md)** - Running coverage locally
 
 ## License
 

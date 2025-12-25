@@ -33,6 +33,7 @@ That means:
 - **Async validation** - Database uniqueness checks with context passing
 - **Type-state tracking** - Compile-time guarantees with phantom types
 - **Auto-derived OpenAPI schemas** - Write validation rules once, get OpenAPI 3.0 schemas automatically (zero duplication)
+- **Serde integration** - Validate automatically during JSON/YAML deserialization with `#[derive(ValidateOnDeserialize)]`
 
 ## Quick Start
 
@@ -47,6 +48,9 @@ struct Email {
     #[validate(length(min = 5, max = 255))]
     value: String,
 }
+
+// Or use ValidateOnDeserialize to validate automatically during JSON parsing:
+// #[derive(ValidateOnDeserialize)] - see "Serde Integration" section below
 
 // Nested validation with automatic path prefixing
 #[derive(Debug, Validate, ToSchema)]
@@ -459,12 +463,16 @@ domainstack = { version = "1.0", features = ["derive", "regex", "async", "chrono
 | `regex` | Email, URL, and pattern matching rules | `regex`, `once_cell` |
 | `async` | Async validation with context passing | `async-trait` |
 | `chrono` | Date/time validation rules (past, future, age_range) | `chrono` |
+| `serde` | **NEW!** Automatic validation during deserialization with `#[derive(ValidateOnDeserialize)]` | `serde` (also enables `derive`) |
 
 **Examples:**
 
 ```toml
 # Web API with validation and derive macros
 domainstack = { version = "1.0", features = ["derive", "regex"] }
+
+# Serde integration - validate automatically during JSON deserialization
+domainstack = { version = "1.0", features = ["serde", "regex"] }
 
 # Async validation for database checks
 domainstack = { version = "1.0", features = ["derive", "async"] }
@@ -521,6 +529,52 @@ serde = { version = "1", features = ["derive"] }
 - **Builder Customization** - Customize error codes, messages, and metadata
 
 ### Advanced Features
+
+#### Serde Integration - Validate on Deserialize ⚡
+
+**NEW!** Automatically validate during JSON/YAML deserialization with a single derive:
+
+```rust
+use domainstack_derive::ValidateOnDeserialize;
+
+#[derive(ValidateOnDeserialize, Debug)]
+struct User {
+    #[validate(email)]
+    #[validate(max_len = 255)]
+    email: String,
+
+    #[validate(range(min = 18, max = 120))]
+    age: u8,
+}
+
+// Single step: deserialize + validate automatically
+let user: User = serde_json::from_str(json)?;
+// ↑ If this succeeds, user is guaranteed valid!
+```
+
+**Benefits:**
+- ✅ **Single step** - No separate `.validate()` call needed
+- ✅ **Better errors** - "age must be between 18 and 120" vs "expected u8"
+- ✅ **Type safety** - If you have `User`, it's guaranteed valid
+- ✅ **Serde compatible** - Works with `#[serde(rename)]`, `#[serde(default)]`, etc.
+
+**Use cases:** API request parsing, configuration file loading, message queue consumers, CLI argument validation.
+
+**Example with serde attributes:**
+```rust
+#[derive(ValidateOnDeserialize)]
+#[serde(rename_all = "camelCase")]
+struct Config {
+    #[validate(range(min = 1024, max = 65535))]
+    server_port: u16,
+
+    #[serde(default = "default_workers")]
+    #[validate(range(min = 1, max = 128))]
+    worker_threads: u8,
+}
+```
+
+See [`examples/serde_validation.rs`](https://github.com/blackwell-systems/domainstack/blob/main/domainstack/domainstack/examples/serde_validation.rs) for complete examples.
 
 #### Async Validation
 

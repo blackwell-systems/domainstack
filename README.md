@@ -14,7 +14,7 @@
 
 ## What is domainstack?
 
-domainstack helps you turn untrusted input into valid domain objects—then report failures back to clients with structured, field-level errors.
+Full-stack validation ecosystem for Rust: Type-safe validation with automatic TypeScript/Zod schema generation, serde integration, OpenAPI schemas, and web framework adapters (Axum, Actix, Rocket).
 
 It's built around a service-oriented reality:
 
@@ -27,13 +27,16 @@ domainstack answers: **"How do I *safely construct domain models* from untrusted
 
 That means:
 - **Domain-first modeling** - Invalid states are unrepresentable
-- **Composable rules** - Rules are reusable values, not just attributes
-- **Structured error paths** - `rooms[0].adults`, `guest.email.value`
-- **Clean boundary mapping** - Optional error-envelope integration for APIs
+- **37 validation rules** - String, numeric, collection, date/time validation out of the box
+- **Composable rule algebra** - `.and()`, `.or()`, `.when()` combinators
+- **Structured error paths** - `rooms[0].adults`, `guest.email.value` for APIs/UIs
+- **Framework adapters** - One-line `DomainJson<Domain, Dto>` extraction (Axum, Actix, Rocket)
+- **Auto-derived OpenAPI schemas** - Write validation once, get OpenAPI 3.0 automatically
+- **Serde integration** - Validate during deserialization with `#[derive(ValidateOnDeserialize)]`
 - **Async validation** - Database uniqueness checks with context passing
+- **Cross-field validation** - Password confirmation, date ranges, business rules
 - **Type-state tracking** - Compile-time guarantees with phantom types
-- **Auto-derived OpenAPI schemas** - Write validation rules once, get OpenAPI 3.0 schemas automatically (zero duplication)
-- **Serde integration** - Validate automatically during JSON/YAML deserialization with `#[derive(ValidateOnDeserialize)]`
+- **Zero dependencies** - Lightweight core, optional features for regex/async/chrono
 
 ## Quick Start
 

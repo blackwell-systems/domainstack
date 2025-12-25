@@ -23,16 +23,15 @@ domainstack asks: **"How do I safely construct domain models from untrusted inpu
 
 **Gate 1: Serde** (decode + shape) — JSON → DTO. Fails on invalid JSON, type mismatches, missing required fields.
 
-**Gate 2: Domain** (semantic validation) — DTO → Domain with business rules. Produces structured field-level errors your APIs depend on.
+**Gate 2: Domain** (construct + validate) — DTO → Domain. Produces structured field-level errors your APIs depend on.
 
-After domain validation succeeds, you can optionally run **async/context validation** (DB/API checks like uniqueness, rate limits, authorization) as a second phase.
+After domain validation succeeds, you can optionally run **async/context validation** (DB/API checks like uniqueness, rate limits, authorization) as a post-validation phase.
 
 ## What that gives you
 
 - **Domain-first modeling**: make invalid states difficult (or impossible) to represent
 - **Composable rule algebra**: reusable rules with `.and()`, `.or()`, `.when()`
 - **Structured error paths**: `rooms[0].adults`, `guest.email.value` (UI-friendly)
-- **Async validation with context**: DB/API checks like uniqueness, rate limits
 - **Cross-field validation**: invariants like password confirmation, date ranges
 - **Type-state tracking**: phantom types to enforce "validated" at compile time
 - **Schema + client parity**: generate OpenAPI (and TypeScript/Zod via CLI) from the same Rust rules

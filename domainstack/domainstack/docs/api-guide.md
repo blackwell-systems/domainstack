@@ -7,9 +7,22 @@ Complete guide to using domainstack for domain validation.
 - [Core Concepts](#core-concepts)
 - [Manual Validation](#manual-validation)
 - [Derive Macro](#derive-macro)
+- [Serde Integration](#serde-integration)
+- [OpenAPI Schema Generation](#openapi-schema-generation)
 - [Error Handling](#error-handling)
+- [Validation Rules](#validation-rules)
 - [HTTP Integration](#http-integration)
+  - [Axum](#axum)
+  - [Actix](#actix)
+  - [Rocket](#rocket)
+- [Date/Time Validation](#datetime-validation)
+- [Code Generation (CLI)](#code-generation-cli)
 - [Advanced Patterns](#advanced-patterns)
+  - [Cross-Field Validation](#cross-field-validation)
+  - [Conditional Validation](#conditional-validation)
+  - [Async Validation](#async-validation)
+  - [Type-State Validation](#type-state-validation)
+  - [Builder-Style Rule Customization](#builder-style-rule-customization)
 
 ## Core Concepts
 
@@ -338,6 +351,219 @@ struct Password {
 }
 ```
 
+## Serde Integration
+
+### Validate on Deserialize
+
+**Feature flag:** `serde`
+
+Automatically validate during JSON/YAML/etc. deserialization:
+
+```rust
+use domainstack::ValidateOnDeserialize;
+use serde::Deserialize;
+
+#[derive(Deserialize, ValidateOnDeserialize)]
+struct User {
+    #[validate(email)]
+    #[validate(max_len = 255)]
+    email: String,
+
+    #[validate(range(min = 18, max = 120))]
+    age: u8,
+
+    #[validate(url)]
+    website: Option<String>,
+}
+
+// Single step: deserialize + validate automatically
+let user: User = serde_json::from_str(json)?;
+// ↑ Returns ValidationError if invalid, not serde::Error
+```
+
+**Benefits:**
+- ✅ Eliminates `dto.validate()` boilerplate
+- ✅ Better error messages: "age must be between 18 and 120" vs "expected u8"
+- ✅ Type safety: if you have `User`, it's guaranteed valid
+- ✅ Works with all serde attributes: `#[serde(rename)]`, `#[serde(default)]`, etc.
+- ✅ ~5% overhead vs two-step approach
+
+**How it works:**
+
+Two-phase deserialization:
+1. Deserialize into intermediate type (standard serde)
+2. Validate all fields
+3. Return validated type or ValidationError
+
+```rust
+// Before (two steps)
+let dto: UserDto = serde_json::from_str(json)?;  // Step 1: deserialize
+dto.validate()?;                                  // Step 2: validate
+
+// After (one step)
+let user: User = serde_json::from_str(json)?;    // Deserialize + validate!
+```
+
+**Example: API Request Handler**
+
+```rust
+#[derive(Deserialize, ValidateOnDeserialize)]
+struct CreateUserRequest {
+    #[validate(email)]
+    email: String,
+
+    #[validate(length(min = 3, max = 50))]
+    #[validate(alphanumeric)]
+    username: String,
+
+    #[validate(length(min = 8, max = 128))]
+    password: String,
+}
+
+// In your handler - guaranteed valid on successful deserialization
+async fn create_user(
+    Json(request): Json<CreateUserRequest>
+) -> Result<Json<User>, ErrorResponse> {
+    // request.email is guaranteed to be a valid email!
+    // No manual .validate() call needed
+    let user = db.insert_user(request).await?;
+    Ok(Json(user))
+}
+```
+
+**Optional Field Handling:**
+
+Validation runs only for `Some(_)` values:
+
+```rust
+#[derive(ValidateOnDeserialize)]
+struct Profile {
+    #[validate(url)]
+    website: Option<String>,  // Validates URL if present, allows None
+
+    #[validate(length(min = 10, max = 500))]
+    bio: Option<String>,  // Validates length if present
+}
+```
+
+**See also:**
+- Example: `domainstack/examples/serde_validation.rs`
+- Tests: 12 comprehensive integration tests in serde_integration.rs
+
+## OpenAPI Schema Generation
+
+### Auto-Derive Schemas
+
+**Feature flag:** `schema`
+
+Generate OpenAPI 3.0 schemas from validation rules:
+
+```rust
+use domainstack::{Validate, ToSchema};
+
+#[derive(Validate, ToSchema)]
+#[schema(description = "User registration data")]
+struct User {
+    #[validate(email)]
+    #[validate(max_len = 255)]
+    #[schema(example = "user@example.com")]
+    email: String,
+
+    #[validate(range(min = 18, max = 120))]
+    #[schema(description = "User's age in years")]
+    age: u8,
+
+    #[validate(url)]
+    #[schema(example = "https://example.com")]
+    website: Option<String>,
+}
+```
+
+**Generated OpenAPI Schema:**
+
+```json
+{
+  "type": "object",
+  "description": "User registration data",
+  "required": ["email", "age"],
+  "properties": {
+    "email": {
+      "type": "string",
+      "format": "email",
+      "maxLength": 255,
+      "example": "user@example.com"
+    },
+    "age": {
+      "type": "integer",
+      "minimum": 18,
+      "maximum": 120,
+      "description": "User's age in years"
+    },
+    "website": {
+      "type": "string",
+      "format": "uri",
+      "example": "https://example.com"
+    }
+  }
+}
+```
+
+**Validation Rule → Schema Mappings:**
+
+| Validation Rule | OpenAPI Property |
+|----------------|------------------|
+| `email()` | `format: "email"` |
+| `url()` | `format: "uri"` |
+| `min_len(n)` | `minLength: n` |
+| `max_len(n)` | `maxLength: n` |
+| `range(min, max)` | `minimum: min, maximum: max` |
+| `positive()` | `minimum: 0, exclusiveMinimum: true` |
+| `min_items(n)` | `minItems: n` |
+| `max_items(n)` | `maxItems: n` |
+| `unique()` | `uniqueItems: true` |
+| `alphanumeric()` | `pattern: "^[a-zA-Z0-9]*$"` |
+| `Option<T>` | Excluded from `required` array |
+
+**Schema Attributes:**
+
+```rust
+#[schema(description = "Field description")]   // Field/type description
+#[schema(example = "value")]                    // Example value
+#[schema(deprecated = true)]                    // Mark as deprecated
+#[schema(read_only = true)]                     // Response-only field
+#[schema(write_only = true)]                    // Request-only field
+```
+
+**Building OpenAPI Specs:**
+
+```rust
+use domainstack_schema::{OpenApiBuilder, ToSchema};
+
+let spec = OpenApiBuilder::new("My API", "1.0.0")
+    .description("API for user management")
+    .register::<User>()
+    .register::<Post>()
+    .register::<Comment>()
+    .build();
+
+// Export as JSON
+let json = spec.to_json()?;
+
+// Or YAML (with "yaml" feature)
+let yaml = spec.to_yaml()?;
+```
+
+**Benefits:**
+- **Single source of truth** - Validation rules = API documentation
+- **Always in sync** - Change validation, schema updates automatically
+- **Type-safe** - Compile-time guarantees for schema generation
+- **Zero maintenance** - No manual schema writing
+
+**See also:**
+- Complete guide: `docs/SCHEMA_DERIVATION.md`
+- Example: `domainstack-schema/examples/auto_derive.rs`
+- Tests: `domainstack-derive/tests/schema_derive.rs`
+
 ## Error Handling
 
 ### ValidationError API
@@ -400,6 +626,188 @@ for (key, value) in meta.iter() {
 // Get specific value
 if let Some(min) = meta.get("min") {
     println!("Minimum: {}", min);
+}
+```
+
+## Validation Rules
+
+### Complete Rules Reference
+
+domainstack provides 37+ built-in validation rules across 5 categories.
+
+**For complete documentation of all rules, see [`RULES.md`](./RULES.md)**
+
+### String Rules (17 rules)
+
+```rust
+use domainstack::rules::*;
+
+// Format validation
+email()                              // Valid email address
+url()                                // Valid URL
+
+// Length validation
+min_len(n)                          // Minimum string length
+max_len(n)                          // Maximum string length
+length(min, max)                    // String length range
+non_empty()                         // Not empty (length >= 1)
+non_blank()                         // Not blank after trimming
+len_chars(min, max)                 // Unicode character count
+
+// Pattern validation
+alphanumeric()                      // Letters and numbers only
+alpha_only()                        // Letters only
+numeric_string()                    // Digits only
+ascii()                             // ASCII characters only
+no_whitespace()                     // No whitespace allowed
+
+// Content validation
+starts_with(prefix)                 // Must start with prefix
+ends_with(suffix)                   // Must end with suffix
+contains(substring)                 // Must contain substring
+matches_regex(pattern)              // Custom regex pattern
+```
+
+### Numeric Rules (8 rules)
+
+```rust
+// Range validation
+range(min, max)                     // Numeric range
+min(n)                              // Minimum value
+max(n)                              // Maximum value
+
+// Sign validation
+positive()                          // Greater than zero
+negative()                          // Less than zero
+non_zero()                          // Cannot be zero
+
+// Other
+multiple_of(n)                      // Must be multiple of n
+finite()                            // Not NaN or Infinity (floats)
+```
+
+**Important:** Always use `finite()` with float validation to catch NaN/Infinity values.
+
+```rust
+#[derive(Validate)]
+struct Measurement {
+    #[validate(range(min = 0.0, max = 100.0))]
+    #[validate(finite)]  // ✅ Catches NaN and Infinity
+    value: f64,
+}
+```
+
+### Choice Rules (3 rules)
+
+```rust
+// Equality checking
+equals(value)                       // Must equal specific value
+not_equals(value)                   // Must not equal value
+one_of(&[values])                   // Must be in allowed set
+
+// Example: Status validation
+#[derive(Validate)]
+struct Order {
+    #[validate(one_of(&["pending", "shipped", "delivered", "cancelled"]))]
+    status: String,
+}
+```
+
+### Collection Rules (4 rules)
+
+```rust
+// Size validation
+min_items(n)                        // Minimum collection size
+max_items(n)                        // Maximum collection size
+
+// Content validation
+unique()                            // All items must be unique
+non_empty_items()                   // No empty string items (for Vec<String>)
+
+// Example
+#[derive(Validate)]
+struct BlogPost {
+    #[validate(min_items(1))]
+    #[validate(max_items(10))]
+    #[validate(unique)]
+    tags: Vec<String>,
+}
+```
+
+### Date/Time Rules (5 rules)
+
+**Feature flag:** `chrono`
+
+```rust
+use chrono::{NaiveDate, DateTime, Utc};
+
+// Temporal validation
+past()                              // Must be in the past
+future()                            // Must be in the future
+before(limit)                       // Must be before limit
+after(limit)                        // Must be after limit
+
+// Age calculation
+age_range(min_years, max_years)     // Age from birth date
+
+// Example
+#[derive(Validate)]
+struct Event {
+    #[validate(after(Utc::now()))]
+    start_date: DateTime<Utc>,
+
+    #[validate(before(Utc::now() + Duration::days(365)))]
+    end_date: DateTime<Utc>,
+}
+```
+
+### Builder-Style Rule Customization
+
+Customize error codes and messages for any rule:
+
+```rust
+use domainstack::rules::*;
+
+let rule = email()
+    .code("custom_email_error")
+    .message("Please provide a valid company email address")
+    .meta("hint", "Use your @company.com address");
+
+// Works with all rules
+let age_rule = range(18, 65)
+    .code("invalid_age")
+    .message("Age must be between 18 and 65 for this program")
+    .meta("min", "18")
+    .meta("max", "65");
+
+// Useful for internationalization
+let localized_rule = min_len(3)
+    .message(get_i18n_message("validation.min_length", locale));
+```
+
+**Available customization methods:**
+- `.code(code)` - Custom error code
+- `.message(msg)` - Custom error message
+- `.meta(key, value)` - Add metadata field
+
+### Rule Composition
+
+Combine rules with logical operators:
+
+```rust
+// AND - both rules must pass
+let rule = email().and(max_len(255));
+
+// WHEN - conditional validation
+let rule = some_rule.when(|value| should_validate(value));
+
+// Multiple conditions
+#[derive(Validate)]
+struct User {
+    #[validate(length(min = 3, max = 50))]
+    #[validate(alphanumeric)]
+    #[validate(no_whitespace)]
+    username: String,
 }
 ```
 
@@ -467,7 +875,7 @@ interface FieldErrors {
 
 function displayErrors(response: ErrorResponse) {
   const fields = response.details.fields;
-  
+
   for (const [path, errors] of Object.entries(fields)) {
     errors.forEach(err => {
       showErrorAtField(path, err.message);
@@ -475,6 +883,119 @@ function displayErrors(response: ErrorResponse) {
   }
 }
 ```
+
+### Axum
+
+**Crate:** `domainstack-axum`
+
+```rust
+use domainstack_axum::{DomainJson, ErrorResponse};
+
+// Type alias for cleaner signatures
+type Result<T> = std::result::Result<T, ErrorResponse>;
+
+async fn create_user(
+    DomainJson(request, user): DomainJson<CreateUserRequest, User>
+) -> Result<Json<User>> {
+    // `user` is guaranteed valid - automatic validation!
+    let created = db.insert_user(user).await?;
+    Ok(Json(created))
+}
+```
+
+**How it works:**
+1. Deserializes JSON into `CreateUserRequest` (DTO)
+2. Validates the DTO
+3. Converts to `User` (domain type) via `TryFrom`
+4. Returns `ErrorResponse` automatically on validation failure
+
+**Alternative: ValidatedJson**
+
+For simpler cases where DTO = Domain type:
+
+```rust
+use domainstack_axum::ValidatedJson;
+
+async fn create_user(
+    ValidatedJson(user): ValidatedJson<User>
+) -> Result<Json<User>> {
+    // `user` validated automatically
+    Ok(Json(user))
+}
+```
+
+### Actix
+
+**Crate:** `domainstack-actix`
+
+```rust
+use domainstack_actix::{DomainJson, ErrorResponse};
+use actix_web::{post, web::Json};
+
+type Result<T> = std::result::Result<T, ErrorResponse>;
+
+#[post("/users")]
+async fn create_user(
+    DomainJson(request, user): DomainJson<CreateUserRequest, User>
+) -> Result<Json<User>> {
+    // Guaranteed valid user
+    let created = db.insert_user(user).await?;
+    Ok(Json(created))
+}
+```
+
+**Note:** Actix extractor uses `block_on()` for synchronous validation in async context. This is the standard pattern for Actix-web 4.x extractors.
+
+### Rocket
+
+**Crate:** `domainstack-rocket`
+
+```rust
+use domainstack_rocket::{DomainJson, ErrorResponse};
+use rocket::{post, serde::json::Json};
+
+type Result<T> = std::result::Result<T, ErrorResponse>;
+
+#[post("/users", data = "<request>")]
+async fn create_user(
+    DomainJson(request, user): DomainJson<CreateUserRequest, User>
+) -> Result<Json<User>> {
+    // Guaranteed valid user
+    let created = db.insert_user(user).await?;
+    Ok(Json(created))
+}
+```
+
+**Error Catchers:**
+
+Rocket requires registering error catchers for proper error handling:
+
+```rust
+use rocket::catch;
+use domainstack_rocket::ErrorResponse;
+
+#[catch(400)]
+fn bad_request(req: &Request) -> ErrorResponse {
+    ErrorResponse::from_request(req)
+}
+
+#[launch]
+fn rocket() -> _ {
+    rocket::build()
+        .mount("/", routes![create_user])
+        .register("/", catchers![bad_request])
+}
+```
+
+### Framework Comparison
+
+| Feature | Axum | Actix | Rocket |
+|---------|------|-------|--------|
+| DomainJson | ✅ | ✅ | ✅ |
+| ValidatedJson | ✅ | ✅ | ✅ |
+| Auto ErrorResponse | ✅ | ✅ | ✅ |
+| Async Validation | ✅ | ⚠️ Requires `block_on()` | ✅ |
+| Setup Complexity | Low | Low | Medium (catchers) |
 
 ## Date/Time Validation
 
@@ -655,23 +1176,295 @@ match validate("birth_date", &birth_date, &age_rule) {
 }
 ```
 
+## Code Generation (CLI)
+
+### TypeScript/Zod Schema Generation
+
+**Tool:** `domainstack-cli`
+
+Generate TypeScript Zod validation schemas from Rust validation rules - single source of truth for frontend and backend validation.
+
+```bash
+# Install the CLI
+cargo install domainstack-cli
+
+# Generate Zod schemas from Rust types
+domainstack zod --input src --output frontend/src/schemas.ts
+```
+
+**From Rust:**
+
+```rust
+#[derive(Validate)]
+struct User {
+    #[validate(email)]
+    #[validate(max_len = 255)]
+    email: String,
+
+    #[validate(range(min = 18, max = 120))]
+    age: u8,
+
+    #[validate(url)]
+    website: Option<String>,
+}
+```
+
+**Generates TypeScript/Zod:**
+
+```typescript
+// frontend/src/schemas.ts (AUTO-GENERATED)
+import { z } from "zod";
+
+export const UserSchema = z.object({
+  email: z.string().email().max(255),
+  age: z.number().min(18).max(120),
+  website: z.string().url().optional(),
+});
+
+export type User = z.infer<typeof UserSchema>;
+```
+
+**Supported Validation Rules:**
+
+26+ validation rules are supported:
+- ✅ All string validations (email, url, length, patterns)
+- ✅ All numeric validations (range, min/max, positive/negative)
+- ✅ Optional fields with correct `.optional()` ordering
+- ✅ Arrays (`Vec<T>` → `z.array(T)`)
+- ✅ Nested types with references
+- ✅ Custom type references
+
+**Benefits:**
+
+- **Single source of truth** - Change validation once, regenerate schemas
+- **Frontend/backend in sync** - Guaranteed consistency
+- **Zero maintenance** - No manual schema writing
+- **Type-safe** - Zod's type inference works automatically
+
+**CLI Usage:**
+
+```bash
+# Basic usage
+domainstack zod --output schemas.ts
+
+# Custom input directory
+domainstack zod --input backend/src --output frontend/schemas.ts
+
+# Verbose output
+domainstack zod -i src -o schemas.ts -v
+```
+
+**Integration with CI/CD:**
+
+```yaml
+# .github/workflows/ci.yml
+- name: Generate Zod schemas
+  run: domainstack zod --input src --output frontend/src/schemas.ts
+
+- name: Check for uncommitted changes
+  run: |
+    git diff --exit-code frontend/src/schemas.ts || \
+      (echo "❌ Schemas out of date! Run: npm run codegen" && exit 1)
+```
+
+**Example: Full-Stack Validation**
+
+```rust
+// Backend: src/models.rs
+#[derive(Validate)]
+struct CreateUserRequest {
+    #[validate(email)]
+    email: String,
+
+    #[validate(length(min = 3, max = 50))]
+    #[validate(alphanumeric)]
+    username: String,
+
+    #[validate(range(min = 18, max = 120))]
+    age: u8,
+}
+```
+
+```typescript
+// Frontend: Generated automatically
+const result = CreateUserRequestSchema.safeParse(formData);
+if (result.success) {
+  // Type-safe validated data
+  const request: CreateUserRequest = result.data;
+  await api.createUser(request);
+} else {
+  // Display field-level errors
+  displayErrors(result.error);
+}
+```
+
+**Future Generators (Planned):**
+
+- `domainstack yup` - Yup schemas for React ecosystem
+- `domainstack graphql` - GraphQL SDL generation
+- `domainstack prisma` - Prisma schemas with validation
+- `domainstack json-schema` - JSON Schema generation
+
+**See also:**
+- Complete guide: `domainstack-cli/README.md`
+- 32 unit tests with 100% pass rate
+- CHANGELOG for v0.1.0 feature details
+
 ## Advanced Patterns
 
 ### Cross-Field Validation
+
+Validate relationships between fields - date ranges, password confirmation, mutual exclusivity, price calculations, and business logic constraints.
+
+#### Derive Macro Syntax
+
+Use struct-level `#[validate(...)]` attributes for declarative cross-field validation:
+
+```rust
+use domainstack::prelude::*;
+use chrono::{DateTime, Utc};
+
+#[derive(Validate)]
+#[validate(
+    check = "self.end_date > self.start_date",
+    code = "invalid_date_range",
+    message = "End date must be after start date"
+)]
+struct DateRange {
+    #[validate(future)]
+    start_date: DateTime<Utc>,
+
+    #[validate(future)]
+    end_date: DateTime<Utc>,
+}
+
+// Usage
+let range = DateRange {
+    start_date: Utc::now() + Duration::days(1),
+    end_date: Utc::now() + Duration::days(30),
+};
+range.validate()?;  // ✓ Valid
+
+let invalid = DateRange {
+    start_date: Utc::now() + Duration::days(30),
+    end_date: Utc::now() + Duration::days(1),  // Before start!
+};
+invalid.validate()?;  // ✗ Error: invalid_date_range
+```
+
+#### Multiple Cross-Field Rules
+
+Combine multiple struct-level validations:
+
+```rust
+#[derive(Validate)]
+#[validate(
+    check = "self.end_date > self.start_date",
+    code = "invalid_date_range",
+    message = "End date must be after start date"
+)]
+#[validate(
+    check = "self.total >= self.minimum_order",
+    code = "below_minimum",
+    message = "Order total below minimum"
+)]
+struct Order {
+    start_date: DateTime<Utc>,
+    end_date: DateTime<Utc>,
+    total: f64,
+    minimum_order: f64,
+}
+```
+
+#### Conditional Cross-Field Validation
+
+Use `when` parameter for conditional validation:
+
+```rust
+#[derive(Validate)]
+#[validate(
+    check = "self.total >= self.minimum_order",
+    code = "below_minimum",
+    message = "Order total below minimum",
+    when = "self.requires_minimum"  // Only validate if this is true
+)]
+struct FlexibleOrder {
+    total: f64,
+    minimum_order: f64,
+    requires_minimum: bool,
+}
+
+// Usage
+let order = FlexibleOrder {
+    total: 50.0,
+    minimum_order: 100.0,
+    requires_minimum: false,  // Validation skipped!
+};
+order.validate()?;  // ✓ Valid - condition is false
+
+let required = FlexibleOrder {
+    total: 50.0,
+    minimum_order: 100.0,
+    requires_minimum: true,  // Validation runs!
+};
+required.validate()?;  // ✗ Error: below_minimum
+```
+
+#### Password Confirmation Example
+
+```rust
+#[derive(Validate)]
+#[validate(
+    check = "self.password == self.password_confirmation",
+    code = "password_mismatch",
+    message = "Passwords do not match"
+)]
+struct PasswordChange {
+    #[validate(length(min = 8, max = 128))]
+    #[validate(matches_regex = r"[A-Z]")]  // At least one uppercase
+    #[validate(matches_regex = r"[0-9]")]  // At least one digit
+    password: String,
+
+    password_confirmation: String,
+}
+```
+
+#### Manual Implementation (Alternative)
+
+For complex cross-field logic, implement `Validate` manually:
 
 ```rust
 impl Validate for DateRange {
     fn validate(&self) -> Result<(), ValidationError> {
         let mut err = ValidationError::new();
-        
-        if self.end_date < self.start_date {
+
+        // Field-level validation first
+        if let Err(e) = validate("start_date", &self.start_date, &rules::future()) {
+            err.extend(e);
+        }
+        if let Err(e) = validate("end_date", &self.end_date, &rules::future()) {
+            err.extend(e);
+        }
+
+        // Cross-field validation
+        if self.end_date <= self.start_date {
             err.push(
                 "end_date",
                 "invalid_range",
                 "End date must be after start date"
             );
         }
-        
+
+        // Check minimum duration (e.g., at least 1 day)
+        let duration = self.end_date.signed_duration_since(self.start_date);
+        if duration.num_days() < 1 {
+            err.push(
+                "end_date",
+                "duration_too_short",
+                "Event must be at least 1 day long"
+            );
+        }
+
         if err.is_empty() { Ok(()) } else { Err(err) }
     }
 }
@@ -752,6 +1545,484 @@ impl User {
     }
 }
 ```
+
+### Async Validation
+
+**Feature:** Async validation with `AsyncValidate` trait for database queries, API calls, and external service checks.
+
+Use async validation when you need to check constraints that require I/O operations - database uniqueness, external API validation, rate limiting, etc.
+
+#### AsyncValidate Trait
+
+```rust
+use domainstack::{AsyncValidate, ValidationError, ValidationContext, Path};
+use async_trait::async_trait;
+
+#[async_trait]
+pub trait AsyncValidate {
+    async fn validate_async(&self, ctx: &ValidationContext) -> Result<(), ValidationError>;
+}
+```
+
+#### Database Uniqueness Check
+
+```rust
+use domainstack::{AsyncValidate, ValidationError, ValidationContext, Path};
+use async_trait::async_trait;
+use sqlx::{PgPool, query};
+
+pub struct User {
+    pub email: String,
+    pub username: String,
+    pub age: u8,
+}
+
+#[async_trait]
+impl AsyncValidate for User {
+    async fn validate_async(&self, ctx: &ValidationContext) -> Result<(), ValidationError> {
+        let mut err = ValidationError::new();
+
+        // Sync validation first
+        if let Err(e) = self.validate() {
+            err.extend(e);
+        }
+
+        // Get database connection from context
+        let db = ctx.get_resource::<PgPool>("db")?;
+
+        // Check email uniqueness
+        let email_exists = query!("SELECT id FROM users WHERE email = $1", self.email)
+            .fetch_optional(db)
+            .await?;
+
+        if email_exists.is_some() {
+            err.push(
+                Path::from("email"),
+                "email_taken",
+                "Email is already registered"
+            );
+        }
+
+        // Check username uniqueness
+        let username_exists = query!("SELECT id FROM users WHERE username = $1", self.username)
+            .fetch_optional(db)
+            .await?;
+
+        if username_exists.is_some() {
+            err.push(
+                Path::from("username"),
+                "username_taken",
+                "Username is already taken"
+            );
+        }
+
+        if err.is_empty() { Ok(()) } else { Err(err) }
+    }
+}
+```
+
+#### Using ValidationContext
+
+Pass external resources (database pools, HTTP clients, caches) via `ValidationContext`:
+
+```rust
+use domainstack::ValidationContext;
+use sqlx::PgPool;
+
+// Create context with resources
+let mut ctx = ValidationContext::new();
+ctx.insert_resource("db", db_pool.clone());
+ctx.insert_resource("cache", redis_client.clone());
+
+// Run async validation
+let user = User {
+    email: "user@example.com".to_string(),
+    username: "johndoe".to_string(),
+    age: 25,
+};
+
+user.validate_async(&ctx).await?;  // ✓ or ✗ with field-level errors
+```
+
+#### Axum Integration with Async Validation
+
+```rust
+use axum::{extract::State, Json};
+use domainstack::{AsyncValidate, ValidationContext};
+use domainstack_axum::ErrorResponse;
+use sqlx::PgPool;
+
+async fn create_user(
+    State(db): State<PgPool>,
+    Json(user): Json<User>
+) -> Result<Json<User>, ErrorResponse> {
+    // Create validation context
+    let mut ctx = ValidationContext::new();
+    ctx.insert_resource("db", db.clone());
+
+    // Async validation (checks uniqueness)
+    user.validate_async(&ctx)
+        .await
+        .map_err(|e| ErrorResponse::from(e))?;
+
+    // User is valid and unique - proceed with insertion
+    let created = insert_user(&db, user).await?;
+    Ok(Json(created))
+}
+```
+
+#### External API Validation
+
+Validate data against external services:
+
+```rust
+use domainstack::{AsyncValidate, ValidationError, ValidationContext, Path};
+use async_trait::async_trait;
+use reqwest::Client;
+
+pub struct VATRegistration {
+    pub vat_number: String,
+    pub country_code: String,
+}
+
+#[async_trait]
+impl AsyncValidate for VATRegistration {
+    async fn validate_async(&self, ctx: &ValidationContext) -> Result<(), ValidationError> {
+        let http_client = ctx.get_resource::<Client>("http_client")?;
+
+        // Call EU VAT validation API
+        let response = http_client
+            .get(&format!(
+                "https://vat-api.eu/check/{}/{}",
+                self.country_code, self.vat_number
+            ))
+            .send()
+            .await?;
+
+        let result: VATResponse = response.json().await?;
+
+        if !result.is_valid {
+            return Err(ValidationError::single(
+                Path::from("vat_number"),
+                "invalid_vat",
+                "VAT number is not valid"
+            ));
+        }
+
+        Ok(())
+    }
+}
+```
+
+#### Rate Limiting with Async Validation
+
+```rust
+use domainstack::{AsyncValidate, ValidationError, ValidationContext, Path};
+use async_trait::async_trait;
+use redis::AsyncCommands;
+
+pub struct LoginAttempt {
+    pub email: String,
+    pub password: String,
+    pub ip_address: String,
+}
+
+#[async_trait]
+impl AsyncValidate for LoginAttempt {
+    async fn validate_async(&self, ctx: &ValidationContext) -> Result<(), ValidationError> {
+        let mut redis = ctx.get_resource::<redis::Client>("redis")?.get_async_connection().await?;
+
+        // Check rate limit (max 5 attempts per 15 minutes)
+        let key = format!("login_attempts:{}", self.ip_address);
+        let attempts: i32 = redis.get(&key).await.unwrap_or(0);
+
+        if attempts >= 5 {
+            return Err(ValidationError::single(
+                Path::root(),
+                "rate_limited",
+                "Too many login attempts. Please try again later."
+            ));
+        }
+
+        // Increment attempt counter
+        redis.incr(&key, 1).await?;
+        redis.expire(&key, 900).await?;  // 15 minutes
+
+        Ok(())
+    }
+}
+```
+
+#### Combining Sync and Async Validation
+
+Best practice: Run synchronous validation first (fast), then async validation (slow):
+
+```rust
+#[async_trait]
+impl AsyncValidate for User {
+    async fn validate_async(&self, ctx: &ValidationContext) -> Result<(), ValidationError> {
+        let mut err = ValidationError::new();
+
+        // 1. Synchronous validation (instant)
+        //    Check format, length, ranges, etc.
+        if let Err(e) = self.validate() {
+            err.extend(e);
+            // Early return if basic validation fails
+            // No need to hit database if email format is invalid!
+            return Err(err);
+        }
+
+        // 2. Async validation (I/O required)
+        //    Check uniqueness, external APIs, etc.
+        let db = ctx.get_resource::<PgPool>("db")?;
+
+        let email_exists = query!("SELECT id FROM users WHERE email = $1", self.email)
+            .fetch_optional(db)
+            .await?;
+
+        if email_exists.is_some() {
+            err.push(
+                Path::from("email"),
+                "email_taken",
+                "Email is already registered"
+            );
+        }
+
+        if err.is_empty() { Ok(()) } else { Err(err) }
+    }
+}
+```
+
+#### Error Handling
+
+```rust
+match user.validate_async(&ctx).await {
+    Ok(_) => {
+        println!("✓ User is valid and unique!");
+    }
+    Err(e) => {
+        for violation in &e.violations {
+            println!("Error at {}: {}", violation.path, violation.message);
+        }
+        // Example output:
+        // Error at email: Email is already registered
+        // Error at username: Username is already taken
+    }
+}
+```
+
+**Benefits of Async Validation:**
+
+- **Database integrity** - Prevent duplicate records before insertion
+- **External validation** - Verify data with third-party APIs
+- **Rate limiting** - Protect against abuse
+- **Real-time checks** - Validate against live data sources
+- **Clean error messages** - Field-level errors just like sync validation
+
+**Performance Tip:** Always run sync validation first to fail fast on basic errors before expensive I/O operations.
+
+### Type-State Validation
+
+**Feature:** Compile-time validation guarantees using phantom types
+
+Use the type system to enforce that data has been validated, preventing use of unvalidated data in critical operations.
+
+```rust
+use domainstack::typestate::{Validated, Unvalidated};
+use domainstack::{ValidationError, validate, rules};
+use std::marker::PhantomData;
+
+// Domain type with validation state
+pub struct Email<State = Unvalidated> {
+    value: String,
+    _state: PhantomData<State>,
+}
+
+impl Email<Unvalidated> {
+    pub fn new(value: String) -> Self {
+        Self {
+            value,
+            _state: PhantomData,
+        }
+    }
+
+    pub fn validate(self) -> Result<Email<Validated>, ValidationError> {
+        validate("email", self.value.as_str(), &rules::email())?;
+        Ok(Email {
+            value: self.value,
+            _state: PhantomData,
+        })
+    }
+}
+
+impl Email<Validated> {
+    pub fn as_str(&self) -> &str {
+        &self.value
+    }
+}
+
+// Only accept validated emails!
+fn send_email(email: Email<Validated>) {
+    // Compiler GUARANTEES email is validated!
+    println!("Sending to: {}", email.as_str());
+}
+
+// Usage
+let email = Email::new("user@example.com".to_string());
+// send_email(email); // ❌ Compile error: expected Email<Validated>
+
+let validated = email.validate()?;
+send_email(validated); // ✅ Compiles!
+```
+
+**Benefits:**
+
+- **Zero runtime cost** - PhantomData has size 0, no memory or CPU overhead
+- **Compile-time safety** - Type system enforces validation occurred
+- **Self-documenting** - Function signatures make validation requirements explicit
+- **Builder pattern friendly** - Natural fit with builder APIs
+
+**Multi-Field Example:**
+
+```rust
+use domainstack::typestate::{Validated, Unvalidated};
+use std::marker::PhantomData;
+
+pub struct User<State = Unvalidated> {
+    pub email: String,
+    pub username: String,
+    pub age: u8,
+    _state: PhantomData<State>,
+}
+
+impl User<Unvalidated> {
+    pub fn new(email: String, username: String, age: u8) -> Self {
+        Self {
+            email,
+            username,
+            age,
+            _state: PhantomData,
+        }
+    }
+
+    pub fn validate(self) -> Result<User<Validated>, ValidationError> {
+        let mut err = ValidationError::new();
+
+        if let Err(e) = validate("email", &self.email, &rules::email()) {
+            err.extend(e);
+        }
+        if let Err(e) = validate("username", &self.username,
+                                 &rules::length(3, 50).and(rules::alphanumeric())) {
+            err.extend(e);
+        }
+        if let Err(e) = validate("age", &self.age, &rules::range(18, 120)) {
+            err.extend(e);
+        }
+
+        if err.is_empty() {
+            Ok(User {
+                email: self.email,
+                username: self.username,
+                age: self.age,
+                _state: PhantomData,
+            })
+        } else {
+            Err(err)
+        }
+    }
+}
+
+// Database operations require validated users
+async fn insert_user(db: &Database, user: User<Validated>) -> Result<i64> {
+    // Type system guarantees user is validated!
+    db.insert(user.email, user.username, user.age).await
+}
+```
+
+**Builder Pattern Integration:**
+
+```rust
+pub struct UserBuilder<State = Unvalidated> {
+    email: Option<String>,
+    username: Option<String>,
+    age: Option<u8>,
+    _state: PhantomData<State>,
+}
+
+impl UserBuilder<Unvalidated> {
+    pub fn new() -> Self {
+        Self {
+            email: None,
+            username: None,
+            age: None,
+            _state: PhantomData,
+        }
+    }
+
+    pub fn email(mut self, email: String) -> Self {
+        self.email = Some(email);
+        self
+    }
+
+    pub fn username(mut self, username: String) -> Self {
+        self.username = Some(username);
+        self
+    }
+
+    pub fn age(mut self, age: u8) -> Self {
+        self.age = Some(age);
+        self
+    }
+
+    pub fn build(self) -> Result<UserBuilder<Validated>, ValidationError> {
+        // Validate all fields
+        let user = User::new(
+            self.email.ok_or_else(|| ValidationError::single(
+                Path::from("email"), "required", "Email is required"
+            ))?,
+            self.username.ok_or_else(|| ValidationError::single(
+                Path::from("username"), "required", "Username is required"
+            ))?,
+            self.age.ok_or_else(|| ValidationError::single(
+                Path::from("age"), "required", "Age is required"
+            ))?,
+        );
+
+        user.validate()?;
+
+        Ok(UserBuilder {
+            email: Some(user.email),
+            username: Some(user.username),
+            age: Some(user.age),
+            _state: PhantomData,
+        })
+    }
+}
+
+impl UserBuilder<Validated> {
+    pub fn into_user(self) -> User<Validated> {
+        User {
+            email: self.email.unwrap(),
+            username: self.username.unwrap(),
+            age: self.age.unwrap(),
+            _state: PhantomData,
+        }
+    }
+}
+```
+
+**Use Cases:**
+
+- Database operations requiring validated data
+- Business logic with validation boundaries
+- Multi-step workflows with validation gates
+- API handlers ensuring data is validated before processing
+- Builder patterns with validation as final step
+
+**See also:**
+- Complete module documentation: `domainstack/src/typestate.rs`
+- Example: `domainstack/examples/phantom_types.rs`
+- 9 unit tests demonstrating all patterns
 
 ## Best Practices
 

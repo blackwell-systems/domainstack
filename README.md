@@ -115,28 +115,72 @@ fn main() {
 
 ## Mental Model: DTOs → Domain → Business Logic
 
-```
-HTTP Request → DTO (untrusted) → Domain (validated) → Business Logic
-```
-
-domainstack enforces validation at boundaries through smart constructors and `TryFrom` implementations:
-
+### 1) DTO at the boundary (untrusted)
 ```rust
-// DTO - public fields for deserialization
 #[derive(Deserialize)]
-pub struct UserDto { pub email: String, pub age: u8 }
+pub struct BookingDto {
+    pub name: String,
+    pub email: String,
+    pub guests: u8,
+}
+```
 
-// Domain - private fields, guaranteed valid
-#[derive(Validate)]
-pub struct User {
-    #[validate(email)] email: String,
-    #[validate(range(min = 18, max = 120))] age: u8,
+### 2) Domain inside (trusted)
+```rust
+use domainstack::Validate;
+
+pub struct Email(String);
+
+impl Email {
+    pub fn new(raw: String) -> Result<Self, ValidationError> {
+        validate("email", raw.as_str(), &rules::email().and(rules::max_len(255)))?;
+        Ok(Self(raw))
+    }
 }
 
-impl TryFrom<UserDto> for User { /* validation enforced here */ }
+// Derive Validate for automatic validation
+#[derive(Validate)]
+pub struct BookingRequest {
+    #[validate(length(min = 1, max = 50))]
+    name: String,      // Private!
+
+    #[validate(nested)]
+    email: Email,
+
+    #[validate(range(min = 1, max = 10))]
+    guests: u8,
+}
+
+impl TryFrom<BookingDto> for BookingRequest {
+    type Error = ValidationError;
+
+    fn try_from(dto: BookingDto) -> Result<Self, Self::Error> {
+        let email = Email::new(dto.email).map_err(|e| e.prefixed("email"))?;
+
+        let booking = Self {
+            name: dto.name,
+            email,
+            guests: dto.guests,
+        };
+
+        booking.validate()?;  // One line validates all fields!
+        Ok(booking)
+    }
+}
 ```
 
-📘 **[Complete Patterns Guide](./domainstack/domainstack/docs/PATTERNS.md)** - Valid-by-construction, smart constructors, boundary enforcement
+### 3) API response mapping (optional)
+```rust
+use domainstack_envelope::IntoEnvelopeError;
+
+async fn create_booking(Json(dto): Json<BookingDto>) -> Result<Json<Booking>, Error> {
+    let domain: BookingRequest = dto.try_into()
+        .map_err(|e: ValidationError| e.into_envelope_error())?;
+    
+    // domain is GUARANTEED valid here - use with confidence!
+    Ok(Json(save_booking(domain).await?))
+}
+```
 
 ## How domainstack is Different
 
@@ -186,26 +230,210 @@ impl TryFrom<UserDto> for User { /* validation enforced here */ }
 - Async validation with database/API context
 - Compile-time guarantees that data was validated (phantom types)
 
-## HTTP Integration
+## Valid-by-Construction Pattern
 
-domainstack provides framework adapters for clean DTO→Domain extraction:
+The recommended approach enforces validation at domain boundaries:
 
 ```rust
-use domainstack_axum::{DomainJson, ErrorResponse};
+use domainstack::prelude::*;
+use domainstack::Validate;
+use serde::Deserialize;
 
-async fn create_user(
-    DomainJson(request, user): DomainJson<UserDto, User>
-) -> Result<Json<User>, ErrorResponse> {
-    // `user` is guaranteed valid - automatic validation!
-    Ok(Json(save_user(user).await?))
+// DTO - Public, for deserialization
+#[derive(Deserialize)]
+pub struct UserDto {
+    pub name: String,
+    pub age: u8,
+    pub email: String,
+}
+
+// Domain - Private fields, enforced validity
+#[derive(Debug, Validate)]
+pub struct User {
+    #[validate(length(min = 2, max = 50))]
+    name: String,     // Private!
+
+    #[validate(range(min = 18, max = 120))]
+    age: u8,
+
+    #[validate(nested)]
+    email: Email,
+}
+
+impl User {
+    // Smart constructor - validation enforced here
+    pub fn new(name: String, age: u8, email_raw: String) -> Result<Self, ValidationError> {
+        let email = Email::new(email_raw).map_err(|e| e.prefixed("email"))?;
+
+        let user = Self { name, age, email };
+        user.validate()?;  // One line - validates all fields!
+        Ok(user)
+    }
+
+    // Getters only - no setters
+    pub fn name(&self) -> &str { &self.name }
+    pub fn age(&self) -> u8 { self.age }
+    pub fn email(&self) -> &Email { &self.email }
+}
+
+// Conversion at boundary
+impl TryFrom<UserDto> for User {
+    type Error = ValidationError;
+
+    fn try_from(dto: UserDto) -> Result<Self, Self::Error> {
+        User::new(dto.name, dto.age, dto.email)
+    }
+}
+
+// HTTP handler
+async fn create_user(Json(dto): Json<UserDto>) -> Result<Json<User>, Error> {
+    let user = User::try_from(dto)
+        .map_err(|e| e.into_envelope_error())?;
+    // user is GUARANTEED valid here - no need to check!
+    Ok(Json(user))
 }
 ```
 
-**Supported frameworks:** Axum, Actix-web, Rocket
-**Auto-generated errors:** Structured field-level 400 responses
-**Envelope integration:** RFC 9457 Problem Details support
+**Key Points**:
+- DTOs are public for deserialization
+- Domain types have private fields
+- `#[derive(Validate)]` eliminates manual error accumulation boilerplate
+- Validation happens in constructors with a single `.validate()` call
+- `TryFrom` enforces validation at boundary
+- Invalid domain objects cannot exist
 
-📦 **[Framework Adapters](./domainstack/domainstack-http/)** - Axum, Actix, Rocket integration guides
+<details>
+<summary>Manual validation (when you need fine-grained control)</summary>
+
+If you need custom error messages or conditional logic, use the manual approach:
+
+```rust
+impl User {
+    pub fn new(name: String, age: u8, email: String) -> Result<Self, ValidationError> {
+        let mut err = ValidationError::new();
+
+        let name_rule = rules::min_len(2)
+            .and(rules::max_len(50))
+            .code("invalid_name")
+            .message("Name must be between 2 and 50 characters");
+        if let Err(e) = validate("name", name.as_str(), &name_rule) {
+            err.extend(e);
+        }
+
+        let age_rule = rules::range(18, 120)
+            .code("invalid_age")
+            .message("Age must be between 18 and 120");
+        if let Err(e) = validate("age", &age, &age_rule) {
+            err.extend(e);
+        }
+
+        let email = Email::new(email).map_err(|e| e.prefixed("email"))?;
+
+        if !err.is_empty() {
+            return Err(err);
+        }
+
+        Ok(Self { name, age, email })
+    }
+}
+```
+
+</details>
+
+### HTTP Integration (Optional Adapter)
+
+```rust
+use domainstack_envelope::IntoEnvelopeError;
+
+// Before: Manual error handling (lots of boilerplate)
+async fn create_team_manual(Json(team): Json<Team>) -> Result<Json<Team>, StatusCode> {
+    match team.validate() {
+        Ok(_) => Ok(Json(team)),
+        Err(e) => {
+            // 15+ lines of boilerplate to build proper JSON error response
+            let mut field_errors = std::collections::HashMap::new();
+            for violation in e.violations {
+                field_errors.entry(violation.path.to_string())
+                    .or_insert_with(Vec::new)
+                    .push(serde_json::json!({
+                        "code": violation.code,
+                        "message": violation.message
+                    }));
+            }
+            // ... more code to set status, format response, etc.
+            Err(StatusCode::BAD_REQUEST)  // Lost all error details!
+        }
+    }
+}
+
+// After: One line with error-envelope
+async fn create_team(Json(team): Json<Team>) -> Result<Json<Team>, Error> {
+    team.validate().map_err(|e| e.into_envelope_error())?;  // ← One line!
+    Ok(Json(team))
+}
+
+// Automatic error response with perfect structure:
+// {
+//   "code": "VALIDATION",
+//   "status": 400,
+//   "message": "Validation failed with 2 errors",
+//   "details": {
+//     "fields": {
+//       "members[1].name": [
+//         {"code": "min_length", "message": "Must be at least 2 characters"}
+//       ],
+//       "members[1].age": [
+//         {"code": "out_of_range", "message": "Must be between 18 and 120"}
+//       ]
+//     }
+//   }
+// }
+```
+
+## Framework Adapters
+
+One-line DTO→Domain extraction for Axum and Actix-web.
+
+### Axum
+
+```rust
+use domainstack_axum::{DomainJson, ErrorResponse};
+use axum::{routing::post, Router, Json};
+
+type UserJson = DomainJson<User, UserDto>;
+
+async fn create_user(
+    UserJson { domain: user, .. }: UserJson
+) -> Result<Json<User>, ErrorResponse> {
+    Ok(Json(save_user(user).await?))  // user is guaranteed valid!
+}
+
+let app = Router::new().route("/users", post(create_user));
+```
+
+### Actix-web
+
+```rust
+use domainstack_actix::{DomainJson, ErrorResponse};
+use actix_web::{post, web};
+
+type UserJson = DomainJson<User, UserDto>;
+
+#[post("/users")]
+async fn create_user(
+    UserJson { domain: user, .. }: UserJson
+) -> Result<web::Json<User>, ErrorResponse> {
+    Ok(web::Json(save_user(user).await?))  // user is guaranteed valid!
+}
+```
+
+**What the adapters provide:**
+- `DomainJson<T, Dto>` extractor - Deserialize JSON → validate → convert to domain
+- `ErrorResponse` - Automatic 400 responses with structured field-level errors
+- `From` impls - `?` operator works with `ValidationError` and `error_envelope::Error`
+- **Identical APIs** - Same pattern across both frameworks
+
+See [domainstack-axum](./domainstack/domainstack-axum/) and [domainstack-actix](./domainstack/domainstack-actix/) for complete documentation.
 
 ## Installation
 

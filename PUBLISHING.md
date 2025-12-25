@@ -4,9 +4,9 @@ This document describes how to publish domainstack crates to crates.io.
 
 ## Workspace Overview
 
-The workspace contains **10 members total**:
+The workspace contains **12 members total**:
 
-**7 Publishable Crates:**
+**8 Publishable Crates:**
 1. **domainstack-derive** - Procedural macros (no workspace dependencies)
 2. **domainstack** - Core validation framework
 3. **domainstack-http** - HTTP integration utilities
@@ -14,15 +14,17 @@ The workspace contains **10 members total**:
 5. **domainstack-schema** - OpenAPI 3.0 schema generation
 6. **domainstack-axum** - Axum web framework integration
 7. **domainstack-actix** - Actix-web framework integration
+8. **domainstack-rocket** - Rocket web framework integration
 
-**3 Example Crates (not published):**
-8. **domainstack-examples** - Core validation examples
-9. **examples-axum** - Axum framework examples
-10. **examples-actix** - Actix-web framework examples
+**4 Example Crates (not published):**
+9. **domainstack-examples** - Core validation examples
+10. **examples-axum** - Axum framework examples
+11. **examples-actix** - Actix-web framework examples
+12. **examples-rocket** - Rocket framework examples
 
 **Note on versions:**
-- domainstack-schema is currently at v0.8.0 (newer crate)
-- Other publishable crates will start at v1.0.0 for initial publication
+- All publishable crates are now at v1.0.0 for unified release management
+- Previous version inconsistency (domainstack-schema was at v0.8.0) has been resolved
 
 ## First-Time Publishing
 
@@ -60,9 +62,10 @@ cargo publish -p domainstack-schema --token $CARGO_TOKEN
 ### Step 4: Publish framework integration crates
 
 ```bash
-# Both framework crates depend on domainstack and domainstack-http
+# All three framework crates depend on domainstack and domainstack-http
 cargo publish -p domainstack-axum --token $CARGO_TOKEN
 cargo publish -p domainstack-actix --token $CARGO_TOKEN
+cargo publish -p domainstack-rocket --token $CARGO_TOKEN
 ```
 
 ## Subsequent Releases
@@ -76,8 +79,6 @@ After the initial publish, the automated GitHub Actions workflow will handle rel
 5. GitHub Actions will automatically:
    - Create a GitHub release
    - Publish all eight crates to crates.io in the correct order
-
-**Note:** domainstack-schema may have a different version number (currently v0.8.0) - manage its releases separately if needed.
 
 ## Publishing Order
 
@@ -98,32 +99,33 @@ Always publish in this order (respecting dependency chain):
 
 ## Version Synchronization
 
-**Most crates** should have synchronized version numbers (starting at v1.0.0):
+**All crates** now have synchronized version numbers at v1.0.0:
 - domainstack-derive
 - domainstack
 - domainstack-http
 - domainstack-envelope
+- domainstack-schema (aligned from 0.8.0 → 1.0.0)
 - domainstack-axum
 - domainstack-actix
+- domainstack-rocket
 
-**Exception:** domainstack-schema is currently at v0.8.0 (newer crate, may evolve independently).
-
-Update synchronized crates together:
+Update all crates together:
 
 ```bash
 # In workspace Cargo.toml
 [workspace.dependencies]
-domainstack = { version = "1.X.Y", path = "domainstack", default-features = false }
-domainstack-derive = { version = "1.X.Y", path = "domainstack-derive" }
-domainstack-http = { version = "1.X.Y", path = "domainstack-http" }
-domainstack-envelope = { version = "1.X.Y", path = "domainstack-envelope" }
-domainstack-axum = { version = "1.X.Y", path = "domainstack-axum" }
-domainstack-actix = { version = "1.X.Y", path = "domainstack-actix" }
-domainstack-schema = { version = "0.8.0", path = "domainstack-schema" }  # Separate versioning
+domainstack = { version = "1.0.0", path = "domainstack", default-features = false }
+domainstack-derive = { version = "1.0.0", path = "domainstack-derive" }
+domainstack-http = { version = "1.0.0", path = "domainstack-http" }
+domainstack-envelope = { version = "1.0.0", path = "domainstack-envelope" }
+domainstack-schema = { version = "1.0.0", path = "domainstack-schema" }
+domainstack-axum = { version = "1.0.0", path = "domainstack-axum" }
+domainstack-actix = { version = "1.0.0", path = "domainstack-actix" }
+domainstack-rocket = { version = "1.0.0", path = "domainstack-rocket" }
 
 # In each crate's Cargo.toml
 [package]
-version = "1.X.Y"  # or "0.8.Y" for domainstack-schema
+version = "1.0.0"
 ```
 
 ## Pre-Publish Checklist
@@ -143,15 +145,14 @@ version = "1.X.Y"  # or "0.8.Y" for domainstack-schema
 - [ ] Framework integration examples (Axum, Actix) compile and run
 
 ### Metadata & Documentation
-- [ ] Version numbers match across all synchronized Cargo.toml files
-- [ ] domainstack-schema version updated separately if needed (currently v0.8.0)
+- [ ] Version numbers match across all synchronized Cargo.toml files (all at 1.0.0)
 - [ ] CHANGELOG.md updated with release notes for all affected crates
 - [ ] README.md examples use current syntax and features
 - [ ] README.md badges show correct version
-- [ ] All 7 crates have complete metadata (keywords, categories, description, etc.)
+- [ ] All 8 crates have complete metadata (keywords, categories, description, etc.)
 
 ### Git & Release
-- [ ] Commit message follows format: "Release v1.X.Y" (or "Release domainstack-schema v0.X.Y")
+- [ ] Commit message follows format: "Release v1.X.Y"
 - [ ] Git tag created: `git tag v1.X.Y`
 - [ ] No uncommitted changes
 - [ ] Branch pushed to origin
@@ -182,7 +183,7 @@ The `domainstack-derive` crate has `domainstack` in dev-dependencies for tests. 
 If different crates reference different versions of workspace dependencies:
 1. Check all Cargo.toml files use `workspace = true` for workspace dependencies
 2. Verify workspace Cargo.toml has correct versions in `[workspace.dependencies]`
-3. Remember domainstack-schema has separate versioning (v0.8.x)
+3. All crates should be at v1.0.0 for unified release management
 
 ### Documentation build failures
 

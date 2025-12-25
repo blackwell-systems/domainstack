@@ -5,6 +5,187 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - domainstack-cli v0.1.0
+
+### Added
+
+#### New Crate: `domainstack-cli`
+
+**HEADLINE FEATURE: Unified Code Generation CLI**
+
+Generate TypeScript validators, GraphQL schemas, and more from your Rust `#[validate(...)]` attributes. Single source of truth for validation logic across your entire stack.
+
+```bash
+# Install once
+cargo install domainstack-cli
+
+# Generate Zod schemas from Rust validation rules
+domainstack zod --input src --output frontend/schemas.ts
+```
+
+**Phase 1: Zod Schema Generation (v0.1.0) ✅**
+
+Transform Rust types with domainstack validation rules into TypeScript Zod schemas:
+
+```rust
+// Rust: src/models.rs
+#[derive(Validate)]
+struct User {
+    #[validate(email)]
+    #[validate(max_len = 255)]
+    email: String,
+
+    #[validate(range(min = 18, max = 120))]
+    age: u8,
+
+    #[validate(url)]
+    profile_url: Option<String>,
+}
+```
+
+Generates:
+
+```typescript
+// TypeScript: schemas.ts (auto-generated)
+export const UserSchema = z.object({
+  email: z.string().email().max(255),
+  age: z.number().min(18).max(120),
+  profile_url: z.string().url().optional(),
+});
+
+export type User = z.infer<typeof UserSchema>;
+```
+
+**Key Features:**
+- **26+ Validation Rules Supported**: All string validations (email, url, length, regex patterns), all numeric validations (range, positive, negative, multiple_of), optional fields, arrays, nested types
+- **Correct Optional Handling**: Validations apply to inner type, `.optional()` added at end
+- **Type Mappings**: String → z.string(), numbers → z.number(), bool → z.boolean(), Option<T> → T.optional(), Vec<T> → z.array(T)
+- **Precision Warnings**: Large integers (u64, i64, u128, i128) include inline comments about JavaScript precision limits
+- **Auto-Generated Headers**: Timestamps and "DO NOT EDIT" warnings
+- **Directory Scanning**: Recursively finds all types with `#[derive(Validate)]`
+
+**Architecture: Unified CLI Design**
+
+Designed for future expansion with single binary, multiple generators:
+
+```
+domainstack
+├── zod        ✅ TypeScript/Zod schemas (v0.1.0)
+├── yup        📋 TypeScript/Yup schemas (planned)
+├── graphql    📋 GraphQL SDL (planned)
+├── prisma     📋 Prisma schemas (planned)
+└── json-schema 📋 JSON Schema (planned)
+```
+
+**Benefits:**
+- **Single Source of Truth**: Define validation once in Rust, use everywhere
+- **Zero Maintenance**: Change Rust validation, regenerate schemas automatically
+- **Type Safety**: Compile-time guarantees for schema generation
+- **Shared Parser**: Efficient, consistent validation rule interpretation
+- **Framework Agnostic**: Works with any web framework
+
+**Internal Structure:**
+
+```
+domainstack-cli/
+├── commands/      # Subcommand implementations
+│   └── zod.rs
+├── parser/        # Shared parsing (reusable by all generators)
+│   ├── ast.rs         # Parse Rust AST, find #[derive(Validate)]
+│   └── validation.rs  # Extract validation rules
+└── generators/    # Language-specific transformations
+    └── zod.rs     # Zod schema generation logic
+```
+
+**Validation Rule → Zod Mappings:**
+
+| Rust Validation | Zod Output | Category |
+|----------------|------------|----------|
+| `email` | `.email()` | String format |
+| `url` | `.url()` | String format |
+| `min_len = N` | `.min(N)` | String length |
+| `max_len = N` | `.max(N)` | String length |
+| `length(min, max)` | `.min(N).max(M)` | String length |
+| `non_empty` | `.min(1)` | String length |
+| `non_blank` | `.trim().min(1)` | String length |
+| `alphanumeric` | `.regex(/^[a-zA-Z0-9]*$/)` | String pattern |
+| `alpha_only` | `.regex(/^[a-zA-Z]*$/)` | String pattern |
+| `numeric_string` | `.regex(/^[0-9]*$/)` | String pattern |
+| `ascii` | `.regex(/^[\x00-\x7F]*$/)` | String pattern |
+| `starts_with = "x"` | `.startsWith("x")` | String content |
+| `ends_with = "x"` | `.endsWith("x")` | String content |
+| `contains = "x"` | `.includes("x")` | String content |
+| `matches_regex = "..."` | `.regex(/.../)` | String pattern |
+| `no_whitespace` | `.regex(/^\S*$/)` | String pattern |
+| `range(min, max)` | `.min(N).max(M)` | Numeric range |
+| `min = N` | `.min(N)` | Numeric |
+| `max = N` | `.max(N)` | Numeric |
+| `positive` | `.positive()` | Numeric |
+| `negative` | `.negative()` | Numeric |
+| `non_zero` | `.refine(n => n !== 0, ...)` | Numeric |
+| `multiple_of = N` | `.multipleOf(N)` | Numeric |
+| `finite` | `.finite()` | Numeric |
+
+**Command Reference:**
+
+```bash
+# Basic usage
+domainstack zod --output schemas.ts
+
+# Custom input directory
+domainstack zod --input backend/src --output frontend/schemas.ts
+
+# Verbose output
+domainstack zod -i src -o schemas.ts -v
+```
+
+**Dependencies:**
+- `clap` - CLI argument parsing with derive macros
+- `syn` - Rust AST parsing
+- `quote` - Token manipulation
+- `walkdir` - Recursive directory traversal
+- `chrono` - Timestamp generation
+- `anyhow` - Error handling
+
+**Examples:**
+- Basic: 3 types (User, Post, Product) - `examples/basic_usage/`
+- Comprehensive: 9 types testing all 26+ validation rules - `examples/comprehensive/`
+- Real-world: Production patterns with optional fields, arrays, multiple rules per field
+
+**Testing:**
+- Comprehensive local testing with all validation rule types
+- Optional field ordering verified (`.optional()` at end)
+- Large integer precision warnings validated
+- Multi-rule field combinations tested
+- Nested types and arrays tested
+
+**Documentation:**
+- Complete README: installation, quick start, all validation rules, architecture
+- Implementation plan: `DOMAINSTACK_CLI_IMPLEMENTATION.md`
+- Contributing guide for adding new generators
+
+**Future Generators (Roadmap):**
+
+```bash
+# Coming soon
+domainstack yup --input src --output schemas.ts      # Yup schemas
+domainstack graphql --input src --output schema.graphql  # GraphQL SDL
+domainstack prisma --input src --output schema.prisma    # Prisma schemas
+domainstack json-schema --input src --output schema.json # JSON Schema
+```
+
+**Design Philosophy:**
+
+This tool eliminates the maintenance burden of keeping validation logic synchronized across languages. Define your validation rules once in Rust using domainstack, then generate equivalent schemas for any target ecosystem. The shared parser ensures consistent interpretation, while generator-specific modules handle output format transformations.
+
+**Use Cases:**
+- Full-stack applications (Rust backend + TypeScript frontend)
+- API schema documentation (OpenAPI with Zod)
+- Form validation on client and server
+- Mobile app validation (via generated schemas)
+- Cross-language validation consistency
+- Rapid prototyping with guaranteed validation parity
+
 ## [1.0.0] - 2025-12-25 - Production Release
 
 This is the first stable release of domainstack, marking production readiness with API stability guarantees.

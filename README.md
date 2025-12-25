@@ -10,33 +10,26 @@
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Sponsor](https://img.shields.io/badge/Sponsor-Buy%20Me%20a%20Coffee-yellow?logo=buy-me-a-coffee&logoColor=white)](https://buymeacoffee.com/blackwellsystems)
 
-**Turn untrusted input into valid domain objects—with structured, field-level errors**
+**domainstack turns untrusted input into valid-by-construction domain objects, and returns stable, field-level errors your APIs and UIs can depend on.**
 
-## What is domainstack?
+It's built for the boundary you actually live at:
 
-Full-stack validation ecosystem for Rust: Type-safe validation with automatic TypeScript/Zod schema generation, serde integration, OpenAPI schemas, and web framework adapters (Axum, Actix, Rocket).
+**HTTP/JSON/etc. → DTOs → Domain (validated) → Business logic**
 
-It's built around a service-oriented reality:
+Most validation crates ask: **"Is this DTO valid?"**
+domainstack asks: **"How do I safely construct domain models from untrusted input—and report failures with a consistent error contract?"**
 
-**Outside world (HTTP/JSON/etc.) → DTOs → Domain (valid-by-construction) → Business logic**
+## What that gives you
 
-### The core idea
-
-Most validation crates answer: **"Is this DTO valid?"**  
-domainstack answers: **"How do I *safely construct domain models* from untrusted input, and return a stable error contract?"**
-
-That means:
-- **Domain-first modeling** - Invalid states are unrepresentable
-- **37 validation rules** - String, numeric, collection, date/time validation out of the box
-- **Composable rule algebra** - `.and()`, `.or()`, `.when()` combinators
-- **Structured error paths** - `rooms[0].adults`, `guest.email.value` for APIs/UIs
-- **Framework adapters** - One-line `DomainJson<Domain, Dto>` extraction (Axum, Actix, Rocket)
-- **Auto-derived OpenAPI schemas** - Write validation once, get OpenAPI 3.0 automatically
-- **Serde integration** - Validate during deserialization with `#[derive(ValidateOnDeserialize)]`
-- **Async validation** - Database uniqueness checks with context passing
-- **Cross-field validation** - Password confirmation, date ranges, business rules
-- **Type-state tracking** - Compile-time guarantees with phantom types
-- **Zero dependencies** - Lightweight core, optional features for regex/async/chrono
+- **Domain-first modeling**: invalid states are hard/impossible to represent
+- **Composable rule algebra**: reusable rules with `.and()`, `.or()`, `.when()`
+- **Structured error paths**: `rooms[0].adults`, `guest.email.value` (UI-friendly)
+- **Async validation with context**: DB/API checks like uniqueness, rate limits
+- **Cross-field validation**: invariants like password confirmation, date ranges
+- **Type-state tracking**: phantom types to enforce "validated" at compile time
+- **Schema + client parity**: generate OpenAPI and TypeScript/Zod from the same Rust rules
+- **Framework adapters**: one-line boundary extraction (Axum / Actix / Rocket)
+- **Lean core**: zero-deps base, opt-in features for regex / async / chrono / serde
 
 ## Quick Start
 

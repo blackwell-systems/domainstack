@@ -20,9 +20,11 @@ Complete guide to using domainstack for domain validation.
 ## Integration Guides
 
 - **[Derive Macro](DERIVE_MACRO.md)** - Complete guide to `#[derive(Validate)]` and `#[validate(...)]` attributes
+- **[Validation Rules](RULES.md)** - Complete reference for all 37 built-in validation rules
 - **[Serde Integration](SERDE_INTEGRATION.md)** - Validate on deserialize
 - **[OpenAPI Schema Generation](OPENAPI_SCHEMA.md)** - Auto-generate schemas from validation rules
 - **[HTTP Integration](HTTP_INTEGRATION.md)** - Axum, Actix-web, and Rocket adapters
+- **[Code Generation](CODE_GENERATION.md)** - Generate TypeScript/Zod schemas from Rust
 
 ## Core Concepts
 
@@ -287,21 +289,19 @@ let custom_rule = email()
 
 ## Code Generation (CLI)
 
-### TypeScript/Zod Schema Generation
+Generate TypeScript/Zod validation schemas from your Rust validation rules using `domainstack-cli`.
 
-**Tool:** `domainstack-cli`
-
-Generate TypeScript Zod validation schemas from Rust validation rules - single source of truth for frontend and backend validation.
+**Quick example:**
 
 ```bash
 # Install the CLI
 cargo install domainstack-cli
 
-# Generate Zod schemas from Rust types
+# Generate Zod schemas
 domainstack zod --input src --output frontend/src/schemas.ts
 ```
 
-**From Rust:**
+**From this Rust:**
 
 ```rust
 #[derive(Validate)]
@@ -312,112 +312,25 @@ struct User {
 
     #[validate(range(min = 18, max = 120))]
     age: u8,
-
-    #[validate(url)]
-    website: Option<String>,
 }
 ```
 
-**Generates TypeScript/Zod:**
+**Generates this TypeScript:**
 
 ```typescript
-// frontend/src/schemas.ts (AUTO-GENERATED)
-import { z } from "zod";
-
 export const UserSchema = z.object({
   email: z.string().email().max(255),
   age: z.number().min(18).max(120),
-  website: z.string().url().optional(),
 });
-
-export type User = z.infer<typeof UserSchema>;
 ```
 
-**Supported Validation Rules:**
-
-26+ validation rules are supported:
-- ✅ All string validations (email, url, length, patterns)
-- ✅ All numeric validations (range, min/max, positive/negative)
-- ✅ Optional fields with correct `.optional()` ordering
-- ✅ Arrays (`Vec<T>` → `z.array(T)`)
-- ✅ Nested types with references
-- ✅ Custom type references
-
-**Benefits:**
-
-- **Single source of truth** - Change validation once, regenerate schemas
-- **Frontend/backend in sync** - Guaranteed consistency
-- **Zero maintenance** - No manual schema writing
-- **Type-safe** - Zod's type inference works automatically
-
-**CLI Usage:**
-
-```bash
-# Basic usage
-domainstack zod --output schemas.ts
-
-# Custom input directory
-domainstack zod --input backend/src --output frontend/schemas.ts
-
-# Verbose output
-domainstack zod -i src -o schemas.ts -v
-```
-
-**Integration with CI/CD:**
-
-```yaml
-# .github/workflows/ci.yml
-- name: Generate Zod schemas
-  run: domainstack zod --input src --output frontend/src/schemas.ts
-
-- name: Check for uncommitted changes
-  run: |
-    git diff --exit-code frontend/src/schemas.ts || \
-      (echo "❌ Schemas out of date! Run: npm run codegen" && exit 1)
-```
-
-**Example: Full-Stack Validation**
-
-```rust
-// Backend: src/models.rs
-#[derive(Validate)]
-struct CreateUserRequest {
-    #[validate(email)]
-    email: String,
-
-    #[validate(length(min = 3, max = 50))]
-    #[validate(alphanumeric)]
-    username: String,
-
-    #[validate(range(min = 18, max = 120))]
-    age: u8,
-}
-```
-
-```typescript
-// Frontend: Generated automatically
-const result = CreateUserRequestSchema.safeParse(formData);
-if (result.success) {
-  // Type-safe validated data
-  const request: CreateUserRequest = result.data;
-  await api.createUser(request);
-} else {
-  // Display field-level errors
-  displayErrors(result.error);
-}
-```
-
-**Future Generators (Planned):**
-
-- `domainstack yup` - Yup schemas for React ecosystem
-- `domainstack graphql` - GraphQL SDL generation
-- `domainstack prisma` - Prisma schemas with validation
-- `domainstack json-schema` - JSON Schema generation
-
-**See also:**
-- Complete guide: `domainstack-cli/README.md`
-- 32 unit tests with 100% pass rate
-- CHANGELOG for v0.1.0 feature details
+**For complete documentation, see [CODE_GENERATION.md](CODE_GENERATION.md)** covering:
+- **Installation** - CLI setup and dependencies
+- **TypeScript/Zod generation** - Full-stack validation sync
+- **Rule mapping** - How Rust rules become Zod schemas
+- **Integration** - NPM scripts, monorepo setup, CI/CD
+- **Examples** - API requests, nested types, collections
+- **Troubleshooting** - Common issues and solutions
 
 ## Advanced Patterns
 

@@ -1,6 +1,7 @@
 use super::ValidationRule;
 use anyhow::Result;
-use syn::{Attribute, File, Item, ItemStruct, Type};
+use quote::ToTokens;
+use syn::{File, Item, ItemStruct, Type};
 
 /// A parsed Rust type with validation rules
 #[derive(Debug, Clone)]
@@ -59,12 +60,9 @@ fn has_validate_derive(struct_item: &ItemStruct) -> bool {
     struct_item.attrs.iter().any(|attr| {
         if let Some(ident) = attr.path().get_ident() {
             if ident == "derive" {
-                // Parse the derive attribute to check for Validate
-                if let Ok(meta_list) = attr.parse_args::<syn::punctuated::Punctuated<syn::Path, syn::Token![,]>>() {
-                    return meta_list.iter().any(|path| {
-                        path.get_ident().map_or(false, |id| id == "Validate")
-                    });
-                }
+                // Simple check: does the attribute contain "Validate"?
+                let tokens = attr.meta.to_token_stream().to_string();
+                return tokens.contains("Validate");
             }
         }
         false

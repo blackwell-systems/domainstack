@@ -5,7 +5,7 @@ use anyhow::{Context, Result};
 use std::path::Path;
 use walkdir::WalkDir;
 
-pub use ast::ParsedType;
+pub use ast::{ParsedType, ParsedField, FieldType};
 pub use validation::ValidationRule;
 
 /// Parse all Rust files in a directory and extract types with validation rules

@@ -1,5 +1,4 @@
-use crate::parser::{ParsedType, ValidationRule};
-use crate::parser::ast::{FieldType, ParsedField};
+use crate::parser::{ParsedType, ValidationRule, FieldType, ParsedField};
 use anyhow::Result;
 
 /// Generate Zod schemas from parsed types
@@ -87,7 +86,7 @@ fn generate_base_type(field_type: &FieldType) -> String {
     }
 }
 
-fn generate_validation_rule(output: &mut String, rule: &ValidationRule, field_type: &FieldType) -> Result<()> {
+fn generate_validation_rule(output: &mut String, rule: &ValidationRule, _field_type: &FieldType) -> Result<()> {
     match rule {
         // String validations
         ValidationRule::Email => output.push_str(".email()"),

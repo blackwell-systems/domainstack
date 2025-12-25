@@ -14,12 +14,14 @@ Complete guide to using domainstack for domain validation.
 - [Advanced Patterns](#advanced-patterns)
   - [Cross-Field Validation](#cross-field-validation)
   - [Conditional Validation](#conditional-validation)
+  - [Validation with Context](#validation-with-context)
   - [Async Validation](#async-validation)
   - [Type-State Validation](#type-state-validation)
   - [Builder-Style Rule Customization](#builder-style-rule-customization)
 
 ## Integration Guides
 
+- **[Derive Macro](DERIVE_MACRO.md)** - Complete guide to `#[derive(Validate)]` and `#[validate(...)]` attributes
 - **[Serde Integration](SERDE_INTEGRATION.md)** - Validate on deserialize
 - **[OpenAPI Schema Generation](OPENAPI_SCHEMA.md)** - Auto-generate schemas from validation rules
 - **[HTTP Integration](HTTP_INTEGRATION.md)** - Axum, Actix-web, and Rocket adapters
@@ -159,201 +161,28 @@ impl Validate for Team {
 
 ## Derive Macro
 
-### Basic Attributes
+The `#[derive(Validate)]` macro automatically implements validation for your structs. Use `#[validate(...)]` attributes to declare rules.
 
-#### #[validate(length)]
+**Quick example:**
 
 ```rust
 #[derive(Validate)]
 struct User {
     #[validate(length(min = 1, max = 50))]
     name: String,
-}
-```
 
-#### #[validate(range)]
-
-```rust
-#[derive(Validate)]
-struct Adult {
     #[validate(range(min = 18, max = 120))]
     age: u8,
 }
 ```
 
-### Nested Validation
-
-```rust
-#[derive(Validate)]
-struct Email {
-    #[validate(length(min = 5, max = 255))]
-    value: String,
-}
-
-#[derive(Validate)]
-struct User {
-    #[validate(nested)]
-    email: Email,
-}
-
-// Error paths: "email.value"
-```
-
-### Collection Validation
-
-#### Nested Collections
-
-```rust
-#[derive(Validate)]
-struct Team {
-    #[validate(each(nested))]
-    members: Vec<User>,
-}
-
-// Error paths: "members[0].name", "members[1].email.value"
-```
-
-#### Primitive Collections with `each(rule)`
-
-**Any validation rule can be used with `each()` to validate collection items:**
-
-```rust
-#[derive(Validate)]
-struct BlogPost {
-    // Validate string length for each tag
-    #[validate(each(length(min = 1, max = 50)))]
-    tags: Vec<String>,
-
-    // Validate each email format
-    #[validate(each(email))]
-    author_emails: Vec<String>,
-
-    // Validate each URL
-    #[validate(each(url))]
-    related_links: Vec<String>,
-
-    // Validate each keyword is alphanumeric
-    #[validate(each(alphanumeric))]
-    keywords: Vec<String>,
-
-    // Validate each rating is in range
-    #[validate(each(range(min = 1, max = 5)))]
-    ratings: Vec<u8>,
-
-    // Combine with collection-level rules
-    #[validate(each(min_len = 3))]
-    #[validate(min_items = 1)]
-    #[validate(max_items = 10)]
-    category_names: Vec<String>,
-}
-
-// Error paths include array indices:
-// - "tags[0]" - "Must be at least 1 character"
-// - "author_emails[2]" - "Invalid email format"
-// - "related_links[1]" - "Invalid URL format"
-// - "keywords[3]" - "Must be alphanumeric"
-// - "ratings[0]" - "Must be between 1 and 5"
-```
-
-**Supported `each()` rules:**
-- String: `email`, `url`, `min_len`, `max_len`, `length`, `alphanumeric`, `ascii`, `alpha_only`, `numeric_string`, `non_empty`, `non_blank`, `no_whitespace`, `contains`, `starts_with`, `ends_with`, `matches_regex`
-- Numeric: `range`, `min`, `max`, `positive`, `negative`, `non_zero`, `finite`, `multiple_of`, `equals`, `not_equals`
-- Nested: `nested` (for complex types)
-
-#### Non-Empty Collection Items
-
-The `non_empty_items()` rule validates that all string items in a collection are non-empty:
-
-```rust
-use domainstack::prelude::*;
-
-// Manual validation
-let tag_rule = rules::min_items(1)
-    .and(rules::unique())
-    .and(rules::non_empty_items());
-
-let tags = vec!["rust".to_string(), "validation".to_string(), "domain".to_string()];
-validate("tags", &tags, &tag_rule)?;  // ✓ Valid
-
-// Invalid - contains empty string
-let invalid_tags = vec!["rust".to_string(), "".to_string(), "domain".to_string()];
-match validate("tags", &invalid_tags, &tag_rule) {
-    Ok(_) => {},
-    Err(e) => {
-        // Error: empty_item
-        // Meta: {"empty_count": "1", "indices": "[1]"}
-        println!("Found {} empty items at indices {}",
-            e.violations[0].meta.get("empty_count").unwrap(),
-            e.violations[0].meta.get("indices").unwrap());
-    }
-}
-
-// With derive macro
-#[derive(Validate)]
-struct Article {
-    #[validate(min_len = 1)]
-    #[validate(max_len = 200)]
-    title: String,
-
-    // Tags must exist, be unique, and all non-empty
-    #[validate(min_items = 1)]
-    #[validate(max_items = 20)]
-    #[validate(unique)]
-    #[validate(non_empty_items)]
-    tags: Vec<String>,
-
-    // Keywords must be non-empty and alphanumeric
-    #[validate(each(alphanumeric))]
-    #[validate(non_empty_items)]
-    keywords: Vec<String>,
-}
-```
-
-**Common use cases:**
-- Tags where empty strings are invalid
-- Category names
-- Keywords for search
-- User-provided lists
-
-### Custom Validation
-
-```rust
-fn validate_even(value: &u8) -> Result<(), ValidationError> {
-    if *value % 2 == 0 {
-        Ok(())
-    } else {
-        Err(ValidationError::single(
-            Path::root(),
-            "not_even",
-            "Must be even"
-        ))
-    }
-}
-
-#[derive(Validate)]
-struct EvenNumber {
-    #[validate(range(min = 0, max = 100))]
-    #[validate(custom = "validate_even")]
-    value: u8,
-}
-```
-
-### Multiple Attributes
-
-You can stack multiple validations:
-
-```rust
-#[derive(Validate)]
-struct Password {
-    #[validate(length(min = 8, max = 128))]
-    #[validate(custom = "validate_strong_password")]
-    value: String,
-}
-```
-
-_For serde integration details, see **[SERDE_INTEGRATION.md](SERDE_INTEGRATION.md)**_
-
-_For OpenAPI schema generation details, see **[OPENAPI_SCHEMA.md](OPENAPI_SCHEMA.md)**_
+**For complete documentation, see [DERIVE_MACRO.md](DERIVE_MACRO.md)** covering:
+- Basic attributes (length, range, email, url, etc.)
+- Nested validation with `#[validate(nested)]`
+- Collection validation with `each(nested)` and `each(rule)`
+- Cross-field validation with struct-level `#[validate(check = "...")]`
+- Conditional validation with `when` parameter
+- Custom validation with `#[validate(custom = "...")]`
 
 ## Error Handling
 
@@ -921,161 +750,14 @@ if (result.success) {
 
 ### Cross-Field Validation
 
-Validate relationships between fields - date ranges, password confirmation, mutual exclusivity, price calculations, and business logic constraints.
+Validate relationships between fields using struct-level `#[validate(check = "...")]` attributes.
 
-#### Derive Macro Syntax
-
-Use struct-level `#[validate(...)]` attributes for declarative cross-field validation:
-
-```rust
-use domainstack::prelude::*;
-use chrono::{DateTime, Utc};
-
-#[derive(Validate)]
-#[validate(
-    check = "self.end_date > self.start_date",
-    code = "invalid_date_range",
-    message = "End date must be after start date"
-)]
-struct DateRange {
-    #[validate(future)]
-    start_date: DateTime<Utc>,
-
-    #[validate(future)]
-    end_date: DateTime<Utc>,
-}
-
-// Usage
-let range = DateRange {
-    start_date: Utc::now() + Duration::days(1),
-    end_date: Utc::now() + Duration::days(30),
-};
-range.validate()?;  // ✓ Valid
-
-let invalid = DateRange {
-    start_date: Utc::now() + Duration::days(30),
-    end_date: Utc::now() + Duration::days(1),  // Before start!
-};
-invalid.validate()?;  // ✗ Error: invalid_date_range
-```
-
-#### Multiple Cross-Field Rules
-
-Combine multiple struct-level validations:
-
-```rust
-#[derive(Validate)]
-#[validate(
-    check = "self.end_date > self.start_date",
-    code = "invalid_date_range",
-    message = "End date must be after start date"
-)]
-#[validate(
-    check = "self.total >= self.minimum_order",
-    code = "below_minimum",
-    message = "Order total below minimum"
-)]
-struct Order {
-    start_date: DateTime<Utc>,
-    end_date: DateTime<Utc>,
-    total: f64,
-    minimum_order: f64,
-}
-```
-
-#### Conditional Cross-Field Validation
-
-Use `when` parameter for conditional validation:
-
-```rust
-#[derive(Validate)]
-#[validate(
-    check = "self.total >= self.minimum_order",
-    code = "below_minimum",
-    message = "Order total below minimum",
-    when = "self.requires_minimum"  // Only validate if this is true
-)]
-struct FlexibleOrder {
-    total: f64,
-    minimum_order: f64,
-    requires_minimum: bool,
-}
-
-// Usage
-let order = FlexibleOrder {
-    total: 50.0,
-    minimum_order: 100.0,
-    requires_minimum: false,  // Validation skipped!
-};
-order.validate()?;  // ✓ Valid - condition is false
-
-let required = FlexibleOrder {
-    total: 50.0,
-    minimum_order: 100.0,
-    requires_minimum: true,  // Validation runs!
-};
-required.validate()?;  // ✗ Error: below_minimum
-```
-
-#### Password Confirmation Example
-
-```rust
-#[derive(Validate)]
-#[validate(
-    check = "self.password == self.password_confirmation",
-    code = "password_mismatch",
-    message = "Passwords do not match"
-)]
-struct PasswordChange {
-    #[validate(length(min = 8, max = 128))]
-    #[validate(matches_regex = r"[A-Z]")]  // At least one uppercase
-    #[validate(matches_regex = r"[0-9]")]  // At least one digit
-    password: String,
-
-    password_confirmation: String,
-}
-```
-
-#### Manual Implementation (Alternative)
-
-For complex cross-field logic, implement `Validate` manually:
-
-```rust
-impl Validate for DateRange {
-    fn validate(&self) -> Result<(), ValidationError> {
-        let mut err = ValidationError::new();
-
-        // Field-level validation first
-        if let Err(e) = validate("start_date", &self.start_date, &rules::future()) {
-            err.extend(e);
-        }
-        if let Err(e) = validate("end_date", &self.end_date, &rules::future()) {
-            err.extend(e);
-        }
-
-        // Cross-field validation
-        if self.end_date <= self.start_date {
-            err.push(
-                "end_date",
-                "invalid_range",
-                "End date must be after start date"
-            );
-        }
-
-        // Check minimum duration (e.g., at least 1 day)
-        let duration = self.end_date.signed_duration_since(self.start_date);
-        if duration.num_days() < 1 {
-            err.push(
-                "end_date",
-                "duration_too_short",
-                "Event must be at least 1 day long"
-            );
-        }
-
-        if err.is_empty() { Ok(()) } else { Err(err) }
-    }
-}
-```
+**For complete documentation, see [DERIVE_MACRO.md](DERIVE_MACRO.md#cross-field-validation)** covering:
+- Basic cross-field rules with `check` parameter
+- Multiple cross-field validations
+- Conditional cross-field validation with `when` parameter
+- Password confirmation example
+- Manual implementation for complex logic
 
 ### Conditional Validation
 
@@ -1093,28 +775,6 @@ impl Validate for Order {
         
         if err.is_empty() { Ok(()) } else { Err(err) }
     }
-}
-```
-
-### Reusable Validation Functions
-
-```rust
-fn validate_positive(value: &i32) -> Result<(), ValidationError> {
-    if *value > 0 {
-        Ok(())
-    } else {
-        Err(ValidationError::single(
-            Path::root(),
-            "not_positive",
-            "Must be positive"
-        ))
-    }
-}
-
-#[derive(Validate)]
-struct Balance {
-    #[validate(custom = "validate_positive")]
-    amount: i32,
 }
 ```
 

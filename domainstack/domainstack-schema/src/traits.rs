@@ -167,14 +167,20 @@ mod tests {
     fn test_string_schema() {
         assert_eq!(String::schema_name(), "string");
         let schema = String::schema();
-        assert!(matches!(schema.schema_type, Some(crate::SchemaType::String)));
+        assert!(matches!(
+            schema.schema_type,
+            Some(crate::SchemaType::String)
+        ));
     }
 
     #[test]
     fn test_str_schema() {
         assert_eq!(<str>::schema_name(), "string");
         let schema = <str>::schema();
-        assert!(matches!(schema.schema_type, Some(crate::SchemaType::String)));
+        assert!(matches!(
+            schema.schema_type,
+            Some(crate::SchemaType::String)
+        ));
     }
 
     #[test]
@@ -205,21 +211,30 @@ mod tests {
     fn test_i32_schema() {
         assert_eq!(i32::schema_name(), "integer");
         let schema = i32::schema();
-        assert!(matches!(schema.schema_type, Some(crate::SchemaType::Integer)));
+        assert!(matches!(
+            schema.schema_type,
+            Some(crate::SchemaType::Integer)
+        ));
     }
 
     #[test]
     fn test_i64_schema() {
         assert_eq!(i64::schema_name(), "integer");
         let schema = i64::schema();
-        assert!(matches!(schema.schema_type, Some(crate::SchemaType::Integer)));
+        assert!(matches!(
+            schema.schema_type,
+            Some(crate::SchemaType::Integer)
+        ));
     }
 
     #[test]
     fn test_f32_schema() {
         assert_eq!(f32::schema_name(), "number");
         let schema = f32::schema();
-        assert!(matches!(schema.schema_type, Some(crate::SchemaType::Number)));
+        assert!(matches!(
+            schema.schema_type,
+            Some(crate::SchemaType::Number)
+        ));
         assert_eq!(schema.format, Some("float".to_string()));
     }
 
@@ -227,7 +242,10 @@ mod tests {
     fn test_f64_schema() {
         assert_eq!(f64::schema_name(), "number");
         let schema = f64::schema();
-        assert!(matches!(schema.schema_type, Some(crate::SchemaType::Number)));
+        assert!(matches!(
+            schema.schema_type,
+            Some(crate::SchemaType::Number)
+        ));
         assert_eq!(schema.format, Some("double".to_string()));
     }
 
@@ -235,7 +253,10 @@ mod tests {
     fn test_bool_schema() {
         assert_eq!(bool::schema_name(), "boolean");
         let schema = bool::schema();
-        assert!(matches!(schema.schema_type, Some(crate::SchemaType::Boolean)));
+        assert!(matches!(
+            schema.schema_type,
+            Some(crate::SchemaType::Boolean)
+        ));
     }
 
     #[test]

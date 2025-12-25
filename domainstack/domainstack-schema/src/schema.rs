@@ -715,17 +715,17 @@ mod tests {
             .description("User's email address");
 
         assert_eq!(schema.format, Some("email".to_string()));
-        assert_eq!(
-            schema.description,
-            Some("User's email address".to_string())
-        );
+        assert_eq!(schema.description, Some("User's email address".to_string()));
     }
 
     #[test]
     fn test_reference_schema() {
         let schema = Schema::reference("User");
 
-        assert_eq!(schema.reference, Some("#/components/schemas/User".to_string()));
+        assert_eq!(
+            schema.reference,
+            Some("#/components/schemas/User".to_string())
+        );
         assert!(schema.schema_type.is_none());
     }
 
@@ -752,4 +752,3 @@ mod tests {
         assert!(matches!(schema.schema_type, Some(SchemaType::Number)));
     }
 }
-

@@ -9,7 +9,6 @@ Complete guide to using domainstack for domain validation.
 - [Derive Macro](#derive-macro)
 - [Error Handling](#error-handling)
 - [Validation Rules](#validation-rules)
-- [Date/Time Validation](#datetime-validation)
 - [Code Generation (CLI)](#code-generation-cli)
 - [Advanced Patterns](#advanced-patterns)
   - [Cross-Field Validation](#cross-field-validation)
@@ -17,7 +16,6 @@ Complete guide to using domainstack for domain validation.
   - [Validation with Context](#validation-with-context)
   - [Async Validation](#async-validation)
   - [Type-State Validation](#type-state-validation)
-  - [Builder-Style Rule Customization](#builder-style-rule-customization)
 
 ## Integration Guides
 
@@ -251,366 +249,41 @@ if let Some(min) = meta.get("min") {
 
 ## Validation Rules
 
-### Complete Rules Reference
+domainstack provides **37 built-in validation rules** across 5 categories: String (17), Numeric (8), Choice (3), Collection (4), and Date/Time (5).
 
-domainstack provides 37+ built-in validation rules across 5 categories.
-
-**For complete documentation of all rules, see [`RULES.md`](./RULES.md)**
-
-### String Rules (17 rules)
+**Quick example:**
 
 ```rust
 use domainstack::rules::*;
 
-// Format validation
-email()                              // Valid email address
-url()                                // Valid URL
+// String validation
+let email_rule = email().and(max_len(255));
 
-// Length validation
-min_len(n)                          // Minimum string length
-max_len(n)                          // Maximum string length
-length(min, max)                    // String length range
-non_empty()                         // Not empty (length >= 1)
-non_blank()                         // Not blank after trimming
-len_chars(min, max)                 // Unicode character count
+// Numeric validation
+let age_rule = range(18, 120);
 
-// Pattern validation
-alphanumeric()                      // Letters and numbers only
-alpha_only()                        // Letters only
-numeric_string()                    // Digits only
-ascii()                             // ASCII characters only
-no_whitespace()                     // No whitespace allowed
+// Collection validation
+let tags_rule = min_items(1).and(unique());
 
-// Content validation
-starts_with(prefix)                 // Must start with prefix
-ends_with(suffix)                   // Must end with suffix
-contains(substring)                 // Must contain substring
-matches_regex(pattern)              // Custom regex pattern
+// Date/Time validation (requires chrono feature)
+let event_rule = future().and(before(deadline));
+
+// Customize any rule
+let custom_rule = email()
+    .code("invalid_company_email")
+    .message("Must use company email")
+    .meta("domain", "company.com");
 ```
 
-### Numeric Rules (8 rules)
-
-```rust
-// Range validation
-range(min, max)                     // Numeric range
-min(n)                              // Minimum value
-max(n)                              // Maximum value
-
-// Sign validation
-positive()                          // Greater than zero
-negative()                          // Less than zero
-non_zero()                          // Cannot be zero
-
-// Other
-multiple_of(n)                      // Must be multiple of n
-finite()                            // Not NaN or Infinity (floats)
-```
-
-**Important:** Always use `finite()` with float validation to catch NaN/Infinity values.
-
-```rust
-#[derive(Validate)]
-struct Measurement {
-    #[validate(range(min = 0.0, max = 100.0))]
-    #[validate(finite)]  // ✅ Catches NaN and Infinity
-    value: f64,
-}
-```
-
-### Choice Rules (3 rules)
-
-```rust
-// Equality checking
-equals(value)                       // Must equal specific value
-not_equals(value)                   // Must not equal value
-one_of(&[values])                   // Must be in allowed set
-
-// Example: Status validation
-#[derive(Validate)]
-struct Order {
-    #[validate(one_of(&["pending", "shipped", "delivered", "cancelled"]))]
-    status: String,
-}
-```
-
-### Collection Rules (4 rules)
-
-```rust
-// Size validation
-min_items(n)                        // Minimum collection size
-max_items(n)                        // Maximum collection size
-
-// Content validation
-unique()                            // All items must be unique
-non_empty_items()                   // No empty string items (for Vec<String>)
-
-// Example
-#[derive(Validate)]
-struct BlogPost {
-    #[validate(min_items(1))]
-    #[validate(max_items(10))]
-    #[validate(unique)]
-    tags: Vec<String>,
-}
-```
-
-### Date/Time Rules (5 rules)
-
-**Feature flag:** `chrono`
-
-```rust
-use chrono::{NaiveDate, DateTime, Utc};
-
-// Temporal validation
-past()                              // Must be in the past
-future()                            // Must be in the future
-before(limit)                       // Must be before limit
-after(limit)                        // Must be after limit
-
-// Age calculation
-age_range(min_years, max_years)     // Age from birth date
-
-// Example
-#[derive(Validate)]
-struct Event {
-    #[validate(after(Utc::now()))]
-    start_date: DateTime<Utc>,
-
-    #[validate(before(Utc::now() + Duration::days(365)))]
-    end_date: DateTime<Utc>,
-}
-```
-
-### Builder-Style Rule Customization
-
-Customize error codes and messages for any rule:
-
-```rust
-use domainstack::rules::*;
-
-let rule = email()
-    .code("custom_email_error")
-    .message("Please provide a valid company email address")
-    .meta("hint", "Use your @company.com address");
-
-// Works with all rules
-let age_rule = range(18, 65)
-    .code("invalid_age")
-    .message("Age must be between 18 and 65 for this program")
-    .meta("min", "18")
-    .meta("max", "65");
-
-// Useful for internationalization
-let localized_rule = min_len(3)
-    .message(get_i18n_message("validation.min_length", locale));
-```
-
-**Available customization methods:**
-- `.code(code)` - Custom error code
-- `.message(msg)` - Custom error message
-- `.meta(key, value)` - Add metadata field
-
-### Rule Composition
-
-Combine rules with logical operators:
-
-```rust
-// AND - both rules must pass
-let rule = email().and(max_len(255));
-
-// WHEN - conditional validation
-let rule = some_rule.when(|value| should_validate(value));
-
-// Multiple conditions
-#[derive(Validate)]
-struct User {
-    #[validate(length(min = 3, max = 50))]
-    #[validate(alphanumeric)]
-    #[validate(no_whitespace)]
-    username: String,
-}
-```
-
-_For HTTP framework integration (Axum, Actix-web, Rocket), see **[HTTP_INTEGRATION.md](HTTP_INTEGRATION.md)**_
-
-## Date/Time Validation
-
-**Requires `chrono` feature flag**
-
-Date and time validation is essential for domain modeling - user registration, event scheduling, deadlines, age verification, and temporal constraints.
-
-### Basic Temporal Validation
-
-```rust
-use domainstack::prelude::*;
-use chrono::{Utc, Duration, NaiveDate};
-
-// Birth dates must be in the past
-let birth_date_rule = rules::past();
-let birth_date = Utc::now() - Duration::days(365 * 25);  // 25 years ago
-validate("birth_date", &birth_date, &birth_date_rule)?;
-
-// Event dates must be in the future
-let event_rule = rules::future();
-let event_date = Utc::now() + Duration::days(30);  // 30 days from now
-validate("event_date", &event_date, &event_rule)?;
-```
-
-### Temporal Range Constraints
-
-```rust
-use chrono::NaiveDate;
-
-// Registration deadline - must be before cutoff
-let deadline = NaiveDate::from_ymd_opt(2025, 12, 31)
-    .unwrap()
-    .and_hms_opt(23, 59, 59)
-    .unwrap()
-    .and_utc();
-
-let before_rule = rules::before(deadline);
-validate("registration_date", &registration_date, &before_rule)?;
-
-// Event must be after start date
-let start_date = NaiveDate::from_ymd_opt(2025, 6, 1)
-    .unwrap()
-    .and_hms_opt(0, 0, 0)
-    .unwrap()
-    .and_utc();
-
-let after_rule = rules::after(start_date);
-validate("event_date", &event_date, &after_rule)?;
-```
-
-### Age Verification
-
-```rust
-use chrono::NaiveDate;
-
-// User must be 18-120 years old
-let age_rule = rules::age_range(18, 120);
-
-// Birth date for someone 25 years old
-let birth_date = NaiveDate::from_ymd_opt(Utc::now().year() - 25, 6, 15).unwrap();
-validate("birth_date", &birth_date, &age_rule)?;  // ✓ Valid
-
-// Too young
-let minor_birth_date = NaiveDate::from_ymd_opt(Utc::now().year() - 10, 6, 15).unwrap();
-let result = validate("birth_date", &minor_birth_date, &age_rule);
-// ✗ Error: age_out_of_range
-```
-
-### Temporal Window Validation
-
-```rust
-// Event must be within a specific window (30-60 days from now)
-let start = Utc::now() + Duration::days(30);
-let end = Utc::now() + Duration::days(60);
-
-let window_rule = rules::after(start).and(rules::before(end));
-
-let valid_event = Utc::now() + Duration::days(45);
-validate("event_date", &valid_event, &window_rule)?;  // ✓ Valid
-```
-
-### Domain Model with Date/Time
-
-```rust
-use domainstack::prelude::*;
-use chrono::{DateTime, Utc, NaiveDate};
-
-pub struct UserRegistration {
-    birth_date: NaiveDate,
-    registration_date: DateTime<Utc>,
-}
-
-impl UserRegistration {
-    pub fn new(birth_date: NaiveDate, registration_date: DateTime<Utc>)
-        -> Result<Self, ValidationError>
-    {
-        let mut err = ValidationError::new();
-
-        // Birth date must be in the past and age 18-120
-        let age_rule = rules::age_range(18, 120);
-        if let Err(e) = validate("birth_date", &birth_date, &age_rule) {
-            err.extend(e);
-        }
-
-        // Registration date must be in the past (already happened)
-        let past_rule = rules::past();
-        if let Err(e) = validate("registration_date", &registration_date, &past_rule) {
-            err.extend(e);
-        }
-
-        if !err.is_empty() {
-            return Err(err);
-        }
-
-        Ok(Self { birth_date, registration_date })
-    }
-}
-
-pub struct Event {
-    name: String,
-    start_date: DateTime<Utc>,
-    end_date: DateTime<Utc>,
-}
-
-impl Event {
-    pub fn new(name: String, start_date: DateTime<Utc>, end_date: DateTime<Utc>)
-        -> Result<Self, ValidationError>
-    {
-        let mut err = ValidationError::new();
-
-        // Start date must be in the future
-        let future_rule = rules::future();
-        if let Err(e) = validate("start_date", &start_date, &future_rule) {
-            err.extend(e);
-        }
-
-        // End date must be after start date
-        let after_start = rules::after(start_date);
-        if let Err(e) = validate("end_date", &end_date, &after_start) {
-            err.extend(e);
-        }
-
-        if !err.is_empty() {
-            return Err(err);
-        }
-
-        Ok(Self { name, start_date, end_date })
-    }
-}
-```
-
-### Error Handling for Date/Time
-
-```rust
-use chrono::{NaiveDate, Utc};
-
-let age_rule = rules::age_range(18, 120);
-let birth_date = NaiveDate::from_ymd_opt(Utc::now().year() - 10, 6, 15).unwrap();
-
-match validate("birth_date", &birth_date, &age_rule) {
-    Ok(_) => println!("Valid age"),
-    Err(e) => {
-        for v in &e.violations {
-            println!("Error at {}: {}", v.path, v.message);
-            // Access metadata
-            if let Some(age) = v.meta.get("age") {
-                println!("Actual age: {}", age);
-            }
-            if let Some(min) = v.meta.get("min") {
-                println!("Minimum age: {}", min);
-            }
-        }
-        // Output:
-        // Error at birth_date: Age must be between 18 and 120 years
-        // Actual age: 10
-        // Minimum age: 18
-    }
-}
-```
+**For complete documentation, see [RULES.md](RULES.md)** covering:
+- **String rules** - email, url, length, pattern matching, unicode
+- **Numeric rules** - range, min/max, sign validation, divisibility
+- **Choice rules** - equals, one_of, membership checking
+- **Collection rules** - size, uniqueness, non-empty items
+- **Date/Time rules** - past, future, before/after, age verification
+- **Rule composition** - .and(), .or(), .not(), .when()
+- **Builder customization** - .code(), .message(), .meta()
+- **Custom rules** - Create your own validation logic
 
 ## Code Generation (CLI)
 

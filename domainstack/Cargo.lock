@@ -776,7 +776,7 @@ dependencies = [
 
 [[package]]
 name = "domainstack"
-version = "0.4.0"
+version = "1.0.0"
 dependencies = [
  "async-trait",
  "chrono",
@@ -792,7 +792,7 @@ dependencies = [
 
 [[package]]
 name = "domainstack-actix"
-version = "0.4.0"
+version = "1.0.0"
 dependencies = [
  "actix-rt",
  "actix-test",
@@ -809,7 +809,7 @@ dependencies = [
 
 [[package]]
 name = "domainstack-axum"
-version = "0.4.0"
+version = "1.0.0"
 dependencies = [
  "axum",
  "axum-test",
@@ -825,7 +825,7 @@ dependencies = [
 
 [[package]]
 name = "domainstack-derive"
-version = "0.4.0"
+version = "1.0.0"
 dependencies = [
  "domainstack",
  "domainstack-schema",
@@ -838,7 +838,7 @@ dependencies = [
 
 [[package]]
 name = "domainstack-envelope"
-version = "0.4.0"
+version = "1.0.0"
 dependencies = [
  "domainstack",
  "domainstack-derive",
@@ -907,7 +907,7 @@ dependencies = [
 
 [[package]]
 name = "domainstack-http"
-version = "0.4.0"
+version = "1.0.0"
 dependencies = [
  "domainstack",
  "domainstack-derive",
@@ -917,7 +917,7 @@ dependencies = [
 
 [[package]]
 name = "domainstack-rocket"
-version = "0.4.0"
+version = "1.0.0"
 dependencies = [
  "domainstack",
  "domainstack-derive",
@@ -932,7 +932,7 @@ dependencies = [
 
 [[package]]
 name = "domainstack-schema"
-version = "0.8.0"
+version = "1.0.0"
 dependencies = [
  "domainstack",
  "domainstack-derive",

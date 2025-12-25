@@ -24,7 +24,7 @@ Complete guide to using domainstack for domain validation.
 - **[Serde Integration](SERDE_INTEGRATION.md)** - Validate on deserialize
 - **[OpenAPI Schema Generation](OPENAPI_SCHEMA.md)** - Auto-generate schemas from validation rules
 - **[HTTP Integration](HTTP_INTEGRATION.md)** - Axum, Actix-web, and Rocket adapters
-- **[Code Generation](CODE_GENERATION.md)** - Generate TypeScript/Zod schemas from Rust
+- **[CLI Guide](CLI_GUIDE.md)** - Generate TypeScript/Zod schemas with domainstack-cli
 
 ## Core Concepts
 
@@ -324,7 +324,7 @@ export const UserSchema = z.object({
 });
 ```
 
-**For complete documentation, see [CODE_GENERATION.md](CODE_GENERATION.md)** covering:
+**For complete documentation, see [CLI_GUIDE.md](CLI_GUIDE.md)** covering:
 - **Installation** - CLI setup and dependencies
 - **TypeScript/Zod generation** - Full-stack validation sync
 - **Rule mapping** - How Rust rules become Zod schemas

@@ -1,4 +1,4 @@
-# Code Generation (CLI)
+# CLI Guide
 
 **Generate TypeScript/Zod schemas from Rust validation rules**
 

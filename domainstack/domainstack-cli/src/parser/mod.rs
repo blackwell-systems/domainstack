@@ -5,7 +5,7 @@ use anyhow::{Context, Result};
 use std::path::Path;
 use walkdir::WalkDir;
 
-pub use ast::{ParsedType, ParsedField, FieldType};
+pub use ast::{FieldType, ParsedField, ParsedType};
 pub use validation::ValidationRule;
 
 /// Parse all Rust files in a directory and extract types with validation rules
@@ -17,7 +17,7 @@ pub fn parse_directory(path: &Path) -> Result<Vec<ParsedType>> {
         .follow_links(true)
         .into_iter()
         .filter_map(|e| e.ok())
-        .filter(|e| e.path().extension().map_or(false, |ext| ext == "rs"))
+        .filter(|e| e.path().extension().is_some_and(|ext| ext == "rs"))
     {
         let file_path = entry.path();
 

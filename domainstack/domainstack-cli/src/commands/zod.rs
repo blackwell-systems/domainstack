@@ -1,6 +1,6 @@
-use crate::ZodArgs;
 use crate::generators;
 use crate::parser;
+use crate::ZodArgs;
 use anyhow::{Context, Result};
 use std::fs;
 
@@ -22,8 +22,8 @@ pub fn run(args: ZodArgs) -> Result<()> {
     }
 
     // Generate Zod schemas
-    let typescript_code = generators::zod::generate(&parsed_types)
-        .context("Failed to generate Zod schemas")?;
+    let typescript_code =
+        generators::zod::generate(&parsed_types).context("Failed to generate Zod schemas")?;
 
     // Write output file
     if let Some(parent) = args.output.parent() {

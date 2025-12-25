@@ -78,7 +78,8 @@ fn parse_struct(struct_item: &ItemStruct) -> Result<Option<ParsedType>> {
             for field in &fields_named.named {
                 if let Some(ident) = &field.ident {
                     let field_type = parse_field_type(&field.ty)?;
-                    let validation_rules = super::validation::parse_validation_attributes(&field.attrs)?;
+                    let validation_rules =
+                        super::validation::parse_validation_attributes(&field.attrs)?;
 
                     fields.push(ParsedField {
                         name: ident.to_string(),

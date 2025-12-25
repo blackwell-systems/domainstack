@@ -36,7 +36,9 @@ pub fn derive_validate_on_deserialize(input: TokenStream) -> TokenStream {
 }
 
 #[cfg(feature = "serde")]
-fn generate_validate_on_deserialize_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStream> {
+fn generate_validate_on_deserialize_impl(
+    input: &DeriveInput,
+) -> syn::Result<proc_macro2::TokenStream> {
     let name = &input.ident;
     let generics = &input.generics;
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
@@ -86,33 +88,30 @@ fn generate_validate_on_deserialize_impl(input: &DeriveInput) -> syn::Result<pro
     let struct_validation_code = struct_validations.iter().map(generate_struct_validation);
 
     // Generate intermediate struct name
-    let intermediate_name = syn::Ident::new(
-        &format!("{}Intermediate", name),
-        name.span(),
-    );
+    let intermediate_name = syn::Ident::new(&format!("{}Intermediate", name), name.span());
 
     // Extract field names and types
-    let field_names: Vec<_> = fields
-        .iter()
-        .map(|f| f.ident.as_ref().unwrap())
-        .collect();
+    let field_names: Vec<_> = fields.iter().map(|f| f.ident.as_ref().unwrap()).collect();
 
-    let field_types: Vec<_> = fields
-        .iter()
-        .map(|f| &f.ty)
-        .collect();
+    let field_types: Vec<_> = fields.iter().map(|f| &f.ty).collect();
 
     // Forward serde attributes from the original struct to the intermediate struct
     // This ensures rename, rename_all, etc. work correctly
-    let struct_serde_attrs: Vec<_> = input.attrs.iter()
+    let struct_serde_attrs: Vec<_> = input
+        .attrs
+        .iter()
         .filter(|attr| attr.path().is_ident("serde"))
         .collect();
 
     // Forward serde attributes for each field
-    let field_serde_attrs: Vec<Vec<_>> = fields.iter()
-        .map(|f| f.attrs.iter()
-            .filter(|attr| attr.path().is_ident("serde"))
-            .collect())
+    let field_serde_attrs: Vec<Vec<_>> = fields
+        .iter()
+        .map(|f| {
+            f.attrs
+                .iter()
+                .filter(|attr| attr.path().is_ident("serde"))
+                .collect()
+        })
         .collect();
 
     // Generate the expanded code

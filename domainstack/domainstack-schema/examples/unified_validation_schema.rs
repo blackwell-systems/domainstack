@@ -11,7 +11,6 @@
 //! cargo run --example unified_validation_schema
 //! ```
 
-use domainstack::prelude::*;
 use domainstack::Validate;
 use domainstack_derive::ToSchema;
 use domainstack_schema::OpenApiBuilder;
@@ -21,6 +20,7 @@ use domainstack_schema::OpenApiBuilder;
 /// Notice: The SAME #[validate(...)] attributes work for BOTH macros!
 #[derive(Debug, Validate, ToSchema)]
 #[schema(description = "User registration request")]
+#[allow(dead_code)]
 struct UserRegistration {
     /// Email field - validated at runtime AND in OpenAPI schema
     #[validate(email)]
@@ -69,6 +69,7 @@ struct Address {
 /// User profile with nested types
 #[derive(Debug, Validate, ToSchema)]
 #[schema(description = "Complete user profile")]
+#[allow(dead_code)]
 struct UserProfile {
     #[validate(email)]
     #[validate(max_len = 255)]
@@ -98,6 +99,7 @@ struct Tag {
 /// Blog post with collection validation
 #[derive(Debug, Validate, ToSchema)]
 #[schema(description = "Blog post with tags")]
+#[allow(dead_code)]
 struct BlogPost {
     #[validate(min_len = 1)]
     #[validate(max_len = 200)]
@@ -146,7 +148,10 @@ fn main() {
     match invalid_user.validate() {
         Ok(_) => println!("   ✗ Invalid user should have failed!"),
         Err(e) => {
-            println!("   ✓ Invalid user rejected with {} errors:", e.violations.len());
+            println!(
+                "   ✓ Invalid user rejected with {} errors:",
+                e.violations.len()
+            );
             for v in &e.violations {
                 println!("     - {}: {}", v.path, v.message);
             }
@@ -226,5 +231,7 @@ fn main() {
     println!("   ✓ Same rich syntax for both macros");
 
     println!("\n==============================================");
-    println!("Example complete! Both validation and schema generation work from the same attributes.");
+    println!(
+        "Example complete! Both validation and schema generation work from the same attributes."
+    );
 }

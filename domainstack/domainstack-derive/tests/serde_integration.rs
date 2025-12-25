@@ -160,7 +160,10 @@ fn test_optional_fields() {
     // Without nickname
     let json = r#"{ "email": "alice@example.com" }"#;
     let result: Result<User, _> = serde_json::from_str(json);
-    assert!(result.is_ok(), "Valid data without optional field should work");
+    assert!(
+        result.is_ok(),
+        "Valid data without optional field should work"
+    );
     assert_eq!(result.unwrap().nickname, None);
 }
 
@@ -222,7 +225,10 @@ fn test_deserialize_then_validate_separately() {
     let user = User {
         email: "alice@example.com".to_string(),
     };
-    assert!(user.validate().is_ok(), "Manual validation should also work");
+    assert!(
+        user.validate().is_ok(),
+        "Manual validation should also work"
+    );
 
     let invalid_user = User {
         email: "not-an-email".to_string(),

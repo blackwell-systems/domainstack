@@ -1,17 +1,65 @@
-# TypeScript/Zod Schema Generation - Implementation Plan
+# domainstack-cli - Unified Code Generation CLI
 
 ## Executive Summary
 
-Generate TypeScript Zod validation schemas from Rust `domainstack` validation rules, ensuring frontend and backend validation stay perfectly synchronized.
+**Unified CLI tool** for generating TypeScript validators, GraphQL schemas, and more from Rust `domainstack` validation rules.
 
+**First Implementation**: Zod schema generation (TypeScript validation)
+**Future Generators**: Yup, GraphQL SDL, Prisma, OpenAPI, JSON Schema
+
+This document focuses on **Phase 1: Zod Generator**, which generates TypeScript Zod validation schemas from Rust validation rules, ensuring frontend and backend validation stay perfectly synchronized.
+
+**Architecture**: Unified CLI (`domainstack-cli`) with subcommands
 **Status**: Research & Design Complete
 **Priority**: 🔥🔥🔥 Very High Impact
-**Effort**: High (5-7 days estimated)
-**Target**: v1.1.0 release
+**Effort**: 6 days for MVP (Zod generator)
+**Target**: v0.1.0 release
 
 ---
 
-## The Problem
+## Unified CLI Vision
+
+`domainstack-cli` is designed as a **unified code generation tool** that transforms Rust validation rules into multiple target formats:
+
+```bash
+# Install once
+cargo install domainstack-cli
+
+# Generate for different ecosystems
+domainstack zod --input src --output frontend/schemas.ts        # ✅ Phase 1 (MVP)
+domainstack yup --input src --output frontend/schemas.ts        # 📋 Future
+domainstack graphql --input src --output schema.graphql         # 📋 Future
+domainstack prisma --input src --output prisma/schema.prisma    # 📋 Future
+```
+
+**Why unified?**
+- ✅ **Single installation** - one tool, not separate binaries for each generator
+- ✅ **Shared parsing** - all generators reuse the same Rust/validation parser
+- ✅ **Consistent UX** - same flags and patterns across generators
+- ✅ **Scalable** - adding new generators is just adding a new subcommand
+
+**This document** focuses on **Phase 1: Zod Generator** - the foundation that proves the unified CLI architecture.
+
+### Scope of This Implementation
+
+**In Scope (v0.1.0 MVP)**:
+- ✅ Unified CLI framework (`domainstack-cli` crate)
+- ✅ Shared parser module (reusable by all future generators)
+- ✅ Zod generator implementation
+- ✅ Command: `domainstack zod --input <dir> --output <file>`
+
+**Future Generators** (v0.2.0+):
+- 📋 `domainstack yup` - Yup schemas for React ecosystem
+- 📋 `domainstack graphql` - GraphQL Schema Definition Language
+- 📋 `domainstack prisma` - Prisma schema with validation constraints
+- 📋 `domainstack openapi` - Enhanced OpenAPI 3.0 schemas
+- 📋 `domainstack json-schema` - JSON Schema with validation
+
+The unified CLI architecture ensures adding these is **trivial** - just new subcommands using the shared parser.
+
+---
+
+## The Problem (Zod Generator Motivation)
 
 **Current State**: Developers duplicate validation logic between Rust backend and TypeScript frontend
 

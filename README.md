@@ -123,6 +123,8 @@ pub struct BookingDto {
 
 ### 2) Domain inside (trusted)
 ```rust
+use domainstack::Validate;
+
 pub struct Email(String);
 
 impl Email {
@@ -132,9 +134,16 @@ impl Email {
     }
 }
 
+// Derive Validate for automatic validation
+#[derive(Validate)]
 pub struct BookingRequest {
+    #[validate(length(min = 1, max = 50))]
     name: String,      // Private!
+
+    #[validate(nested)]
     email: Email,
+
+    #[validate(range(min = 1, max = 10))]
     guests: u8,
 }
 
@@ -142,14 +151,16 @@ impl TryFrom<BookingDto> for BookingRequest {
     type Error = ValidationError;
 
     fn try_from(dto: BookingDto) -> Result<Self, Self::Error> {
-        let email = Email::new(dto.email)
-            .map_err(|e| e.prefixed("email"))?;
-        
-        validate("name", dto.name.as_str(), 
-                 &rules::min_len(1).and(rules::max_len(50)))?;
-        validate("guests", &dto.guests, &rules::range(1, 10))?;
-        
-        Ok(Self { name: dto.name, email, guests: dto.guests })
+        let email = Email::new(dto.email).map_err(|e| e.prefixed("email"))?;
+
+        let booking = Self {
+            name: dto.name,
+            email,
+            guests: dto.guests,
+        };
+
+        booking.validate()?;  // One line validates all fields!
+        Ok(booking)
     }
 }
 ```

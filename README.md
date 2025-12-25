@@ -673,19 +673,9 @@ impl ToSchema for CustomType {
 
 See [domainstack-schema/OPENAPI_CAPABILITIES.md](./domainstack/domainstack-schema/OPENAPI_CAPABILITIES.md) for complete documentation.
 
-### 37 Built-in Validation Rules
+### Validation Rules
 
-| Category | Rules |
-|----------|-------|
-| **String (17)** | `email`, `url`, `min_len`, `max_len`, `length`, `non_empty`, `non_blank`, `alphanumeric`, `alpha_only`, `numeric_string`, `ascii`, `no_whitespace`, `contains`, `starts_with`, `ends_with`, `matches_regex`, `len_chars` |
-| **Numeric (8)** | `range`, `min`, `max`, `positive`, `negative`, `non_zero`, `multiple_of`, `finite` |
-| **Choice (3)** | `equals`, `not_equals`, `one_of` |
-| **Collection (4)** | `min_items`, `max_items`, `unique`, `non_empty_items` |
-| **Date/Time (5)** | `past`, `future`, `before`, `after`, `age_range` (requires `chrono` feature) |
-
-**Combinators:** `.and()`, `.or()`, `.when()`, `.code()`, `.message()`, `.meta()`
-
-**All rules work with `each(rule)` for collection validation.** Errors include array indices (`tags[0]`, `emails[1]`).
+**37 built-in rules** across string (17), numeric (8), collection (4), date/time (5), and choice (3) validation—with composable `.and()`, `.or()`, `.when()` combinators. All rules work with `each(rule)` for collection validation with array indices in errors (`tags[0]`, `emails[1]`).
 
 📖 **[Complete Rules Reference](./domainstack/domainstack/docs/RULES.md)** - Detailed documentation with examples for all 37 rules.
 

@@ -74,6 +74,12 @@ impl<T: ?Sized> Clone for Rule<T> {
     }
 }
 
+impl<T: ?Sized> std::fmt::Debug for Rule<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("Rule { <validation closure> }")
+    }
+}
+
 impl<T: ?Sized + 'static> Rule<T> {
     /// Creates a new validation rule.
     ///
@@ -440,5 +446,12 @@ mod tests {
         assert_eq!(result.violations[0].code, "custom");
         assert_eq!(result.violations[0].message, "Custom msg");
         assert_eq!(result.violations[0].meta.get("hint"), Some("Use positive"));
+    }
+
+    #[test]
+    fn test_rule_debug() {
+        let rule = positive_rule();
+        let debug_str = format!("{:?}", rule);
+        assert_eq!(debug_str, "Rule { <validation closure> }");
     }
 }

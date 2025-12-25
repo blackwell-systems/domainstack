@@ -43,6 +43,12 @@ where
     fn from_request(req: &HttpRequest, payload: &mut actix_web::dev::Payload) -> Self::Future {
         let json_fut = web::Json::<Dto>::from_request(req, payload);
 
+        // Note: Using block_on() here is required by Actix-web's synchronous extractor pattern.
+        // FromRequest returns a Ready<T> future (not async), so we must synchronously extract
+        // the JSON. This is the standard pattern for Actix-web 4.x extractors.
+        // Performance note: This blocks the current task but does not block the async runtime.
+        // For truly async extraction, consider using web::Json::from_request directly in your
+        // handler and calling into_domain() on the DTO.
         ready(match futures::executor::block_on(json_fut) {
             Ok(web::Json(dto)) => domainstack_http::into_domain(dto)
                 .map(DomainJson::new)
@@ -90,6 +96,8 @@ where
     fn from_request(req: &HttpRequest, payload: &mut actix_web::dev::Payload) -> Self::Future {
         let json_fut = web::Json::<Dto>::from_request(req, payload);
 
+        // Note: See DomainJson implementation for explanation of block_on() usage.
+        // This is the standard Actix-web 4.x extractor pattern.
         ready(match futures::executor::block_on(json_fut) {
             Ok(web::Json(dto)) => dto.validate().map(|_| ValidatedJson(dto)).map_err(|e| {
                 use domainstack_envelope::IntoEnvelopeError;

@@ -1,7 +1,7 @@
 use crate::Path;
 use std::collections::HashMap;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Violation {
     pub path: Path,
     pub code: &'static str,
@@ -9,7 +9,7 @@ pub struct Violation {
     pub meta: Meta,
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Meta {
     fields: HashMap<&'static str, String>,
 }
@@ -84,5 +84,49 @@ mod tests {
         assert_eq!(violation.code, "invalid_email");
         assert_eq!(violation.message, "Invalid email format");
         assert_eq!(violation.path.to_string(), "email");
+    }
+
+    #[test]
+    fn test_meta_equality() {
+        let mut meta1 = Meta::new();
+        meta1.insert("min", 5);
+        meta1.insert("max", 10);
+
+        let mut meta2 = Meta::new();
+        meta2.insert("min", 5);
+        meta2.insert("max", 10);
+
+        assert_eq!(meta1, meta2);
+
+        let meta3 = Meta::new();
+        assert_ne!(meta1, meta3);
+    }
+
+    #[test]
+    fn test_violation_equality() {
+        let v1 = Violation {
+            path: Path::from("email"),
+            code: "invalid_email",
+            message: "Invalid email".to_string(),
+            meta: Meta::default(),
+        };
+
+        let v2 = Violation {
+            path: Path::from("email"),
+            code: "invalid_email",
+            message: "Invalid email".to_string(),
+            meta: Meta::default(),
+        };
+
+        assert_eq!(v1, v2);
+
+        let v3 = Violation {
+            path: Path::from("age"),
+            code: "invalid_email",
+            message: "Invalid email".to_string(),
+            meta: Meta::default(),
+        };
+
+        assert_ne!(v1, v3);
     }
 }

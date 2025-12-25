@@ -34,7 +34,7 @@ use std::collections::BTreeMap;
 /// // Error path becomes "email.value"
 /// assert_eq!(parent_err.violations[0].path.to_string(), "email.value");
 /// ```
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct ValidationError {
     pub violations: SmallVec<[Violation; 4]>,
 }
@@ -84,6 +84,30 @@ impl ValidationError {
         }
     }
 
+    /// Returns a map of field paths to error messages.
+    ///
+    /// **⚠️ Warning**: This method only returns messages and **loses error codes and metadata**.
+    /// For complete error information including codes (needed for proper error classification,
+    /// client-side handling, and internationalization), use [`field_violations_map()`](Self::field_violations_map) instead.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use domainstack::ValidationError;
+    ///
+    /// let mut err = ValidationError::new();
+    /// err.push("email", "invalid_format", "Invalid email format");
+    /// err.push("email", "too_long", "Email too long");
+    ///
+    /// let map = err.field_errors_map();
+    /// assert_eq!(map.get("email").unwrap().len(), 2);
+    /// // Note: Error codes "invalid_format" and "too_long" are lost!
+    /// ```
+    #[deprecated(
+        since = "0.5.0",
+        note = "Use `field_violations_map()` instead to preserve error codes and metadata. \
+                This method only returns messages and loses important error information."
+    )]
     pub fn field_errors_map(&self) -> BTreeMap<String, Vec<String>> {
         let mut map = BTreeMap::new();
         for violation in &self.violations {
@@ -122,6 +146,82 @@ impl ValidationError {
             })
             .collect();
 
+        Self { violations }
+    }
+
+    /// Transform all violation messages using the provided function.
+    ///
+    /// This is useful for internationalization (i18n), message formatting,
+    /// or any other message transformation needs.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use domainstack::ValidationError;
+    ///
+    /// let mut err = ValidationError::new();
+    /// err.push("email", "invalid", "Invalid email");
+    /// err.push("age", "too_young", "Must be 18+");
+    ///
+    /// // Add prefix to all messages
+    /// let err = err.map_messages(|msg| format!("Error: {}", msg));
+    ///
+    /// assert_eq!(err.violations[0].message, "Error: Invalid email");
+    /// assert_eq!(err.violations[1].message, "Error: Must be 18+");
+    /// ```
+    ///
+    /// ## Internationalization Example
+    ///
+    /// ```
+    /// use domainstack::ValidationError;
+    ///
+    /// let mut err = ValidationError::new();
+    /// err.push("email", "invalid_email", "Invalid email format");
+    ///
+    /// // Translate messages based on error code
+    /// let err = err.map_messages(|msg| {
+    ///     // In a real app, this would use error codes for translation
+    ///     "Formato de email inválido".to_string()
+    /// });
+    ///
+    /// assert_eq!(err.violations[0].message, "Formato de email inválido");
+    /// ```
+    pub fn map_messages<F>(mut self, f: F) -> Self
+    where
+        F: Fn(String) -> String,
+    {
+        for violation in &mut self.violations {
+            let old_message = std::mem::take(&mut violation.message);
+            violation.message = f(old_message);
+        }
+        self
+    }
+
+    /// Filter violations based on a predicate.
+    ///
+    /// This is useful for removing certain types of errors based on custom criteria.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use domainstack::ValidationError;
+    ///
+    /// let mut err = ValidationError::new();
+    /// err.push("email", "warning", "Email format questionable");
+    /// err.push("age", "invalid", "Age is required");
+    /// err.push("name", "warning", "Name seems unusual");
+    ///
+    /// // Remove all warnings, keep only errors
+    /// let err = err.filter(|v| v.code != "warning");
+    ///
+    /// assert_eq!(err.violations.len(), 1);
+    /// assert_eq!(err.violations[0].code, "invalid");
+    /// ```
+    pub fn filter<F>(self, f: F) -> Self
+    where
+        F: Fn(&Violation) -> bool,
+    {
+        let violations = self.violations.into_iter().filter(|v| f(v)).collect();
         Self { violations }
     }
 }
@@ -274,5 +374,90 @@ mod tests {
         err.push("age", "invalid", "Invalid age");
 
         assert_eq!(err.to_string(), "Validation failed with 2 errors");
+    }
+
+    #[test]
+    fn test_validation_error_equality() {
+        let mut err1 = ValidationError::new();
+        err1.push("email", "invalid", "Invalid email");
+        err1.push("age", "out_of_range", "Age out of range");
+
+        let mut err2 = ValidationError::new();
+        err2.push("email", "invalid", "Invalid email");
+        err2.push("age", "out_of_range", "Age out of range");
+
+        assert_eq!(err1, err2);
+
+        let mut err3 = ValidationError::new();
+        err3.push("email", "invalid", "Invalid email");
+
+        assert_ne!(err1, err3);
+    }
+
+    #[test]
+    fn test_validation_error_equality_empty() {
+        let err1 = ValidationError::new();
+        let err2 = ValidationError::default();
+        assert_eq!(err1, err2);
+    }
+
+    #[test]
+    fn test_map_messages() {
+        let mut err = ValidationError::new();
+        err.push("email", "invalid", "Invalid email");
+        err.push("age", "out_of_range", "Age out of range");
+
+        let err = err.map_messages(|msg| format!("Error: {}", msg));
+
+        assert_eq!(err.violations[0].message, "Error: Invalid email");
+        assert_eq!(err.violations[1].message, "Error: Age out of range");
+    }
+
+    #[test]
+    fn test_map_messages_preserves_other_fields() {
+        let mut err = ValidationError::new();
+        err.push("email", "invalid", "Invalid email");
+
+        let err = err.map_messages(|msg| format!("Modified: {}", msg));
+
+        assert_eq!(err.violations[0].code, "invalid");
+        assert_eq!(err.violations[0].path.to_string(), "email");
+        assert_eq!(err.violations[0].message, "Modified: Invalid email");
+    }
+
+    #[test]
+    fn test_filter() {
+        let mut err = ValidationError::new();
+        err.push("email", "warning", "Email questionable");
+        err.push("age", "invalid", "Age required");
+        err.push("name", "warning", "Name unusual");
+
+        let err = err.filter(|v| v.code != "warning");
+
+        assert_eq!(err.violations.len(), 1);
+        assert_eq!(err.violations[0].code, "invalid");
+        assert_eq!(err.violations[0].path.to_string(), "age");
+    }
+
+    #[test]
+    fn test_filter_all() {
+        let mut err = ValidationError::new();
+        err.push("email", "warning", "Email questionable");
+        err.push("name", "warning", "Name unusual");
+
+        let err = err.filter(|v| v.code != "warning");
+
+        assert!(err.is_empty());
+    }
+
+    #[test]
+    fn test_filter_none() {
+        let mut err = ValidationError::new();
+        err.push("email", "invalid", "Invalid email");
+        err.push("age", "out_of_range", "Age out of range");
+
+        let err = err.filter(|_| true);
+
+        assert_eq!(err.violations.len(), 2);
     }
 }

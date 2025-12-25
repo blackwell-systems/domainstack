@@ -19,6 +19,14 @@ use crate::{Rule, RuleContext, ValidationError};
 /// - Code: `out_of_range`
 /// - Message: `"Must be between {min} and {max}"`
 /// - Meta: `{"min": "18", "max": "120"}`
+///
+/// # Generic Type Bounds
+/// The generic parameter `T` requires several trait bounds:
+/// - `PartialOrd`: Required for comparison operations (`<` and `>`) to check if value is in range
+/// - `Copy`: Required for efficient value passing in validation closures (zero-cost, no heap allocation)
+/// - `Display`: Required to format boundary values in error messages ("Must be between 18 and 120")
+/// - `Send + Sync`: Required for thread-safe rule sharing across async tasks and threads
+/// - `'static`: Required for the rule to be stored and used independently of its creation context
 pub fn range<T>(min: T, max: T) -> Rule<T>
 where
     T: PartialOrd + Copy + std::fmt::Display + Send + Sync + 'static,
@@ -56,6 +64,9 @@ where
 /// - Code: `below_minimum`
 /// - Message: `"Must be at least {min}"`
 /// - Meta: `{"min": "18"}`
+///
+/// # Generic Type Bounds
+/// See [`range()`] for explanation of generic type bounds.
 pub fn min<T>(min: T) -> Rule<T>
 where
     T: PartialOrd + Copy + std::fmt::Display + Send + Sync + 'static,
@@ -92,6 +103,9 @@ where
 /// - Code: `above_maximum`
 /// - Message: `"Must be at most {max}"`
 /// - Meta: `{"max": "100"}`
+///
+/// # Generic Type Bounds
+/// See [`range()`] for explanation of generic type bounds.
 pub fn max<T>(max: T) -> Rule<T>
 where
     T: PartialOrd + Copy + std::fmt::Display + Send + Sync + 'static,

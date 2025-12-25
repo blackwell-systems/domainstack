@@ -146,9 +146,10 @@ fn main() {
                 println!("     [{} {}] {}", v.path, v.code, v.message);
             }
 
-            println!("\n   Field errors map:");
-            let map = e.field_errors_map();
-            for (field, messages) in map {
+            println!("\n   Field violations map:");
+            let map = e.field_violations_map();
+            for (field, violations) in map {
+                let messages: Vec<&str> = violations.iter().map(|v| v.message.as_str()).collect();
                 println!("     {}: {:?}", field, messages);
             }
         }

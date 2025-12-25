@@ -360,6 +360,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(deprecated)]
     fn test_field_errors_map() {
         let mut err = ValidationError::new();
         err.push("email", "invalid", "Invalid email");

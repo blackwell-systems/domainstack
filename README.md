@@ -19,6 +19,11 @@ It's built for the boundary you actually live at:
 Most validation crates ask: **"Is this DTO valid?"**
 domainstack asks: **"How do I safely construct domain models from untrusted input—and report failures with a consistent error contract?"**
 
+### Two validation gates:
+
+1. **Gate 1: DTO → Domain** (untrusted → trusted) - Parse and validate incoming data into domain types
+2. **Gate 2: Async/context validation** (optional) - DB/API checks like uniqueness, rate limits, authorization
+
 ## What that gives you
 
 - **Domain-first modeling**: invalid states are hard/impossible to represent
@@ -31,12 +36,42 @@ domainstack asks: **"How do I safely construct domain models from untrusted inpu
 - **Framework adapters**: one-line boundary extraction (Axum / Actix / Rocket)
 - **Lean core**: zero-deps base, opt-in features for regex / async / chrono / serde
 
+### Why domainstack over validator/garde/etc.?
+
+**validator** and **garde** focus on "Is this struct valid?" domainstack focuses on **DTO → Domain conversion** with field-level error paths designed for APIs. It provides composable rules as values, async validation with context (DB/API checks), and framework adapters that automatically convert validation errors into structured HTTP responses. If you need valid-by-construction domain types with errors that map cleanly to forms and clients, domainstack is purpose-built for that.
+
+## Table of Contents
+
+- [Quick Start](#quick-start)
+- [Mental Model: DTOs → Domain → Business Logic](#mental-model-dtos--domain--business-logic)
+- [How domainstack is Different](#how-domainstack-is-different)
+- [Core Features](#core-features)
+- [Installation](#installation)
+- [Examples](#examples)
+- [Documentation](#documentation)
+
 ## Quick Start
 
+**Dependencies** (add to `Cargo.toml`):
+
+```toml
+[dependencies]
+domainstack = { version = "1.0", features = ["derive", "regex", "chrono"] }
+domainstack-derive = "1.0"
+domainstack-axum = "1.0"  # Or domainstack-actix if using Actix-web
+serde = { version = "1", features = ["derive"] }
+chrono = "0.4"
+axum = "0.7"
+```
+
+**Complete example** (with all imports):
+
 ```rust
+use axum::Json;
+use chrono::NaiveDate;
 use domainstack::prelude::*;
-use domainstack_derive::{Validate, ToSchema};
-use domainstack_axum::DomainJson;
+use domainstack_axum::{DomainJson, ErrorResponse};
+use domainstack_derive::{ToSchema, Validate};
 use serde::Deserialize;
 
 // DTO from HTTP/JSON (untrusted input)

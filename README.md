@@ -206,8 +206,9 @@ pub struct BookingDto {
 
 ### 2) Domain inside (trusted)
 ```rust
-use domainstack::Validate;
+use domainstack::prelude::*;
 
+// Smart constructor with validation
 pub struct Email(String);
 
 impl Email {
@@ -217,24 +218,26 @@ impl Email {
     }
 }
 
-// Derive Validate for automatic validation
+// Private fields + automatic validation
 #[derive(Validate)]
 pub struct BookingRequest {
     #[validate(length(min = 1, max = 50))]
-    name: String,      // Private!
+    name: String,      // Private - can't be constructed in invalid state!
 
     #[validate(nested)]
-    email: Email,
+    email: Email,      // Nested validation
 
     #[validate(range(min = 1, max = 10))]
     guests: u8,
 }
 
+// DTO → Domain conversion
 impl TryFrom<BookingDto> for BookingRequest {
     type Error = ValidationError;
 
     fn try_from(dto: BookingDto) -> Result<Self, Self::Error> {
-        let email = Email::new(dto.email).map_err(|e| e.prefixed("email"))?;
+        let email = Email::new(dto.email)
+            .map_err(|e| e.prefixed("email"))?;  // Key pattern: prefix nested errors
 
         let booking = Self {
             name: dto.name,
@@ -242,24 +245,13 @@ impl TryFrom<BookingDto> for BookingRequest {
             guests: dto.guests,
         };
 
-        booking.validate()?;  // One line validates all fields!
+        booking.validate()?;  // Validates all fields + cross-field rules
         Ok(booking)
     }
 }
 ```
 
-### 3) API response mapping (optional)
-```rust
-use domainstack_envelope::IntoEnvelopeError;
-
-async fn create_booking(Json(dto): Json<BookingDto>) -> Result<Json<Booking>, Error> {
-    let domain: BookingRequest = dto.try_into()
-        .map_err(|e: ValidationError| e.into_envelope_error())?;
-    
-    // domain is GUARANTEED valid here - use with confidence!
-    Ok(Json(save_booking(domain).await?))
-}
-```
+**Key insight:** Domain types have private fields and can only be created through validated constructors. Invalid states become difficult (or impossible) to represent.
 
 ## How domainstack is Different
 

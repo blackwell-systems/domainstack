@@ -1,14 +1,13 @@
 # domainstack
 
 [![Blackwell Systems™](https://raw.githubusercontent.com/blackwell-systems/blackwell-docs-theme/main/badge-trademark.svg)](https://github.com/blackwell-systems)
+[![Rust Version](https://img.shields.io/badge/Rust-1.76%2B-CE422B?logo=rust&logoColor=white)](https://www.rust-lang.org/)
 [![Crates.io](https://img.shields.io/crates/v/domainstack.svg)](https://crates.io/crates/domainstack)
 [![Documentation](https://docs.rs/domainstack/badge.svg)](https://docs.rs/domainstack)
-[![Rust Version](https://img.shields.io/badge/Rust-1.76%2B-CE422B?logo=rust&logoColor=white)](https://www.rust-lang.org/)
 [![Version](https://img.shields.io/github/v/release/blackwell-systems/domainstack)](https://github.com/blackwell-systems/domainstack/releases)
-
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![CI](https://github.com/blackwell-systems/domainstack/workflows/CI/badge.svg)](https://github.com/blackwell-systems/domainstack/actions)
 [![codecov](https://codecov.io/gh/blackwell-systems/domainstack/branch/main/graph/badge.svg)](https://codecov.io/gh/blackwell-systems/domainstack)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Sponsor](https://img.shields.io/badge/Sponsor-Buy%20Me%20a%20Coffee-yellow?logo=buy-me-a-coffee&logoColor=white)](https://buymeacoffee.com/blackwellsystems)
 
 **Turn untrusted input into valid domain objects—with structured, field-level errors**
@@ -216,11 +215,6 @@ async fn create_booking(Json(dto): Json<BookingDto>) -> Result<Json<Booking>, Er
 - Async validation with database/API context
 - Compile-time guarantees that data was validated (phantom types)
 
-**You might not need domainstack if:**
-- You're validating only DTOs and your domain is basically DTO-shaped
-- You don't care about structured field paths/codes across services
-- You're happy with ad-hoc handler-level error mapping
-
 ## Valid-by-Construction Pattern
 
 The recommended approach enforces validation at domain boundaries:
@@ -401,30 +395,82 @@ See [domainstack-axum](./domainstack/domainstack-axum/) and [domainstack-actix](
 
 ## Installation
 
+<details>
+<summary>Click to expand installation options</summary>
+
+### Core Library
+
 ```toml
 [dependencies]
-# Core library only
+# Minimal - Core validation only (no dependencies except smallvec)
 domainstack = "1.0"
 
-# With derive macro (recommended)
+# Recommended - Core + derive macro
 domainstack = { version = "1.0", features = ["derive"] }
 
-# With regex validation (adds regex dependency for email/URL/pattern matching)
+# All features enabled
+domainstack = { version = "1.0", features = ["derive", "regex", "async", "chrono"] }
+```
+
+### Feature Flags
+
+| Feature | Description | Added Dependencies |
+|---------|-------------|-------------------|
+| `std` | Standard library support (enabled by default) | None |
+| `derive` | Enable `#[derive(Validate)]` macro | `domainstack-derive` |
+| `regex` | Email, URL, and pattern matching rules | `regex`, `once_cell` |
+| `async` | Async validation with context passing | `async-trait` |
+| `chrono` | Date/time validation rules (past, future, age_range) | `chrono` |
+
+**Examples:**
+
+```toml
+# Web API with validation and derive macros
 domainstack = { version = "1.0", features = ["derive", "regex"] }
 
-# With async validation (for database uniqueness checks, external APIs)
-domainstack = { version = "1.0", features = ["async"] }
+# Async validation for database checks
+domainstack = { version = "1.0", features = ["derive", "async"] }
 
-# All features
-domainstack = { version = "1.0", features = ["derive", "regex", "async"] }
+# Date/time validation
+domainstack = { version = "1.0", features = ["derive", "chrono"] }
+```
 
-# Optional: HTTP error mapping
+### Optional Companion Crates
+
+```toml
+# OpenAPI 3.0 schema generation
+domainstack-schema = "1.0"
+
+# HTTP error envelope integration (RFC 9457 Problem Details)
 domainstack-envelope = "1.0"
 
-# Optional: Framework adapters
-domainstack-axum = "1.0"    # For Axum web framework
-domainstack-actix = "1.0"   # For Actix-web framework
+# HTTP utilities (framework-agnostic)
+domainstack-http = "1.0"
+
+# Framework adapters - one-line DTO→Domain extraction
+domainstack-axum = "1.0"      # For Axum 0.7+
+domainstack-actix = "1.0"     # For Actix-web 4.x
+domainstack-rocket = "1.0"    # For Rocket 0.5+
 ```
+
+### Full Stack Example
+
+```toml
+[dependencies]
+# Core validation with all features
+domainstack = { version = "1.0", features = ["derive", "regex", "async", "chrono"] }
+
+# Schema generation for OpenAPI docs
+domainstack-schema = "1.0"
+
+# Axum web framework integration
+domainstack-axum = "1.0"
+axum = "0.7"
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+```
+
+</details>
 
 ## Key Features
 
@@ -516,7 +562,7 @@ fn send_email(email: Email<Validated>) {
 
 #### OpenAPI Schema Generation
 
-**NEW**: Auto-generate OpenAPI 3.0 schemas directly from your validation rules—**zero duplication**:
+Auto-generate OpenAPI 3.0 schemas directly from your validation rules—**zero duplication**:
 
 ```rust
 use domainstack_derive::{Validate, ToSchema};

@@ -437,86 +437,46 @@ See [domainstack-axum](./domainstack/domainstack-axum/) and [domainstack-actix](
 
 ## Installation
 
-<details>
-<summary>Click to expand installation options</summary>
-
-### Core Library
-
 ```toml
 [dependencies]
-# Minimal - Core validation only (no dependencies except smallvec)
-domainstack = "1.0"
-
-# Recommended - Core + derive macro
+# Core validation + derive macro (recommended)
 domainstack = { version = "1.0", features = ["derive"] }
-
-# All features enabled
-domainstack = { version = "1.0", features = ["derive", "regex", "async", "chrono"] }
 ```
 
 ### Feature Flags
 
-| Feature | Description | Added Dependencies |
-|---------|-------------|-------------------|
-| `std` | Standard library support (enabled by default) | None |
-| `derive` | Enable `#[derive(Validate)]` macro | `domainstack-derive` |
-| `regex` | Email, URL, and pattern matching rules | `regex`, `once_cell` |
-| `async` | Async validation with context passing | `async-trait` |
-| `chrono` | Date/time validation rules (past, future, age_range) | `chrono` |
-| `serde` | **NEW!** Automatic validation during deserialization with `#[derive(ValidateOnDeserialize)]` | `serde` (also enables `derive`) |
+| Feature | Adds | Use When |
+|---------|------|----------|
+| `derive` | `#[derive(Validate)]` macro | Declarative validation (recommended) |
+| `regex` | Email, URL, pattern matching | Web APIs, user input |
+| `async` | Database/API validation | Uniqueness checks, external validation |
+| `chrono` | Date/time rules | Temporal constraints, age verification |
+| `serde` | `ValidateOnDeserialize` | Validate during JSON/YAML parsing |
 
-**Examples:**
+### Common Combinations
 
 ```toml
-# Web API with validation and derive macros
+# Web API (most common)
 domainstack = { version = "1.0", features = ["derive", "regex"] }
 
-# Serde integration - validate automatically during JSON deserialization
-domainstack = { version = "1.0", features = ["serde", "regex"] }
+# API + async validation
+domainstack = { version = "1.0", features = ["derive", "regex", "async"] }
 
-# Async validation for database checks
-domainstack = { version = "1.0", features = ["derive", "async"] }
-
-# Date/time validation
-domainstack = { version = "1.0", features = ["derive", "chrono"] }
+# Full-stack with OpenAPI + framework adapter
+domainstack = { version = "1.0", features = ["derive", "regex", "async"] }
+domainstack-schema = "1.0"      # OpenAPI generation
+domainstack-axum = "1.0"        # Axum integration
 ```
 
 ### Optional Companion Crates
 
 ```toml
-# OpenAPI 3.0 schema generation
-domainstack-schema = "1.0"
-
-# HTTP error envelope integration (RFC 9457 Problem Details)
-domainstack-envelope = "1.0"
-
-# HTTP utilities (framework-agnostic)
-domainstack-http = "1.0"
-
-# Framework adapters - one-line DTO→Domain extraction
-domainstack-axum = "1.0"      # For Axum 0.7+
-domainstack-actix = "1.0"     # For Actix-web 4.x
-domainstack-rocket = "1.0"    # For Rocket 0.5+
+domainstack-schema = "1.0"    # OpenAPI 3.0 schema generation
+domainstack-envelope = "1.0"  # HTTP error envelopes (RFC 9457)
+domainstack-axum = "1.0"      # Axum adapter (0.7+)
+domainstack-actix = "1.0"     # Actix-web adapter (4.x)
+domainstack-rocket = "1.0"    # Rocket adapter (0.5+)
 ```
-
-### Full Stack Example
-
-```toml
-[dependencies]
-# Core validation with all features
-domainstack = { version = "1.0", features = ["derive", "regex", "async", "chrono"] }
-
-# Schema generation for OpenAPI docs
-domainstack-schema = "1.0"
-
-# Axum web framework integration
-domainstack-axum = "1.0"
-axum = "0.7"
-tokio = { version = "1", features = ["full"] }
-serde = { version = "1", features = ["derive"] }
-```
-
-</details>
 
 ## Key Features
 
@@ -735,51 +695,19 @@ See [domainstack-schema/OPENAPI_CAPABILITIES.md](./domainstack/domainstack-schem
 
 ### 37 Built-in Validation Rules
 
-**String Rules (17):**
-- Length: `non_empty()`, `min_len()`, `max_len()`, `length()`, `len_chars()`
-- Format: `email()`, `url()`, `matches_regex()`
-- Content: `alpha_only()`, `alphanumeric()`, `numeric_string()`, `ascii()`
-- Patterns: `contains()`, `starts_with()`, `ends_with()`, `non_blank()`, `no_whitespace()`
+| Category | Rules |
+|----------|-------|
+| **String (17)** | `email`, `url`, `min_len`, `max_len`, `length`, `non_empty`, `non_blank`, `alphanumeric`, `alpha_only`, `numeric_string`, `ascii`, `no_whitespace`, `contains`, `starts_with`, `ends_with`, `matches_regex`, `len_chars` |
+| **Numeric (8)** | `range`, `min`, `max`, `positive`, `negative`, `non_zero`, `multiple_of`, `finite` |
+| **Choice (3)** | `equals`, `not_equals`, `one_of` |
+| **Collection (4)** | `min_items`, `max_items`, `unique`, `non_empty_items` |
+| **Date/Time (5)** | `past`, `future`, `before`, `after`, `age_range` (requires `chrono` feature) |
 
-**All rules work with `each(rule)` for collection validation:**
+**Combinators:** `.and()`, `.or()`, `.when()`, `.code()`, `.message()`, `.meta()`
 
-```rust
-#[derive(Validate)]
-struct BlogPost {
-    #[validate(each(email))]        // Validate each email in list
-    author_emails: Vec<String>,
+**All rules work with `each(rule)` for collection validation.** Errors include array indices (`tags[0]`, `emails[1]`).
 
-    #[validate(each(url))]           // Validate each URL
-    related_links: Vec<String>,
-
-    #[validate(each(length(min = 1, max = 50)))]  // Validate tag length
-    tags: Vec<String>,
-}
-// Errors include array indices: tags[0], author_emails[1], etc.
-```
-
-**Numeric Rules (8):**
-- Comparison: `min()`, `max()`, `range()`
-- Sign: `positive()`, `negative()`, `non_zero()`
-- Special: `finite()` (for floats), `multiple_of()`
-
-**Choice Rules (3):**
-- `equals()`, `not_equals()`, `one_of()`
-
-**Collection Rules (4):**
-- `min_items()`, `max_items()`, `unique()`, `non_empty_items()`
-
-**Date/Time Rules (5):** (requires `chrono` feature)
-- Temporal: `past()`, `future()`, `before()`, `after()`
-- Age: `age_range()`
-
-**Combinators:**
-- `.and()` - Both rules must pass
-- `.or()` - Either rule must pass
-- `.when()` - Conditional validation
-- `.code()`, `.message()`, `.meta()` - Customize errors
-
-See [Rules Reference](./docs/RULES.md) for complete documentation and examples.
+📖 **[Complete Rules Reference](./domainstack/domainstack/docs/RULES.md)** - Detailed documentation with examples for all 37 rules.
 
 ## Examples
 
@@ -965,27 +893,16 @@ cargo llvm-cov --all-features --workspace --html
 
 ## 📦 Crates
 
-This repository contains **12 workspace members** (8 publishable crates, 4 example crates):
+**8 publishable crates** for modular adoption:
 
-**Core (Publishable):**
-- **[domainstack](./domainstack/)** - Core validation library with composable rules
-- **[domainstack-derive](./domainstack/domainstack-derive/)** - Derive macro for `#[derive(Validate)]`
-- **[domainstack-envelope](./domainstack/domainstack-envelope/)** - error-envelope integration for HTTP APIs
-- **[domainstack-schema](./domainstack/domainstack-schema/)** - OpenAPI 3.0 schema generation
+| Category | Crates |
+|----------|--------|
+| **Core** | `domainstack`, `domainstack-derive`, `domainstack-schema`, `domainstack-envelope` |
+| **Web Frameworks** | `domainstack-axum`, `domainstack-actix`, `domainstack-rocket`, `domainstack-http` |
 
-**Framework Adapters (Publishable):**
-- **[domainstack-http](./domainstack/domainstack-http/)** - Framework-agnostic HTTP helpers
-- **[domainstack-axum](./domainstack/domainstack-axum/)** - Axum extractor and response implementations
-- **[domainstack-actix](./domainstack/domainstack-actix/)** - Actix-web extractor and response implementations
-- **[domainstack-rocket](./domainstack/domainstack-rocket/)** - Rocket request guard and response implementations
+**4 example crates** (repository only): `domainstack-examples`, `examples-axum`, `examples-actix`, `examples-rocket`
 
-**Examples (Available in Repository):**
-- **[domainstack-examples](./domainstack/domainstack-examples/)** - Core validation examples
-- **[examples-axum](./domainstack/examples-axum/)** - Axum booking service example
-- **[examples-actix](./domainstack/examples-actix/)** - Actix-web booking service example
-- **[examples-rocket](./domainstack/examples-rocket/)** - Rocket booking service example
-
-**Note:** Example crates are not published to crates.io but are included in the [GitHub repository](https://github.com/blackwell-systems/domainstack). Clone the repo to run them locally.
+📦 **[Complete Crate List](./domainstack/README.md#crates)** - Detailed descriptions and links
 
 ## 📚 Documentation
 

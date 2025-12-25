@@ -50,10 +50,9 @@
 //!     Ok(Json(format!("Created: {}", user.name)))
 //! }
 //!
-//! #[tokio::main]
-//! async fn main() {
-//!     let app = Router::new().route("/users", post(create_user));
-//!     // ...
+//! // In your main.rs or server setup:
+//! fn setup_router() -> Router {
+//!     Router::new().route("/users", post(create_user))
 //! }
 //! ```
 //!

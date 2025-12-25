@@ -51,13 +51,31 @@ fn generate_type_schema(output: &mut String, parsed_type: &ParsedType) -> Result
 }
 
 fn generate_field_schema(output: &mut String, field: &ParsedField) -> Result<()> {
-    // Start with base type
-    let base_schema = generate_base_type(&field.ty);
+    // Check if this is an optional field
+    let is_optional = matches!(field.ty, FieldType::Option(_));
+
+    // Get the base schema (unwrapped if optional)
+    let base_schema = if is_optional {
+        // For Option<T>, generate the inner type first
+        if let FieldType::Option(inner) = &field.ty {
+            generate_base_type(inner)
+        } else {
+            generate_base_type(&field.ty)
+        }
+    } else {
+        generate_base_type(&field.ty)
+    };
+
     output.push_str(&base_schema);
 
-    // Add validation rules
+    // Add validation rules (before .optional())
     for rule in &field.validation_rules {
         generate_validation_rule(output, rule, &field.ty)?;
+    }
+
+    // Add .optional() at the end if this is an Option type
+    if is_optional {
+        output.push_str(".optional()");
     }
 
     Ok(())
@@ -75,7 +93,9 @@ fn generate_base_type(field_type: &FieldType) -> String {
             "z.number() /* Warning: Large integers may lose precision in JavaScript */".to_string()
         }
         FieldType::Option(inner) => {
-            format!("{}.optional()", generate_base_type(inner))
+            // For Option, just return the inner type
+            // .optional() will be added by generate_field_schema
+            generate_base_type(inner)
         }
         FieldType::Vec(inner) => {
             format!("z.array({})", generate_base_type(inner))

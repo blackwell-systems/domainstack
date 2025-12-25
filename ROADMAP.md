@@ -2,7 +2,7 @@
 
 This roadmap outlines potential future features for domainstack, ranked by impact and alignment with the library's philosophy of "write once, derive everything."
 
-## Status: v1.0.0 Released ✅
+## Status: v1.0.0 Released + domainstack-cli v0.1.0 ✅
 
 The core library is production-ready with:
 - ✅ Derive macro for validation
@@ -13,6 +13,10 @@ The core library is production-ready with:
 - ✅ Type-state validation
 - ✅ Nested validation with path tracking
 - ✅ Serde integration (validate on deserialize)
+- ✅ **NEW:** Code generation CLI (`domainstack-cli`)
+  - TypeScript/Zod schema generation
+  - 26+ validation rules supported
+  - Unified CLI architecture for future generators
 
 ---
 
@@ -59,17 +63,26 @@ let user: User = serde_json::from_str(json)?;
 
 ---
 
-#### 2. Client-Side Validation Generation (TypeScript/JavaScript)
+#### 2. Code Generation CLI (TypeScript/Zod) ✅
 
-**Status**: Research
+**Status**: ✅ **Phase 1 Complete - v0.1.0**
 **Impact**: 🔥🔥🔥 Very High
-**Effort**: High
-**RFC**: TBD
+**Effort**: 6 days for MVP - **COMPLETED**
+**Crate**: `domainstack-cli`
 
-Generate TypeScript validators from Rust validation rules:
+Generate TypeScript Zod schemas from Rust validation rules:
 
+```bash
+# Install the CLI
+cargo install domainstack-cli
+
+# Generate Zod schemas
+domainstack zod --input src --output frontend/schemas.ts
+```
+
+**From Rust:**
 ```rust
-#[derive(Validate, ToTypeScript)]
+#[derive(Validate)]
 struct User {
     #[validate(email)]
     #[validate(max_len = 255)]
@@ -77,42 +90,49 @@ struct User {
 
     #[validate(range(min = 18, max = 120))]
     age: u8,
+
+    #[validate(url)]
+    profile_url: Option<String>,
 }
 ```
 
-**Generates:**
-- TypeScript type definitions
-- Zod schemas
-- Yup schemas
-- React Hook Form integration
-- Vanilla JavaScript validators
-
-**Benefits:**
-- Frontend/backend validation stays in sync automatically
-- No duplicate validation logic
-- Type-safe forms
-- Better UX with immediate client-side feedback
-
-**Target Outputs:**
+**Generates TypeScript/Zod:**
 ```typescript
-// Generated TypeScript
-export interface User {
-  email: string;
-  age: number;
-}
-
-// Generated Zod schema
 export const UserSchema = z.object({
   email: z.string().email().max(255),
-  age: z.number().min(18).max(120)
+  age: z.number().min(18).max(120),
+  profile_url: z.string().url().optional(),
 });
 
-// Generated Yup schema
-export const UserYupSchema = yup.object({
-  email: yup.string().email().max(255).required(),
-  age: yup.number().min(18).max(120).required()
-});
+export type User = z.infer<typeof UserSchema>;
 ```
+
+**Implemented Features:**
+- ✅ Unified CLI with subcommand architecture
+- ✅ Zod schema generation with 26+ validation rules
+- ✅ All string validations (email, url, length, patterns)
+- ✅ All numeric validations (range, min/max, positive/negative)
+- ✅ Optional fields with correct `.optional()` ordering
+- ✅ Arrays and nested types
+- ✅ Custom type references
+- ✅ Precision warnings for large integers (u64, i128, etc.)
+- ✅ Auto-generated headers with timestamps
+- ✅ Comprehensive test coverage (32 unit tests)
+
+**Benefits:**
+- ✅ Single source of truth for validation
+- ✅ Frontend/backend validation stays in sync automatically
+- ✅ No duplicate validation logic
+- ✅ Type-safe schemas with Zod's type inference
+- ✅ Zero maintenance - regenerate when Rust types change
+
+**Future Generators (Planned):**
+- 📋 Yup schemas (`domainstack yup`)
+- 📋 GraphQL SDL (`domainstack graphql`)
+- 📋 Prisma schemas (`domainstack prisma`)
+- 📋 JSON Schema (`domainstack json-schema`)
+
+**See:** `domainstack/domainstack-cli/README.md` for full documentation
 
 ---
 

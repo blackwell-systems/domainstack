@@ -1,0 +1,27 @@
+[package]
+name = "domainstack-cli"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.76"
+authors = ["Dayna Blackwell <blackwellsystems@protonmail.com>"]
+license = "Apache-2.0"
+description = "Unified code generation CLI for domainstack - generate Zod schemas, GraphQL SDL, and more from Rust validation rules"
+repository = "https://github.com/blackwell-systems/domainstack"
+documentation = "https://docs.rs/domainstack-cli"
+keywords = ["cli", "codegen", "validation", "zod", "typescript"]
+categories = ["command-line-utilities", "development-tools"]
+
+[[bin]]
+name = "domainstack"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4.5", features = ["derive"] }
+syn = { version = "2.0", features = ["full", "extra-traits"] }
+quote = "1.0"
+proc-macro2 = "1.0"
+walkdir = "2.5"
+anyhow = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+chrono = "0.4"

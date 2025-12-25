@@ -49,7 +49,7 @@ const UserSchema = z.object({
 **Auto-generate Zod schemas from Rust validation rules**
 
 ```bash
-$ domainstack-zod generate --input src --output frontend/src/schemas.ts
+$ domainstack zod --input src --output frontend/src/schemas.ts
 ✓ Generated schemas for 12 types
 ✓ Written to frontend/src/schemas.ts
 ```
@@ -155,13 +155,45 @@ Zod is a TypeScript-first validation library with:
 
 ## Architecture Decision
 
-### Recommended: **CLI Tool** (MVP) → **Proc Macro** (Later)
+### Recommended: **Unified CLI** with Subcommands
 
-#### Phase 1: CLI Tool (MVP - Target v1.1.0)
+#### Design: One CLI, Multiple Generators
+
+**Why unified?** Prepare for future generators (Yup, GraphQL, Prisma, etc.) without cluttering the ecosystem with separate binaries.
+
+**Command Structure**:
+```bash
+# Install once
+cargo install domainstack-cli
+
+# Generate different schemas
+domainstack zod --input src --output frontend/schemas.ts
+domainstack yup --input src --output frontend/schemas.ts      # Future
+domainstack graphql --input src --output schema.graphql       # Future
+```
+
+**Crate Structure**:
+```
+domainstack-cli/              # Unified CLI binary
+├── Cargo.toml
+└── src/
+    ├── main.rs               # CLI entry point (clap)
+    ├── commands/
+    │   └── zod.rs            # Zod subcommand
+    ├── generators/
+    │   ├── mod.rs
+    │   └── zod.rs            # Zod schema generator
+    └── parser/
+        ├── mod.rs
+        ├── ast.rs            # Shared AST parsing
+        └── validation.rs     # Shared validation extraction
+```
+
+#### Phase 1: Zod Generator (MVP - Target v1.1.0)
 
 **Command**:
 ```bash
-domainstack-zod generate --input src --output frontend/src/schemas.ts
+domainstack zod --input src --output frontend/src/schemas.ts
 ```
 
 **How it works**:
@@ -171,20 +203,21 @@ domainstack-zod generate --input src --output frontend/src/schemas.ts
 4. Generate Zod schemas with validation rules
 5. Write to `--output` file
 
-**Pros**:
-- ✅ Explicit and controllable
-- ✅ Works with any project structure
-- ✅ Easy to integrate in CI/CD, npm scripts, pre-commit hooks
-- ✅ No build time impact
-- ✅ Easier to test and debug
-- ✅ Can provide nice CLI output (progress bars, error messages)
+**Benefits of Unified CLI**:
+- ✅ **Single installation** - one tool, not `domainstack-zod` + `domainstack-yup` + ...
+- ✅ **Shared parsing logic** - all generators reuse same Rust parser
+- ✅ **Consistent interface** - same flags across generators (`--input`, `--output`, `--watch`)
+- ✅ **Better discovery** - `domainstack --help` shows all capabilities
+- ✅ **Brand consistency** - everything is `domainstack <command>`
+- ✅ **Easy to extend** - adding new generators is just a new subcommand
 
 **Integration Examples**:
 ```json
 // package.json
 {
   "scripts": {
-    "codegen": "domainstack-zod generate --input ../backend/src --output src/schemas.ts",
+    "codegen": "domainstack zod --input ../backend/src --output src/schemas.ts",
+    "codegen:watch": "domainstack zod --input ../backend/src --output src/schemas.ts --watch",
     "prebuild": "npm run codegen"
   }
 }
@@ -193,12 +226,51 @@ domainstack-zod generate --input src --output frontend/src/schemas.ts
 ```yaml
 # .github/workflows/ci.yml
 - name: Generate Zod schemas
-  run: domainstack-zod generate --input src --output frontend/src/schemas.ts
+  run: domainstack zod --input src --output frontend/src/schemas.ts
+
 - name: Check for uncommitted changes
-  run: git diff --exit-code frontend/src/schemas.ts
+  run: |
+    git diff --exit-code frontend/src/schemas.ts || \
+      (echo "❌ Schemas out of date! Run: npm run codegen" && exit 1)
 ```
 
-#### Phase 2: Proc Macro (Later - v1.2.0+)
+```toml
+# domainstack.toml (future: config file support)
+[zod]
+input = "src/models"
+output = "frontend/src/schemas.ts"
+watch = true
+
+[graphql]  # Future generator
+input = "src/models"
+output = "schema.graphql"
+```
+
+#### Phase 2: Additional Generators (v1.2.0+)
+
+Once unified CLI is established, adding generators is **trivial**:
+
+**Yup Schemas** (React ecosystem):
+```bash
+domainstack yup --input src --output frontend/schemas.ts
+```
+
+**GraphQL Schema Definition Language**:
+```bash
+domainstack graphql --input src --output schema.graphql
+```
+
+**Prisma Migrations**:
+```bash
+domainstack prisma --input src --output prisma/schema.prisma
+```
+
+**Enhanced OpenAPI** (beyond current `ToSchema`):
+```bash
+domainstack openapi --input src --output openapi.yaml
+```
+
+#### Phase 3: Proc Macro (Optional, v1.3.0+)
 
 **Optional convenience** for users who want auto-export:
 
@@ -215,13 +287,13 @@ struct User {
 - CLI can still be used for batch generation
 - Gives users flexibility
 
-### Why CLI First?
+### Why Unified CLI?
 
-1. **Simpler implementation** - parse files, generate output
-2. **Better UX** - explicit, predictable, debuggable
-3. **Standard pattern** - similar to `protoc`, `graphql-codegen`, etc.
-4. **Flexibility** - works with any workflow
-5. **No magic** - clear when schemas are generated
+1. **Scalability** - prepared for multiple generators without ecosystem fragmentation
+2. **Shared code** - parsing logic used by all generators (Zod, Yup, GraphQL, etc.)
+3. **Better UX** - single tool to install and learn
+4. **Standard pattern** - like `cargo`, `prisma`, `protoc` with subcommands
+5. **Future-proof** - easy to add new generators as needed
 
 ---
 
@@ -229,33 +301,37 @@ struct User {
 
 ### Milestone 1: Core CLI Tool (3 days)
 
-**Crate**: `domainstack-zod` (binary crate)
+**Crate**: `domainstack-cli` (binary crate with `zod` subcommand)
 
 **Tasks**:
-1. **File Parser**
+1. **CLI Framework Setup**
+   - Use `clap` for argument parsing with subcommands
+   - Main binary: `domainstack`
+   - First subcommand: `zod`
+   - Shared flags: `--input <DIR>`, `--output <FILE>`, `--watch`
+
+2. **File Parser (Shared Module)**
    - Use `syn` to parse Rust files
    - Find structs with `#[derive(Validate)]`
    - Extract field types and `#[validate(...)]` attributes
+   - **Reusable** by future generators (Yup, GraphQL, etc.)
 
-2. **Validation Rule Parser**
+3. **Validation Rule Parser (Shared Module)**
    - Reuse parsing logic from `domainstack-derive`
    - Convert parsed rules to intermediate representation
+   - **Reusable** by all generators
 
-3. **Zod Code Generator**
+4. **Zod Code Generator (Generator-Specific)**
    - Map Rust types → TS types
    - Map validation rules → Zod methods
    - Generate TypeScript code with proper formatting
-
-4. **CLI Interface**
-   - `clap` for argument parsing
-   - `--input <DIR>`: Source directory
-   - `--output <FILE>`: Output TypeScript file
-   - `--watch`: Watch mode (optional, later)
+   - Lives in `generators/zod.rs`
 
 **Example Output**:
 ```typescript
 /**
- * AUTO-GENERATED by domainstack-zod
+ * AUTO-GENERATED by domainstack-cli
+ * Command: domainstack zod --input src --output frontend/schemas.ts
  * DO NOT EDIT MANUALLY
  *
  * Generated from: src/models/user.rs
@@ -298,11 +374,12 @@ export type Post = z.infer<typeof PostSchema>;
 ### Milestone 3: Documentation (1 day)
 
 **Docs**:
-1. README for `domainstack-zod` crate
-2. User guide in main docs
+1. README for `domainstack-cli` crate
+2. User guide for `domainstack zod` command
 3. Migration guide from manual Zod schemas
 4. Troubleshooting guide
-5. Update ROADMAP.md to mark as implemented
+5. Architecture docs (unified CLI design, adding new generators)
+6. Update ROADMAP.md to mark as implemented
 
 ### Milestone 4: Advanced Features (Optional, v1.2.0+)
 
@@ -392,11 +469,17 @@ export type Post = z.infer<typeof PostSchema>;
 
 | Milestone | Effort | Deliverable |
 |-----------|--------|-------------|
-| **1. Core CLI Tool** | 3 days | Working CLI that generates basic Zod schemas |
-| **2. Testing & Examples** | 1 day | Comprehensive tests + examples |
-| **3. Documentation** | 1 day | User guide, API docs, examples |
+| **1. Core CLI Tool** | 3 days | `domainstack-cli` with `zod` subcommand |
+| **2. Testing & Examples** | 1 day | Comprehensive tests + full-stack example |
+| **3. Documentation** | 1 day | User guide, architecture docs, examples |
 | **4. Polish & Release** | 1 day | README, CHANGELOG, crates.io publish |
-| **Total (MVP)** | **6 days** | `domainstack-zod` v0.1.0 on crates.io |
+| **Total (MVP)** | **6 days** | `domainstack-cli` v0.1.0 on crates.io |
+
+**Future Milestones** (post-MVP):
+- **v0.2.0**: Add `--watch` mode for auto-regeneration
+- **v0.3.0**: Add `yup` subcommand for Yup schemas
+- **v0.4.0**: Add `graphql` subcommand for GraphQL SDL
+- **v1.0.0**: Config file support (`domainstack.toml`), stable API
 
 ---
 
@@ -437,19 +520,22 @@ These are explicitly **not** included in v1.1.0:
 ## Next Steps
 
 1. ✅ **This document** - Research and design complete
-2. ⏭️ **Get user approval** - Confirm architecture and scope
-3. ⏭️ **Create `domainstack-zod` crate** - Start implementation
-4. ⏭️ **Implement core parser** - File parsing + validation extraction
-5. ⏭️ **Implement code generator** - Zod schema generation
-6. ⏭️ **Build CLI interface** - Argument parsing + file I/O
-7. ⏭️ **Write tests** - Comprehensive test coverage
-8. ⏭️ **Create examples** - Full-stack example app
-9. ⏭️ **Write documentation** - User guide + API docs
-10. ⏭️ **Release v0.1.0** - Publish to crates.io
+2. ✅ **Unified CLI architecture** - Designed for future extensibility
+3. ⏭️ **Get user approval** - Confirm unified CLI approach and scope
+4. ⏭️ **Create `domainstack-cli` crate** - Setup unified CLI structure
+5. ⏭️ **Implement shared parser** - File parsing + validation extraction (reusable)
+6. ⏭️ **Implement Zod generator** - Zod schema generation in `generators/zod.rs`
+7. ⏭️ **Build CLI interface** - `clap` subcommands + file I/O
+8. ⏭️ **Write tests** - Parser tests, generator tests, integration tests
+9. ⏭️ **Create examples** - Full-stack example app with React
+10. ⏭️ **Write documentation** - User guide, architecture docs, API docs
+11. ⏭️ **Release v0.1.0** - Publish `domainstack-cli` to crates.io
 
 ---
 
-**Status**: ✅ Research & Design Complete - Ready for Implementation
+**Status**: ✅ Research & Design Complete - Unified CLI Architecture
+**Architecture**: Unified CLI (`domainstack-cli`) with subcommands, starting with `zod`
 **Author**: Claude (AI Assistant)
 **Date**: 2025-01-15
+**Updated**: 2025-01-15 (Added unified CLI architecture)
 **Next Review**: After user approval

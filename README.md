@@ -426,48 +426,6 @@ domainstack-axum = "1.0"    # For Axum web framework
 domainstack-actix = "1.0"   # For Actix-web framework
 ```
 
-## Crates
-
-This repository contains **12 workspace members** (8 publishable crates, 4 example crates):
-
-**Core (Publishable):**
-- **[domainstack](./domainstack/)** - Core validation library with composable rules
-- **[domainstack-derive](./domainstack/domainstack-derive/)** - Derive macro for `#[derive(Validate)]`
-- **[domainstack-envelope](./domainstack/domainstack-envelope/)** - error-envelope integration for HTTP APIs
-- **[domainstack-schema](./domainstack/domainstack-schema/)** - OpenAPI 3.0 schema generation
-
-**Framework Adapters (Publishable):**
-- **[domainstack-http](./domainstack/domainstack-http/)** - Framework-agnostic HTTP helpers
-- **[domainstack-axum](./domainstack/domainstack-axum/)** - Axum extractor and response implementations
-- **[domainstack-actix](./domainstack/domainstack-actix/)** - Actix-web extractor and response implementations
-- **[domainstack-rocket](./domainstack/domainstack-rocket/)** - Rocket request guard and response implementations
-
-**Examples (Not Published):**
-- **[domainstack-examples](./domainstack/domainstack-examples/)** - Core validation examples
-- **[examples-axum](./domainstack/examples-axum/)** - Axum booking service example
-- **[examples-actix](./domainstack/examples-actix/)** - Actix-web booking service example
-- **[examples-rocket](./domainstack/examples-rocket/)** - Rocket booking service example
-
-## Documentation
-
-### Multi-README Structure
-
-This project has **multiple README files** for different audiences:
-
-1. **[README.md](./README.md)** (this file) - GitHub visitors
-2. **[domainstack/README.md](./domainstack/README.md)** - Cargo/crates.io users
-3. **Individual crate READMEs** - Library implementers
-
-### Additional Documentation
-
-- **[API Guide](./docs/api-guide.md)** - Complete API documentation
-- **[Rules Reference](./docs/RULES.md)** - All validation rules
-- **[Architecture](./docs/architecture.md)** - System design and data flow
-- **[Examples](./domainstack/domainstack-examples/)** - 9 runnable examples
-- **[API Documentation](https://docs.rs/domainstack)** - Generated API reference
-- **[Publishing Guide](./PUBLISHING.md)** - How to publish to crates.io
-- **[Coverage Guide](./COVERAGE.md)** - Running coverage locally
-
 ## Key Features
 
 ### Core Capabilities
@@ -825,6 +783,48 @@ cargo llvm-cov --all-features --workspace --html
 ```
 
 </details>
+
+## Crates
+
+This repository contains **12 workspace members** (8 publishable crates, 4 example crates):
+
+**Core (Publishable):**
+- **[domainstack](./domainstack/)** - Core validation library with composable rules
+- **[domainstack-derive](./domainstack/domainstack-derive/)** - Derive macro for `#[derive(Validate)]`
+- **[domainstack-envelope](./domainstack/domainstack-envelope/)** - error-envelope integration for HTTP APIs
+- **[domainstack-schema](./domainstack/domainstack-schema/)** - OpenAPI 3.0 schema generation
+
+**Framework Adapters (Publishable):**
+- **[domainstack-http](./domainstack/domainstack-http/)** - Framework-agnostic HTTP helpers
+- **[domainstack-axum](./domainstack/domainstack-axum/)** - Axum extractor and response implementations
+- **[domainstack-actix](./domainstack/domainstack-actix/)** - Actix-web extractor and response implementations
+- **[domainstack-rocket](./domainstack/domainstack-rocket/)** - Rocket request guard and response implementations
+
+**Examples (Not Published):**
+- **[domainstack-examples](./domainstack/domainstack-examples/)** - Core validation examples
+- **[examples-axum](./domainstack/examples-axum/)** - Axum booking service example
+- **[examples-actix](./domainstack/examples-actix/)** - Actix-web booking service example
+- **[examples-rocket](./domainstack/examples-rocket/)** - Rocket booking service example
+
+## 📚 Documentation
+
+### Multi-README Structure
+
+This project has **multiple README files** for different audiences:
+
+1. **[README.md](./README.md)** (this file) - GitHub visitors
+2. **[domainstack/README.md](./domainstack/README.md)** - Cargo/crates.io users
+3. **Individual crate READMEs** - Library implementers
+
+### Additional Documentation
+
+- **[API Guide](./docs/api-guide.md)** - Complete API documentation
+- **[Rules Reference](./docs/RULES.md)** - All validation rules
+- **[Architecture](./docs/architecture.md)** - System design and data flow
+- **[Examples](./domainstack/domainstack-examples/)** - 9 runnable examples
+- **[API Documentation](https://docs.rs/domainstack)** - Generated API reference
+- **[Publishing Guide](./PUBLISHING.md)** - How to publish to crates.io
+- **[Coverage Guide](./COVERAGE.md)** - Running coverage locally
 
 ## License
 

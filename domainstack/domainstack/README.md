@@ -426,40 +426,6 @@ domainstack-axum = "1.0"    # For Axum web framework
 domainstack-actix = "1.0"   # For Actix-web framework
 ```
 
-## Crates
-
-This repository contains **12 workspace members** (8 publishable crates, 4 example crates):
-
-**Core (Publishable):**
-- **[domainstack](https://crates.io/crates/domainstack)** - Core validation library with composable rules
-- **[domainstack-derive](https://crates.io/crates/domainstack-derive)** - Derive macro for `#[derive(Validate)]`
-- **[domainstack-envelope](https://crates.io/crates/domainstack-envelope)** - error-envelope integration for HTTP APIs
-- **[domainstack-schema](https://crates.io/crates/domainstack-schema)** - OpenAPI 3.0 schema generation
-
-**Framework Adapters (Publishable):**
-- **[domainstack-http](https://crates.io/crates/domainstack-http)** - Framework-agnostic HTTP helpers
-- **[domainstack-axum](https://crates.io/crates/domainstack-axum)** - Axum extractor and response implementations
-- **[domainstack-actix](https://crates.io/crates/domainstack-actix)** - Actix-web extractor and response implementations
-- **[domainstack-rocket](https://crates.io/crates/domainstack-rocket)** - Rocket request guard and response implementations
-
-**Examples (Not Published):**
-- **[domainstack-examples](https://github.com/blackwell-systems/domainstack/tree/main/domainstack/domainstack-examples)** - Core validation examples
-- **[examples-axum](https://github.com/blackwell-systems/domainstack/tree/main/domainstack/examples-axum)** - Axum booking service example
-- **[examples-actix](https://github.com/blackwell-systems/domainstack/tree/main/domainstack/examples-actix)** - Actix-web booking service example
-- **[examples-rocket](https://github.com/blackwell-systems/domainstack/tree/main/domainstack/examples-rocket)** - Rocket booking service example
-
-## Documentation
-
-### Additional Documentation
-
-- **[API Guide](https://github.com/blackwell-systems/domainstack/blob/main/docs/api-guide.md)** - Complete API documentation
-- **[Rules Reference](https://github.com/blackwell-systems/domainstack/blob/main/docs/RULES.md)** - All validation rules
-- **[Architecture](https://github.com/blackwell-systems/domainstack/blob/main/docs/architecture.md)** - System design and data flow
-- **[Examples](https://github.com/blackwell-systems/domainstack/tree/main/domainstack/domainstack-examples)** - 9 runnable examples
-- **[API Documentation](https://docs.rs/domainstack)** - Generated API reference
-- **[Publishing Guide](https://github.com/blackwell-systems/domainstack/blob/main/PUBLISHING.md)** - How to publish to crates.io
-- **[Coverage Guide](https://github.com/blackwell-systems/domainstack/blob/main/COVERAGE.md)** - Running coverage locally
-
 ## Key Features
 
 ### Core Capabilities
@@ -817,6 +783,48 @@ cargo llvm-cov --all-features --workspace --html
 ```
 
 </details>
+
+## Crates
+
+This repository contains **12 workspace members** (8 publishable crates, 4 example crates):
+
+**Core (Publishable):**
+- **[domainstack](https://crates.io/crates/domainstack)** - Core validation library with composable rules
+- **[domainstack-derive](https://crates.io/crates/domainstack-derive)** - Derive macro for `#[derive(Validate)]`
+- **[domainstack-envelope](https://crates.io/crates/domainstack-envelope)** - error-envelope integration for HTTP APIs
+- **[domainstack-schema](https://crates.io/crates/domainstack-schema)** - OpenAPI 3.0 schema generation
+
+**Framework Adapters (Publishable):**
+- **[domainstack-http](https://crates.io/crates/domainstack-http)** - Framework-agnostic HTTP helpers
+- **[domainstack-axum](https://crates.io/crates/domainstack-axum)** - Axum extractor and response implementations
+- **[domainstack-actix](https://crates.io/crates/domainstack-actix)** - Actix-web extractor and response implementations
+- **[domainstack-rocket](https://crates.io/crates/domainstack-rocket)** - Rocket request guard and response implementations
+
+**Examples (Not Published):**
+- **[domainstack-examples](https://github.com/blackwell-systems/domainstack/tree/main/domainstack/domainstack-examples)** - Core validation examples
+- **[examples-axum](https://github.com/blackwell-systems/domainstack/tree/main/domainstack/examples-axum)** - Axum booking service example
+- **[examples-actix](https://github.com/blackwell-systems/domainstack/tree/main/domainstack/examples-actix)** - Actix-web booking service example
+- **[examples-rocket](https://github.com/blackwell-systems/domainstack/tree/main/domainstack/examples-rocket)** - Rocket booking service example
+
+## 📚 Documentation
+
+### Multi-README Structure
+
+This project has **multiple README files** for different audiences:
+
+1. **[README.md](./README.md)** (this file) - GitHub visitors
+2. **[domainstack/README.md](./domainstack/README.md)** - Cargo/crates.io users
+3. **Individual crate READMEs** - Library implementers
+
+### Additional Documentation
+
+- **[API Guide](https://github.com/blackwell-systems/domainstack/blob/main/docs/api-guide.md)** - Complete API documentation
+- **[Rules Reference](https://github.com/blackwell-systems/domainstack/blob/main/docs/RULES.md)** - All validation rules
+- **[Architecture](https://github.com/blackwell-systems/domainstack/blob/main/docs/architecture.md)** - System design and data flow
+- **[Examples](https://github.com/blackwell-systems/domainstack/tree/main/domainstack/domainstack-examples)** - 9 runnable examples
+- **[API Documentation](https://docs.rs/domainstack)** - Generated API reference
+- **[Publishing Guide](https://github.com/blackwell-systems/domainstack/blob/main/PUBLISHING.md)** - How to publish to crates.io
+- **[Coverage Guide](https://github.com/blackwell-systems/domainstack/blob/main/COVERAGE.md)** - Running coverage locally
 
 ## License
 

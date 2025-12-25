@@ -88,4 +88,35 @@ mod tests {
         let err = result.unwrap_err();
         assert_eq!(err.violations[0].path.to_string(), "guest.age");
     }
+
+    #[test]
+    fn test_validate_with_index_path() {
+        let result = validate(
+            Path::root().field("items").index(0).field("value"),
+            &-5,
+            &positive_rule(),
+        );
+
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert_eq!(err.violations[0].path.to_string(), "items[0].value");
+    }
+
+    #[test]
+    fn test_validate_index_only_path() {
+        let result = validate(Path::root().index(2), &-5, &positive_rule());
+
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert_eq!(err.violations[0].path.to_string(), "[2]");
+    }
+
+    #[test]
+    fn test_validate_root_path() {
+        let result = validate(Path::root(), &-5, &positive_rule());
+
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert_eq!(err.violations[0].path.to_string(), "");
+    }
 }

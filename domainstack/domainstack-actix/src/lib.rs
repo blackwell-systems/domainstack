@@ -337,4 +337,31 @@ mod tests {
         let resp = test::call_service(&app, req).await;
         assert_eq!(resp.status(), 400);
     }
+
+    #[actix_rt::test]
+    async fn test_error_response_debug() {
+        let err = ErrorResponse(error_envelope::Error::bad_request("Test error"));
+        let debug_str = format!("{:?}", err);
+        assert!(debug_str.contains("ErrorResponse"));
+    }
+
+    #[actix_rt::test]
+    async fn test_error_response_display() {
+        let err = ErrorResponse(error_envelope::Error::bad_request("Custom message"));
+        let display_str = format!("{}", err);
+        assert_eq!(display_str, "Custom message");
+    }
+
+    #[actix_rt::test]
+    async fn test_error_response_status_code() {
+        use actix_web::ResponseError;
+
+        let err = ErrorResponse(error_envelope::Error::bad_request("Bad request"));
+        assert_eq!(err.status_code().as_u16(), 400);
+
+        let mut custom_err = error_envelope::Error::bad_request("Custom");
+        custom_err.status = 422;
+        let err = ErrorResponse(custom_err);
+        assert_eq!(err.status_code().as_u16(), 422);
+    }
 }

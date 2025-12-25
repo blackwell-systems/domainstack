@@ -380,4 +380,65 @@ mod tests {
 
         assert_eq!(result1.is_empty(), result2.is_empty());
     }
+
+    #[test]
+    fn test_rule_code_customization() {
+        let rule = positive_rule().code("custom_code");
+
+        let result = rule.apply(&-5);
+        assert_eq!(result.violations.len(), 1);
+        assert_eq!(result.violations[0].code, "custom_code");
+    }
+
+    #[test]
+    fn test_rule_message_customization() {
+        let rule = positive_rule().message("Custom error message");
+
+        let result = rule.apply(&-5);
+        assert_eq!(result.violations.len(), 1);
+        assert_eq!(result.violations[0].message, "Custom error message");
+    }
+
+    #[test]
+    fn test_rule_meta_customization() {
+        let rule = positive_rule().meta("hint", "Try a positive number");
+
+        let result = rule.apply(&-5);
+        assert_eq!(result.violations.len(), 1);
+        assert_eq!(
+            result.violations[0].meta.get("hint"),
+            Some("Try a positive number")
+        );
+    }
+
+    #[test]
+    fn test_rule_apply_with_context() {
+        let rule = positive_rule();
+        let ctx = RuleContext::root("age");
+
+        let result = rule.apply_with_context(&-5, &ctx);
+        assert_eq!(result.violations.len(), 1);
+        assert_eq!(result.violations[0].path.to_string(), "age");
+    }
+
+    #[test]
+    fn test_rule_map_path_with_valid_value() {
+        let rule = positive_rule().map_path("field");
+
+        let result = rule.apply(&5);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_rule_chaining_customizations() {
+        let rule = positive_rule()
+            .code("custom")
+            .message("Custom msg")
+            .meta("hint", "Use positive");
+
+        let result = rule.apply(&-5);
+        assert_eq!(result.violations[0].code, "custom");
+        assert_eq!(result.violations[0].message, "Custom msg");
+        assert_eq!(result.violations[0].meta.get("hint"), Some("Use positive"));
+    }
 }

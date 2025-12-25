@@ -323,4 +323,22 @@ mod tests {
 
         response.assert_status_bad_request();
     }
+
+    #[tokio::test]
+    async fn test_error_response_into_response() {
+        let err = ErrorResponse(error_envelope::Error::bad_request("Test error"));
+        let response = err.into_response();
+        assert_eq!(response.status(), axum::http::StatusCode::BAD_REQUEST);
+    }
+
+    #[tokio::test]
+    async fn test_error_response_custom_status() {
+        let mut err = error_envelope::Error::bad_request("Test");
+        err.status = 422;
+        let response = ErrorResponse(err).into_response();
+        assert_eq!(
+            response.status(),
+            axum::http::StatusCode::UNPROCESSABLE_ENTITY
+        );
+    }
 }

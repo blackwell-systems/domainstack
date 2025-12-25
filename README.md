@@ -21,9 +21,11 @@ domainstack asks: **"How do I safely construct domain models from untrusted inpu
 
 ### Two validation gates
 
-**Gate 1: DTO → Domain** (untrusted → trusted) — Parse + validate incoming data into domain types
+**Gate 1: Serde** (decode + shape) — JSON → DTO. Fails on invalid JSON, type mismatches, missing required fields.
 
-**Gate 2: Async/context validation** (optional) — After Gate 1 succeeds, run DB/API checks like uniqueness, rate limits, authorization
+**Gate 2: Domain** (semantic validation) — DTO → Domain with business rules. Produces structured field-level errors your APIs depend on.
+
+After domain validation succeeds, you can optionally run **async/context validation** (DB/API checks like uniqueness, rate limits, authorization) as a second phase.
 
 ## What that gives you
 

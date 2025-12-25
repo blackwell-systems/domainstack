@@ -26,58 +26,24 @@
 //!
 //! ```rust
 //! use domainstack::prelude::*;
-//! use domainstack::Validate;
 //!
-//! // Domain models with validation rules (invalid states impossible)
-//! #[derive(Debug, Validate)]
-//! #[validate(
-//!     check = "self.check_in < self.check_out",
-//!     message = "Check-out must be after check-in"
-//! )]
-//! struct Booking {
-//!     #[validate(email, max_len = 255)]
-//!     guest_email: String,
+//! // Validate a username with composable rules
+//! let username = "alice";
+//! let rule = rules::min_len(3).and(rules::max_len(20));
 //!
-//!     check_in: u32,  // Unix timestamp for example
-//!     check_out: u32,
-//!
-//!     #[validate(min_items = 1, max_items = 5)]
-//!     #[validate(each(nested))]
-//!     rooms: Vec<Room>,
-//! }
-//!
-//! #[derive(Debug, Validate)]
-//! struct Room {
-//!     #[validate(range(min = 1, max = 4))]
-//!     adults: u8,
-//!
-//!     #[validate(range(min = 0, max = 3))]
-//!     children: u8,
-//! }
-//!
-//! // Build your booking
-//! let booking = Booking {
-//!     guest_email: "guest@example.com".to_string(),
-//!     check_in: 1704067200,
-//!     check_out: 1704153600,
-//!     rooms: vec![
-//!         Room { adults: 2, children: 1 },
-//!         Room { adults: 5, children: 0 },  // Invalid: too many adults!
-//!     ],
-//! };
-//!
-//! // Validate all fields + cross-field rules in one call
-//! match booking.validate() {
-//!     Ok(_) => println!("Booking valid"),
+//! match validate("username", username, &rule) {
+//!     Ok(_) => println!("Username is valid!"),
 //!     Err(e) => {
-//!         // Structured errors with precise paths:
-//!         // [rooms[1].adults] out_of_range - Must be between 1 and 4
 //!         for v in &e.violations {
 //!             println!("[{}] {} - {}", v.path, v.code, v.message);
 //!         }
 //!     }
 //! }
 //! ```
+//!
+//! For more complex examples with `#[derive(Validate)]`, cross-field validation, and nested types,
+//! see the [examples directory](https://github.com/blackwell-systems/domainstack/tree/main/domainstack/domainstack-examples)
+//! or check out the [booking system example](https://github.com/blackwell-systems/domainstack#quick-start) in the README.
 //!
 //! With framework adapters (Axum/Actix/Rocket), this becomes a one-line extraction:
 //! `DomainJson<Booking, BookingDto>` automatically deserializes, validates, and converts DTOs

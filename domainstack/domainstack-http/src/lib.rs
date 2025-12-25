@@ -1,3 +1,61 @@
+//! # domainstack-http
+//!
+//! Framework-agnostic HTTP validation helpers for domainstack.
+//!
+//! This crate provides reusable helper functions for converting DTOs to domain types and
+//! validating DTOs, with automatic conversion to RFC 9457 error responses.
+//!
+//! ## What it provides
+//!
+//! - **`into_domain<T, Dto>(dto)`** - Convert DTO to domain type via `TryFrom`, return envelope error on failure
+//! - **`validate_dto<Dto>(dto)`** - Validate a DTO and return it, or return envelope error on failure
+//!
+//! These functions are used internally by framework adapters (`domainstack-axum`, `domainstack-actix`, `domainstack-rocket`)
+//! but can also be used directly in custom extractors or handlers.
+//!
+//! ## Example - `into_domain`
+//!
+//! ```rust
+//! use domainstack::prelude::*;
+//! use domainstack_http::into_domain;
+//!
+//! struct User { name: String, age: u8 }
+//!
+//! struct UserDto { name: String, age: u8 }
+//!
+//! impl TryFrom<UserDto> for User {
+//!     type Error = domainstack::ValidationError;
+//!
+//!     fn try_from(dto: UserDto) -> Result<Self, Self::Error> {
+//!         validate("name", dto.name.as_str(), &rules::min_len(2))?;
+//!         validate("age", &dto.age, &rules::range(18, 120))?;
+//!         Ok(Self { name: dto.name, age: dto.age })
+//!     }
+//! }
+//!
+//! let dto = UserDto { name: "Alice".to_string(), age: 30 };
+//! let user = into_domain::<User, UserDto>(dto).expect("Valid user");
+//! ```
+//!
+//! ## Example - `validate_dto`
+//!
+//! ```rust
+//! use domainstack::Validate;
+//! use domainstack_http::validate_dto;
+//!
+//! #[derive(Validate)]
+//! struct UserDto {
+//!     #[validate(length(min = 2, max = 50))]
+//!     name: String,
+//!
+//!     #[validate(range(min = 18, max = 120))]
+//!     age: u8,
+//! }
+//!
+//! let dto = UserDto { name: "Alice".to_string(), age: 30 };
+//! let validated = validate_dto(dto).expect("Valid DTO");
+//! ```
+
 use domainstack::{Validate, ValidationError};
 use domainstack_envelope::IntoEnvelopeError;
 

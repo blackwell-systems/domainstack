@@ -1,3 +1,76 @@
+//! # domainstack-derive
+//!
+//! Derive macros for domainstack validation and schema generation.
+//!
+//! ## Provided Macros
+//!
+//! - **`#[derive(Validate)]`** - Automatic validation implementation with `#[validate(...)]` attributes
+//! - **`#[derive(ToSchema)]`** - OpenAPI 3.0 schema generation from validation rules
+//! - **`#[derive(ValidateOnDeserialize)]`** - Validate automatically during serde deserialization (requires `serde` feature)
+//!
+//! ## `#[derive(Validate)]`
+//!
+//! Generates a `Validate` trait implementation that validates all fields with `#[validate(...)]` attributes.
+//!
+//! ```rust
+//! use domainstack::Validate;
+//!
+//! #[derive(Debug, Validate)]
+//! struct User {
+//!     #[validate(length(min = 2, max = 50))]
+//!     name: String,
+//!
+//!     #[validate(range(min = 18, max = 120))]
+//!     age: u8,
+//! }
+//!
+//! let user = User { name: "Alice".to_string(), age: 30 };
+//! assert!(user.validate().is_ok());
+//! ```
+//!
+//! ## `#[derive(ToSchema)]`
+//!
+//! Generates a `ToSchema` trait implementation that produces OpenAPI 3.0 schemas from validation rules.
+//!
+//! ```rust,ignore
+//! use domainstack_derive::{Validate, ToSchema};
+//!
+//! #[derive(Validate, ToSchema)]
+//! struct User {
+//!     #[validate(email)]
+//!     #[validate(max_len = 255)]
+//!     email: String,
+//!
+//!     #[validate(range(min = 18, max = 120))]
+//!     age: u8,
+//! }
+//!
+//! let schema = User::schema();
+//! // → email: { type: "string", format: "email", maxLength: 255 }
+//! // → age: { type: "integer", minimum: 18, maximum: 120 }
+//! ```
+//!
+//! ## `#[derive(ValidateOnDeserialize)]`
+//!
+//! Validates during serde deserialization, returning validation errors instead of serde errors.
+//!
+//! ```rust,ignore
+//! use domainstack_derive::ValidateOnDeserialize;
+//!
+//! #[derive(ValidateOnDeserialize)]
+//! struct User {
+//!     #[validate(email)]
+//!     email: String,
+//!
+//!     #[validate(range(min = 18, max = 120))]
+//!     age: u8,
+//! }
+//!
+//! // Validation happens automatically during deserialization
+//! let user: User = serde_json::from_str(r#"{"email": "alice@example.com", "age": 30}"#)?;
+//! // ↑ If this succeeds, user is guaranteed valid!
+//! ```
+
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, Attribute, Data, DeriveInput, Expr, Field, Fields, Lit, Meta};

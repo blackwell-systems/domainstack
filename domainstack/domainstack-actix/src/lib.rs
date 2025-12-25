@@ -1,3 +1,108 @@
+//! # domainstack-actix
+//!
+//! Actix-web integration for domainstack validation with automatic DTO→Domain conversion.
+//!
+//! This crate provides Actix-web extractors that automatically deserialize, validate, and convert
+//! DTOs to domain types—returning structured RFC 9457 error responses on validation failure.
+//!
+//! ## What it provides
+//!
+//! - **`DomainJson<T, Dto>`** - Extract JSON, validate, and convert DTO to domain type in one step
+//! - **`ValidatedJson<Dto>`** - Extract and validate a DTO without domain conversion
+//! - **`ErrorResponse`** - Automatic RFC 9457 compliant error responses with field-level details
+//!
+//! ## Example - DomainJson
+//!
+//! ```rust,no_run
+//! use actix_web::{post, web, App, HttpServer};
+//! use domainstack::prelude::*;
+//! use domainstack_actix::{DomainJson, ErrorResponse};
+//! use serde::Deserialize;
+//!
+//! #[derive(Deserialize)]
+//! struct CreateUserDto {
+//!     name: String,
+//!     age: u8,
+//! }
+//!
+//! struct User {
+//!     name: String,
+//!     age: u8,
+//! }
+//!
+//! impl TryFrom<CreateUserDto> for User {
+//!     type Error = domainstack::ValidationError;
+//!
+//!     fn try_from(dto: CreateUserDto) -> Result<Self, Self::Error> {
+//!         validate("name", dto.name.as_str(), &rules::min_len(2).and(rules::max_len(50)))?;
+//!         validate("age", &dto.age, &rules::range(18, 120))?;
+//!         Ok(Self { name: dto.name, age: dto.age })
+//!     }
+//! }
+//!
+//! // Type alias for cleaner handler signatures
+//! type UserJson = DomainJson<User, CreateUserDto>;
+//!
+//! #[post("/users")]
+//! async fn create_user(
+//!     UserJson { domain: user, .. }: UserJson
+//! ) -> Result<web::Json<String>, ErrorResponse> {
+//!     // user is guaranteed valid here!
+//!     Ok(web::Json(format!("Created: {}", user.name)))
+//! }
+//!
+//! #[actix_web::main]
+//! async fn main() -> std::io::Result<()> {
+//!     HttpServer::new(|| App::new().service(create_user))
+//!         .bind(("127.0.0.1", 8080))?
+//!         .run()
+//!         .await
+//! }
+//! ```
+//!
+//! ## Example - ValidatedJson
+//!
+//! ```rust,ignore
+//! use actix_web::{post, web};
+//! use domainstack::Validate;
+//! use domainstack_actix::{ValidatedJson, ErrorResponse};
+//!
+//! #[derive(Debug, Validate, serde::Deserialize)]
+//! struct UserDto {
+//!     #[validate(length(min = 2, max = 50))]
+//!     name: String,
+//!
+//!     #[validate(range(min = 18, max = 120))]
+//!     age: u8,
+//! }
+//!
+//! #[post("/users")]
+//! async fn create_user(
+//!     ValidatedJson(dto): ValidatedJson<UserDto>
+//! ) -> Result<web::Json<UserDto>, ErrorResponse> {
+//!     // dto is guaranteed valid here!
+//!     Ok(web::Json(dto))
+//! }
+//! ```
+//!
+//! ## Error Response Format
+//!
+//! On validation failure, returns a 400 Bad Request with structured errors:
+//!
+//! ```json
+//! {
+//!   "code": "VALIDATION",
+//!   "status": 400,
+//!   "message": "Validation failed with 2 errors",
+//!   "details": {
+//!     "fields": {
+//!       "name": [{"code": "min_length", "message": "Must be at least 2 characters"}],
+//!       "age": [{"code": "out_of_range", "message": "Must be between 18 and 120"}]
+//!     }
+//!   }
+//! }
+//! ```
+
 use actix_web::{error::ResponseError, web, FromRequest, HttpRequest, HttpResponse};
 use domainstack::ValidationError;
 use futures::future::{ready, Ready};

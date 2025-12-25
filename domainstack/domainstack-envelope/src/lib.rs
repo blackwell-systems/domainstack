@@ -1,3 +1,51 @@
+//! # domainstack-envelope
+//!
+//! Convert domainstack validation errors into RFC 9457 compliant HTTP error responses.
+//!
+//! This crate provides the `IntoEnvelopeError` trait to convert `ValidationError` into
+//! `error_envelope::Error`, producing structured JSON error responses with field-level details.
+//!
+//! ## What it provides
+//!
+//! - **`IntoEnvelopeError`** trait - Convert `ValidationError` to `error_envelope::Error`
+//! - **Field-level error mapping** - Preserves error paths like `rooms[0].adults`, `guest.email`
+//! - **RFC 9457 compliance** - Standard HTTP error response format
+//! - **Metadata preservation** - Includes validation metadata (min, max, etc.) in responses
+//!
+//! ## Example
+//!
+//! ```rust
+//! use domainstack::prelude::*;
+//! use domainstack_envelope::IntoEnvelopeError;
+//!
+//! let mut err = domainstack::ValidationError::new();
+//! err.push("email", "invalid_email", "Invalid email format");
+//! err.push("age", "out_of_range", "Must be between 18 and 120");
+//!
+//! let envelope = err.into_envelope_error();
+//!
+//! // Produces RFC 9457 error:
+//! // {
+//! //   "code": "VALIDATION",
+//! //   "status": 400,
+//! //   "message": "Validation failed with 2 errors",
+//! //   "details": {
+//! //     "fields": {
+//! //       "email": [{"code": "invalid_email", "message": "Invalid email format"}],
+//! //       "age": [{"code": "out_of_range", "message": "Must be between 18 and 120"}]
+//! //     }
+//! //   }
+//! // }
+//! ```
+//!
+//! ## Integration with Web Frameworks
+//!
+//! Use with framework adapters for automatic error response handling:
+//!
+//! - **`domainstack-axum`** - Axum integration
+//! - **`domainstack-actix`** - Actix-web integration
+//! - **`domainstack-rocket`** - Rocket integration
+
 use domainstack::{ValidationError, Violation};
 use error_envelope::Error;
 

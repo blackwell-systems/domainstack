@@ -897,9 +897,10 @@ This project has **multiple README files** for different audiences:
 
 ### Additional Documentation
 
-- **[API Guide](https://github.com/blackwell-systems/domainstack/blob/main/docs/api-guide.md)** - Complete API documentation
-- **[Rules Reference](https://github.com/blackwell-systems/domainstack/blob/main/docs/RULES.md)** - All validation rules
-- **[Architecture](https://github.com/blackwell-systems/domainstack/blob/main/docs/architecture.md)** - System design and data flow
+- **[API Guide](https://github.com/blackwell-systems/domainstack/blob/main/domainstack/domainstack/docs/api-guide.md)** - Complete API documentation
+- **[Rules Reference](https://github.com/blackwell-systems/domainstack/blob/main/domainstack/domainstack/docs/RULES.md)** - All validation rules
+- **[Architecture](https://github.com/blackwell-systems/domainstack/blob/main/domainstack/domainstack/docs/architecture.md)** - System design and data flow
+- **[OpenAPI Schema Derivation](https://github.com/blackwell-systems/domainstack/blob/main/domainstack/domainstack/docs/SCHEMA_DERIVATION.md)** - OpenAPI 3.0 schema generation guide
 - **[Examples](https://github.com/blackwell-systems/domainstack/tree/main/domainstack/domainstack-examples)** - 9 runnable examples
 - **[API Documentation](https://docs.rs/domainstack)** - Generated API reference
 - **[Publishing Guide](https://github.com/blackwell-systems/domainstack/blob/main/PUBLISHING.md)** - How to publish to crates.io

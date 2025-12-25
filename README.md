@@ -897,9 +897,10 @@ This project has **multiple README files** for different audiences:
 
 ### Additional Documentation
 
-- **[API Guide](./docs/api-guide.md)** - Complete API documentation
-- **[Rules Reference](./docs/RULES.md)** - All validation rules
-- **[Architecture](./docs/architecture.md)** - System design and data flow
+- **[API Guide](./domainstack/domainstack/docs/api-guide.md)** - Complete API documentation
+- **[Rules Reference](./domainstack/domainstack/docs/RULES.md)** - All validation rules
+- **[Architecture](./domainstack/domainstack/docs/architecture.md)** - System design and data flow
+- **[OpenAPI Schema Derivation](./domainstack/domainstack/docs/SCHEMA_DERIVATION.md)** - OpenAPI 3.0 schema generation guide
 - **[Examples](./domainstack/domainstack-examples/)** - 9 runnable examples
 - **[API Documentation](https://docs.rs/domainstack)** - Generated API reference
 - **[Publishing Guide](./PUBLISHING.md)** - How to publish to crates.io

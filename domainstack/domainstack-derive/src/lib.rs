@@ -24,6 +24,151 @@ pub fn derive_to_schema(input: TokenStream) -> TokenStream {
     }
 }
 
+#[cfg(feature = "serde")]
+#[proc_macro_derive(ValidateOnDeserialize, attributes(validate, serde))]
+pub fn derive_validate_on_deserialize(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+
+    match generate_validate_on_deserialize_impl(&input) {
+        Ok(tokens) => tokens.into(),
+        Err(err) => err.to_compile_error().into(),
+    }
+}
+
+#[cfg(feature = "serde")]
+fn generate_validate_on_deserialize_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStream> {
+    let name = &input.ident;
+    let generics = &input.generics;
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+
+    // Only support structs with named fields
+    let fields = match &input.data {
+        Data::Struct(data) => match &data.fields {
+            Fields::Named(fields) => &fields.named,
+            _ => {
+                return Err(syn::Error::new_spanned(
+                    input,
+                    "#[derive(ValidateOnDeserialize)] only supports structs with named fields",
+                ))
+            }
+        },
+        _ => {
+            return Err(syn::Error::new_spanned(
+                input,
+                "#[derive(ValidateOnDeserialize)] only supports structs",
+            ))
+        }
+    };
+
+    // Parse struct-level validation checks (reuse existing function)
+    let struct_validations = parse_struct_attributes(input)?;
+
+    // Parse validation rules for each field (reuse existing function)
+    let mut field_validations = Vec::new();
+    for field in fields {
+        let field_name = field.ident.as_ref().unwrap().clone();
+        let field_type = field.ty.clone();
+        let rules = parse_field_attributes(field)?;
+
+        if !rules.is_empty() {
+            field_validations.push(FieldValidation {
+                field_name,
+                field_type,
+                rules,
+            });
+        }
+    }
+
+    // Generate validation code for each field (reuse existing function)
+    let field_validation_code = field_validations.iter().map(generate_field_validation);
+
+    // Generate validation code for struct-level checks (reuse existing function)
+    let struct_validation_code = struct_validations.iter().map(generate_struct_validation);
+
+    // Generate intermediate struct name
+    let intermediate_name = syn::Ident::new(
+        &format!("{}Intermediate", name),
+        name.span(),
+    );
+
+    // Extract field names and types
+    let field_names: Vec<_> = fields
+        .iter()
+        .map(|f| f.ident.as_ref().unwrap())
+        .collect();
+
+    let field_types: Vec<_> = fields
+        .iter()
+        .map(|f| &f.ty)
+        .collect();
+
+    // Forward serde attributes from the original struct to the intermediate struct
+    // This ensures rename, rename_all, etc. work correctly
+    let struct_serde_attrs: Vec<_> = input.attrs.iter()
+        .filter(|attr| attr.path().is_ident("serde"))
+        .collect();
+
+    // Forward serde attributes for each field
+    let field_serde_attrs: Vec<Vec<_>> = fields.iter()
+        .map(|f| f.attrs.iter()
+            .filter(|attr| attr.path().is_ident("serde"))
+            .collect())
+        .collect();
+
+    // Generate the expanded code
+    let expanded = quote! {
+        // Intermediate struct for deserialization
+        #[derive(::serde::Deserialize)]
+        #[doc(hidden)]
+        #( #struct_serde_attrs )*
+        struct #intermediate_name #generics {
+            #(
+                #( #field_serde_attrs )*
+                #field_names: #field_types,
+            )*
+        }
+
+        // Implement Deserialize for the main struct
+        impl<'de> ::serde::Deserialize<'de> for #name #ty_generics #where_clause {
+            fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+            where
+                D: ::serde::Deserializer<'de>,
+            {
+                // Phase 1: Deserialize into intermediate struct
+                let intermediate = #intermediate_name::deserialize(deserializer)?;
+
+                // Phase 2: Construct the final struct
+                let value = #name {
+                    #( #field_names: intermediate.#field_names, )*
+                };
+
+                // Phase 3: Validate using fully qualified syntax
+                <#name #ty_generics as ::domainstack::Validate>::validate(&value)
+                    .map_err(|e| ::serde::de::Error::custom(format!("Validation failed: {}", e)))?;
+
+                Ok(value)
+            }
+        }
+
+        // Generate Validate implementation with actual validation logic
+        impl #impl_generics ::domainstack::Validate for #name #ty_generics #where_clause {
+            fn validate(&self) -> Result<(), ::domainstack::ValidationError> {
+                let mut err = ::domainstack::ValidationError::default();
+
+                // Field-level validations
+                #(#field_validation_code)*
+
+                // Struct-level validations (cross-field checks)
+                #(#struct_validation_code)*
+
+                if err.is_empty() { Ok(()) } else { Err(err) }
+            }
+        }
+    };
+
+    Ok(expanded)
+}
+
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 enum ValidationRule {

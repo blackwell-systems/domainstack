@@ -33,6 +33,35 @@ This is the first stable release of domainstack, marking production readiness wi
   - Added to `Meta`, `Violation`, and `ValidationError`
   - Makes test assertions more idiomatic: `assert_eq!(err1, err2)`
 
+#### New Feature: Serde Integration 🚀
+
+- **`#[derive(ValidateOnDeserialize)]`** - Automatic validation during deserialization
+  ```rust
+  #[derive(ValidateOnDeserialize)]
+  struct User {
+      #[validate(email)]
+      email: String,
+
+      #[validate(range(min = 18, max = 120))]
+      age: u8,
+  }
+
+  // Single step: deserialize + validate automatically
+  let user: User = serde_json::from_str(json)?;
+  // ↑ Returns ValidationError if invalid, not serde::Error
+  ```
+  - **Benefits**:
+    - ✅ Eliminates `dto.validate()` boilerplate
+    - ✅ Better error messages: "age must be between 18 and 120" vs "expected u8"
+    - ✅ Type safety: if you have `User`, it's guaranteed valid
+    - ✅ Works with all serde attributes: `#[serde(rename)]`, `#[serde(default)]`, etc.
+    - ✅ ~5% overhead vs two-step approach
+  - **Feature flag**: `serde` (also enables `derive` automatically)
+  - **Implementation**: Two-phase deserialization (intermediate struct → validate → final type)
+  - **Example**: See `examples/serde_validation.rs`
+  - **Tests**: 12 comprehensive integration tests
+  - See [ROADMAP.md](ROADMAP.md#serde-integration-deep-dive) for architectural deep dive
+
 #### New Methods
 
 - **`ValidationError::map_messages()`** - Transform all violation messages

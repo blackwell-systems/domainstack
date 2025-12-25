@@ -18,6 +18,7 @@ once_cell = { workspace = true, optional = true }
 domainstack-derive = { workspace = true, optional = true }
 async-trait = { workspace = true, optional = true }
 chrono = { workspace = true, optional = true }
+serde = { workspace = true, optional = true }
 
 [features]
 default = ["std"]
@@ -26,6 +27,7 @@ regex = ["dep:regex", "dep:once_cell"]
 derive = ["domainstack-derive"]
 async = ["dep:async-trait"]
 chrono = ["dep:chrono"]
+serde = ["dep:serde", "derive", "domainstack-derive/serde"]
 
 [[example]]
 name = "booking_aggregate"
@@ -47,6 +49,10 @@ required-features = ["async"]
 name = "phantom_types"
 required-features = ["regex"]
 
+[[example]]
+name = "serde_validation"
+required-features = ["serde", "regex"]
+
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
 # Disable default features to avoid pulling in unnecessary database drivers (mysql, postgres)
@@ -55,3 +61,5 @@ sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio",
 # Pin dependencies to maintain MSRV compatibility (Rust 1.76)
 home = "=0.5.9"     # v0.5.12+ requires edition2024
 crc = "=3.2.1"      # v3.4.0+ requires Rust 1.83+
+serde_json = "1.0"
+domainstack-derive = { workspace = true, features = ["serde"] }

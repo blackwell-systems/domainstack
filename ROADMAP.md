@@ -12,6 +12,7 @@ The core library is production-ready with:
 - ✅ Async validation with context
 - ✅ Type-state validation
 - ✅ Nested validation with path tracking
+- ✅ Serde integration (validate on deserialize)
 
 ---
 
@@ -19,12 +20,12 @@ The core library is production-ready with:
 
 ### 🔥 Tier 1: High Impact, Core Extensions
 
-#### 1. Serde Integration (Validate on Deserialize)
+#### 1. Serde Integration (Validate on Deserialize) ✅
 
-**Status**: Planned
+**Status**: ✅ **Implemented in v1.0.0**
 **Impact**: 🔥🔥🔥 Very High
 **Effort**: Medium
-**RFC**: TBD
+**Feature Flag**: `serde`
 
 Automatically validate during JSON/YAML/etc. deserialization:
 

@@ -28,42 +28,60 @@
 //! use domainstack::prelude::*;
 //! use domainstack::Validate;
 //!
-//! // Derive validation for your domain types
+//! // Domain models with validation rules (invalid states impossible)
 //! #[derive(Debug, Validate)]
-//! struct User {
-//!     #[validate(length(min = 2, max = 50))]
-//!     name: String,
+//! #[validate(
+//!     check = "self.check_in < self.check_out",
+//!     message = "Check-out must be after check-in"
+//! )]
+//! struct Booking {
+//!     #[validate(email, max_len = 255)]
+//!     guest_email: String,
 //!
-//!     #[validate(range(min = 18, max = 120))]
-//!     age: u8,
+//!     check_in: u32,  // Unix timestamp for example
+//!     check_out: u32,
 //!
+//!     #[validate(min_items = 1, max_items = 5)]
 //!     #[validate(each(nested))]
-//!     emails: Vec<Email>,
+//!     rooms: Vec<Room>,
 //! }
 //!
 //! #[derive(Debug, Validate)]
-//! struct Email {
-//!     #[validate(email)]
-//!     #[validate(max_len = 255)]
-//!     value: String,
+//! struct Room {
+//!     #[validate(range(min = 1, max = 4))]
+//!     adults: u8,
+//!
+//!     #[validate(range(min = 0, max = 3))]
+//!     children: u8,
 //! }
 //!
-//! // Validation happens with one call
-//! let user = User {
-//!     name: "Alice".to_string(),
-//!     age: 30,
-//!     emails: vec![Email { value: "alice@example.com".to_string() }],
+//! // Build your booking
+//! let booking = Booking {
+//!     guest_email: "guest@example.com".to_string(),
+//!     check_in: 1704067200,
+//!     check_out: 1704153600,
+//!     rooms: vec![
+//!         Room { adults: 2, children: 1 },
+//!         Room { adults: 5, children: 0 },  // Invalid: too many adults!
+//!     ],
 //! };
 //!
-//! match user.validate() {
-//!     Ok(_) => println!("Valid!"),
+//! // Validate all fields + cross-field rules in one call
+//! match booking.validate() {
+//!     Ok(_) => println!("Booking valid"),
 //!     Err(e) => {
+//!         // Structured errors with precise paths:
+//!         // [rooms[1].adults] out_of_range - Must be between 1 and 4
 //!         for v in &e.violations {
 //!             println!("[{}] {} - {}", v.path, v.code, v.message);
 //!         }
 //!     }
 //! }
 //! ```
+//!
+//! With framework adapters (Axum/Actix/Rocket), this becomes a one-line extraction:
+//! `DomainJson<Booking, BookingDto>` automatically deserializes, validates, and converts DTOs
+//! to domain types—returning structured errors to clients on failure.
 //!
 //! ## Documentation
 //!

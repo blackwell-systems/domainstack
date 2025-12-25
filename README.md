@@ -35,78 +35,123 @@ domainstack asks: **"How do I safely construct domain models from untrusted inpu
 
 ```rust
 use domainstack::prelude::*;
-use domainstack::Validate;
-use domainstack_derive::ToSchema;
+use domainstack_derive::{Validate, ToSchema};
+use domainstack_axum::DomainJson;
+use serde::Deserialize;
 
-// Email with custom validation
-#[derive(Debug, Clone, Validate, ToSchema)]
-struct Email {
-    #[validate(length(min = 5, max = 255))]
-    value: String,
+// DTO from HTTP/JSON (untrusted input)
+#[derive(Deserialize)]
+struct BookingDto {
+    guest_email: String,
+    check_in: String,
+    check_out: String,
+    rooms: Vec<RoomDto>,
 }
 
-// Or use ValidateOnDeserialize to validate automatically during JSON parsing:
-// #[derive(ValidateOnDeserialize)] - see "Serde Integration" section below
-
-// Nested validation with automatic path prefixing
-#[derive(Debug, Validate, ToSchema)]
-struct User {
-    #[validate(length(min = 2, max = 50))]
-    name: String,
-
-    #[validate(range(min = 18, max = 120))]
-    age: u8,
-
-    #[validate(nested)]  // Validates email, errors appear as "email.value"
-    email: Email,
+#[derive(Deserialize)]
+struct RoomDto {
+    adults: u8,
+    children: u8,
 }
 
-// Collection validation with array indices
-#[derive(Debug, Validate, ToSchema)]
-struct Team {
-    #[validate(length(min = 1, max = 50))]
-    team_name: String,
+// Domain models with validation rules (invalid states impossible)
+#[derive(Validate, ToSchema)]
+#[validate(
+    check = "self.check_in < self.check_out",
+    message = "Check-out must be after check-in"
+)]
+struct Booking {
+    #[validate(email, max_len = 255)]
+    guest_email: String,
 
-    #[validate(each(nested))]  // Validates each member, errors like "members[0].name"
-    members: Vec<User>,
+    check_in: NaiveDate,
+    check_out: NaiveDate,
+
+    #[validate(min_items = 1, max_items = 5)]
+    #[validate(each(nested))]
+    rooms: Vec<Room>,
 }
 
-fn main() {
-    let team = Team {
-        team_name: "Engineering".to_string(),
-        members: vec![
-            User {
-                name: "Alice".to_string(),
-                age: 30,
-                email: Email { value: "alice@example.com".to_string() },
-            },
-            User {
-                name: "".to_string(),  // Invalid!
-                age: 200,               // Invalid!
-                email: Email { value: "bob@example.com".to_string() },
-            },
-        ],
-    };
+#[derive(Validate, ToSchema)]
+struct Room {
+    #[validate(range(min = 1, max = 4))]
+    adults: u8,
 
-    match team.validate() {
-        Ok(_) => println!("✓ Team is valid"),
-        Err(e) => {
-            println!("✗ Validation failed with {} errors:", e.violations.len());
-            for v in &e.violations {
-                println!("  [{}] {} - {}", v.path, v.code, v.message);
-            }
-            // Output:
-            //   [members[1].name] min_length - Must be at least 2 characters
-            //   [members[1].age] out_of_range - Must be between 18 and 120
-        }
+    #[validate(range(min = 0, max = 3))]
+    children: u8,
+}
+
+// TryFrom: DTO → Domain conversion with validation
+impl TryFrom<BookingDto> for Booking {
+    type Error = ValidationError;
+
+    fn try_from(dto: BookingDto) -> Result<Self, Self::Error> {
+        let booking = Self {
+            guest_email: dto.guest_email,
+            check_in: NaiveDate::parse_from_str(&dto.check_in, "%Y-%m-%d")
+                .map_err(|_| ValidationError::single("check_in", "invalid_date", "Invalid date format"))?,
+            check_out: NaiveDate::parse_from_str(&dto.check_out, "%Y-%m-%d")
+                .map_err(|_| ValidationError::single("check_out", "invalid_date", "Invalid date format"))?,
+            rooms: dto.rooms.into_iter().map(|r| Room {
+                adults: r.adults,
+                children: r.children,
+            }).collect(),
+        };
+
+        booking.validate()?;  // Validates all fields + cross-field rules!
+        Ok(booking)
     }
-
-    // Auto-generate OpenAPI schema from validation rules (zero duplication!)
-    let user_schema = User::schema();
-    // → name: { type: "string", minLength: 2, maxLength: 50 }
-    // → age: { type: "integer", minimum: 18, maximum: 120 }
-    // → email: { $ref: "#/components/schemas/Email" }
 }
+
+// Axum handler: one-line extraction with automatic validation
+type BookingJson = DomainJson<Booking, BookingDto>;
+
+async fn create_booking(
+    BookingJson { domain: booking, .. }: BookingJson
+) -> Result<Json<Booking>, ErrorResponse> {
+    // booking is GUARANTEED valid here - use with confidence!
+    save_to_db(booking).await
+}
+```
+
+**On validation failure, automatic structured errors:**
+
+```json
+{
+  "status": 400,
+  "message": "Validation failed with 3 errors",
+  "details": {
+    "fields": {
+      "guest_email": [
+        {"code": "invalid_email", "message": "Invalid email format"}
+      ],
+      "rooms[0].adults": [
+        {"code": "out_of_range", "message": "Must be between 1 and 4"}
+      ],
+      "rooms[1].children": [
+        {"code": "out_of_range", "message": "Must be between 0 and 3"}
+      ]
+    }
+  }
+}
+```
+
+**Auto-generated TypeScript/Zod from the same Rust code:**
+
+```typescript
+// Zero duplication - generated from Rust validation rules!
+export const bookingSchema = z.object({
+  guest_email: z.string().email().max(255),
+  check_in: z.string(),
+  check_out: z.string(),
+  rooms: z.array(z.object({
+    adults: z.number().min(1).max(4),
+    children: z.number().min(0).max(3)
+  })).min(1).max(5)
+}).refine(
+  (data) => data.check_in < data.check_out,
+  { message: "Check-out must be after check-in" }
+);
 ```
 
 ## Mental Model: DTOs → Domain → Business Logic

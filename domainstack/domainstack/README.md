@@ -788,11 +788,15 @@ Error paths include array indices for precise error tracking:
 
 ## Running Examples
 
+Examples are included in the repository (not published to crates.io). Clone the repo to try them:
+
 <details>
 <summary>Click to expand example commands</summary>
 
 ```bash
-cd domainstack
+# Clone the repository
+git clone https://github.com/blackwell-systems/domainstack.git
+cd domainstack/domainstack
 
 # Manual validation examples
 cargo run --example email_primitive --features regex
@@ -873,11 +877,13 @@ This repository contains **12 workspace members** (8 publishable crates, 4 examp
 - **[domainstack-actix](https://crates.io/crates/domainstack-actix)** - Actix-web extractor and response implementations
 - **[domainstack-rocket](https://crates.io/crates/domainstack-rocket)** - Rocket request guard and response implementations
 
-**Examples (Not Published):**
+**Examples (Available in Repository):**
 - **[domainstack-examples](https://github.com/blackwell-systems/domainstack/tree/main/domainstack/domainstack-examples)** - Core validation examples
 - **[examples-axum](https://github.com/blackwell-systems/domainstack/tree/main/domainstack/examples-axum)** - Axum booking service example
 - **[examples-actix](https://github.com/blackwell-systems/domainstack/tree/main/domainstack/examples-actix)** - Actix-web booking service example
 - **[examples-rocket](https://github.com/blackwell-systems/domainstack/tree/main/domainstack/examples-rocket)** - Rocket booking service example
+
+**Note:** Example crates are not published to crates.io but are included in the [GitHub repository](https://github.com/blackwell-systems/domainstack). Clone the repo to run them locally.
 
 ## 📚 Documentation
 

@@ -662,4 +662,94 @@ mod tests {
         assert!(json.contains("\"writeOnly\": true"));
         assert!(json.contains("\"readOnly\": true"));
     }
+
+    #[test]
+    fn test_string_constraints() {
+        let schema = Schema::string()
+            .min_length(5)
+            .max_length(100)
+            .pattern("^[a-z]+$");
+
+        assert_eq!(schema.min_length, Some(5));
+        assert_eq!(schema.max_length, Some(100));
+        assert_eq!(schema.pattern, Some("^[a-z]+$".to_string()));
+    }
+
+    #[test]
+    fn test_numeric_constraints() {
+        let schema = Schema::number()
+            .minimum(0.0)
+            .maximum(100.5)
+            .multiple_of(0.5);
+
+        assert_eq!(schema.minimum, Some(0.0));
+        assert_eq!(schema.maximum, Some(100.5));
+        assert_eq!(schema.multiple_of, Some(0.5));
+    }
+
+    #[test]
+    fn test_array_constraints() {
+        let schema = Schema::array(Schema::string())
+            .min_items(1)
+            .max_items(10)
+            .unique_items(true);
+
+        assert_eq!(schema.min_items, Some(1));
+        assert_eq!(schema.max_items, Some(10));
+        assert_eq!(schema.unique_items, Some(true));
+    }
+
+    #[test]
+    fn test_enum_values() {
+        let schema = Schema::string().enum_values(&["red", "green", "blue"]);
+
+        assert!(schema.r#enum.is_some());
+        let enum_vals = schema.r#enum.unwrap();
+        assert_eq!(enum_vals.len(), 3);
+    }
+
+    #[test]
+    fn test_format_and_description() {
+        let schema = Schema::string()
+            .format("email")
+            .description("User's email address");
+
+        assert_eq!(schema.format, Some("email".to_string()));
+        assert_eq!(
+            schema.description,
+            Some("User's email address".to_string())
+        );
+    }
+
+    #[test]
+    fn test_reference_schema() {
+        let schema = Schema::reference("User");
+
+        assert_eq!(schema.reference, Some("#/components/schemas/User".to_string()));
+        assert!(schema.schema_type.is_none());
+    }
+
+    #[test]
+    fn test_new_schema() {
+        let schema = Schema::new();
+
+        assert!(schema.schema_type.is_none());
+        assert!(schema.properties.is_none());
+        assert!(schema.required.is_none());
+    }
+
+    #[test]
+    fn test_boolean_schema() {
+        let schema = Schema::boolean();
+
+        assert!(matches!(schema.schema_type, Some(SchemaType::Boolean)));
+    }
+
+    #[test]
+    fn test_number_schema() {
+        let schema = Schema::number();
+
+        assert!(matches!(schema.schema_type, Some(SchemaType::Number)));
+    }
 }
+

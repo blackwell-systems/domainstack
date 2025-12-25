@@ -233,7 +233,8 @@ mod tests {
                 #tokens
             }
         };
-        let item_struct: syn::ItemStruct = syn::parse2(struct_tokens).expect("Failed to parse struct");
+        let item_struct: syn::ItemStruct =
+            syn::parse2(struct_tokens).expect("Failed to parse struct");
         let field = &item_struct.fields.iter().next().expect("No field found");
         parse_validation_attributes(&field.attrs).expect("Failed to parse validation attributes")
     }

@@ -40,8 +40,15 @@ After domain validation succeeds, you can optionally run **async/context validat
 
 ### Why domainstack over validator/garde/etc.?
 
-validator and garde focus on "Is this struct valid?"
-domainstack focuses on DTO → Domain conversion with field-level paths designed for APIs, rules as values, optional async validation with context, and adapters that map validation errors into structured HTTP responses. If you want valid-by-construction domain types with errors that map cleanly to forms and clients, domainstack is purpose-built for that.
+**validator and garde** focus on: *"Is this struct valid?"*
+
+**domainstack** focuses on:
+- DTO → Domain conversion with field-level error paths
+- Rules as composable values (`.and()`, `.or()`, `.when()`)
+- Async validation with context (DB checks, API calls)
+- Framework adapters that map errors to structured HTTP responses
+
+**If you want valid-by-construction domain types with errors that map cleanly to forms and clients, domainstack is purpose-built for that.**
 
 ## Table of Contents
 

@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.0] - 2025-01-XX
 
 ### Added
 
@@ -1209,4 +1209,5 @@ Most code uses `Path::field()` and `Path::to_string()` which work identically. N
 
 Initial release with core validation framework, derive macros, and framework adapters for Axum and Actix-web.
 
+[1.0.0]: https://github.com/blackwell-systems/domainstack/compare/v0.4.0...v1.0.0
 [0.4.0]: https://github.com/blackwell-systems/domainstack/compare/v0.3.0...v0.4.0

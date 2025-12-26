@@ -248,4 +248,154 @@ mod tests {
         let password_violations = fields["password"].as_array().expect("Should be array");
         assert_eq!(password_violations.len(), 2);
     }
+
+    #[test]
+    fn test_deeply_nested_path() {
+        let mut err = ValidationError::new();
+        err.push(
+            Path::root()
+                .field("order")
+                .field("items")
+                .index(0)
+                .field("product")
+                .field("variants")
+                .index(2)
+                .field("sku"),
+            "invalid_sku",
+            "SKU format is invalid",
+        );
+
+        let envelope = err.into_envelope_error();
+
+        let details = envelope.details.expect("Should have details");
+        let fields = details["fields"]
+            .as_object()
+            .expect("Should have fields object");
+
+        assert!(fields.contains_key("order.items[0].product.variants[2].sku"));
+    }
+
+    #[test]
+    fn test_empty_message_string() {
+        let mut err = ValidationError::new();
+        err.push("field", "error_code", "");
+
+        let envelope = err.into_envelope_error();
+
+        let details = envelope.details.expect("Should have details");
+        let violations = details["fields"]["field"]
+            .as_array()
+            .expect("Should be array");
+        assert_eq!(violations[0]["message"], "");
+    }
+
+    #[test]
+    fn test_special_characters_in_message() {
+        let mut err = ValidationError::new();
+        err.push(
+            "field",
+            "error",
+            r#"Message with "quotes", 'apostrophes', and \backslash"#,
+        );
+
+        let envelope = err.into_envelope_error();
+
+        let details = envelope.details.expect("Should have details");
+        let violations = details["fields"]["field"]
+            .as_array()
+            .expect("Should be array");
+        assert_eq!(
+            violations[0]["message"],
+            r#"Message with "quotes", 'apostrophes', and \backslash"#
+        );
+    }
+
+    #[test]
+    fn test_meta_with_special_characters() {
+        let mut err = ValidationError::new();
+        let mut violation = domainstack::Violation {
+            path: Path::from("field"),
+            code: "error",
+            message: "Error".to_string(),
+            meta: domainstack::Meta::new(),
+        };
+        violation.meta.insert("key_with:colon", "value");
+        violation.meta.insert("pattern", r"^[\w]+$");
+        err.violations.push(violation);
+
+        let envelope = err.into_envelope_error();
+
+        let details = envelope.details.expect("Should have details");
+        let violations = details["fields"]["field"]
+            .as_array()
+            .expect("Should be array");
+        let meta = violations[0]["meta"].as_object().expect("Should have meta");
+        assert_eq!(meta["key_with:colon"], "value");
+        assert_eq!(meta["pattern"], r"^[\w]+$");
+    }
+
+    #[test]
+    fn test_three_violations_message_format() {
+        let mut err = ValidationError::new();
+        err.push("a", "err", "Error A");
+        err.push("b", "err", "Error B");
+        err.push("c", "err", "Error C");
+
+        let envelope = err.into_envelope_error();
+
+        assert_eq!(envelope.message, "Validation failed with 3 errors");
+    }
+
+    #[test]
+    fn test_empty_meta_not_included() {
+        let mut err = ValidationError::new();
+        err.push("field", "error_code", "Error message");
+
+        let envelope = err.into_envelope_error();
+
+        let details = envelope.details.expect("Should have details");
+        let violations = details["fields"]["field"]
+            .as_array()
+            .expect("Should be array");
+        // Empty meta should not be present in output
+        assert!(violations[0].get("meta").is_none());
+    }
+
+    #[test]
+    fn test_large_number_of_violations() {
+        let mut err = ValidationError::new();
+        for i in 0..100 {
+            err.push(format!("field{}", i), "error", format!("Error {}", i));
+        }
+
+        let envelope = err.into_envelope_error();
+
+        assert_eq!(envelope.message, "Validation failed with 100 errors");
+        let details = envelope.details.expect("Should have details");
+        let fields = details["fields"]
+            .as_object()
+            .expect("Should have fields object");
+        assert_eq!(fields.len(), 100);
+    }
+
+    #[test]
+    fn test_root_path_violation() {
+        let mut err = ValidationError::new();
+        let violation = domainstack::Violation {
+            path: Path::root(),
+            code: "invalid_object",
+            message: "Object is invalid".to_string(),
+            meta: domainstack::Meta::new(),
+        };
+        err.violations.push(violation);
+
+        let envelope = err.into_envelope_error();
+
+        let details = envelope.details.expect("Should have details");
+        let fields = details["fields"]
+            .as_object()
+            .expect("Should have fields object");
+        // Root path should be represented as empty string
+        assert!(fields.contains_key(""));
+    }
 }

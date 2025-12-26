@@ -58,15 +58,18 @@ fn generate(args: &ZodArgs) -> Result<()> {
 
 /// Watch for file changes and regenerate
 fn watch(args: &ZodArgs) -> Result<()> {
-    println!("\n[watch] Watching for changes in: {}", args.input.display());
+    println!(
+        "\n[watch] Watching for changes in: {}",
+        args.input.display()
+    );
     println!("[watch] Press Ctrl+C to stop\n");
 
     // Create a channel to receive events
     let (tx, rx) = channel();
 
     // Create a debounced watcher with 500ms delay
-    let mut debouncer = new_debouncer(Duration::from_millis(500), tx)
-        .context("Failed to create file watcher")?;
+    let mut debouncer =
+        new_debouncer(Duration::from_millis(500), tx).context("Failed to create file watcher")?;
 
     // Watch the input directory recursively
     debouncer
@@ -79,10 +82,8 @@ fn watch(args: &ZodArgs) -> Result<()> {
         match rx.recv() {
             Ok(Ok(events)) => {
                 // Filter for .rs file changes only
-                let rust_changes: Vec<_> = events
-                    .iter()
-                    .filter(|e| is_rust_file(&e.path))
-                    .collect();
+                let rust_changes: Vec<_> =
+                    events.iter().filter(|e| is_rust_file(&e.path)).collect();
 
                 if !rust_changes.is_empty() {
                     if args.verbose {
@@ -117,7 +118,5 @@ fn watch(args: &ZodArgs) -> Result<()> {
 
 /// Check if a path is a Rust source file
 fn is_rust_file(path: &Path) -> bool {
-    path.extension()
-        .map(|ext| ext == "rs")
-        .unwrap_or(false)
+    path.extension().map(|ext| ext == "rs").unwrap_or(false)
 }

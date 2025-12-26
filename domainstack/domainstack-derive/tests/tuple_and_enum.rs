@@ -199,9 +199,9 @@ fn test_enum_struct_variant_invalid_month() {
 #[test]
 fn test_enum_struct_variant_multiple_errors() {
     let card = PaymentMethod::Card {
-        number: "123".to_string(),  // Too short
-        exp_month: 13,              // Invalid
-        exp_year: 2020,             // Too old
+        number: "123".to_string(), // Too short
+        exp_month: 13,             // Invalid
+        exp_year: 2020,            // Too old
     };
     let result = card.validate();
     assert!(result.is_err());
@@ -340,8 +340,8 @@ fn test_mixed_enum_address_valid() {
 #[test]
 fn test_mixed_enum_address_invalid() {
     let contact = ContactInfo::Address {
-        street: "".to_string(),        // Empty, fails min_len = 1
-        city: "X".to_string(),         // Too short
+        street: "".to_string(),                 // Empty, fails min_len = 1
+        city: "X".to_string(),                  // Too short
         postal_code: "12345678901".to_string(), // Too long
     };
     let result = contact.validate();

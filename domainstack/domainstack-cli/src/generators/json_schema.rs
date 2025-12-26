@@ -70,7 +70,12 @@ fn generate_base_type_schema(field_type: &FieldType) -> Value {
     match field_type {
         FieldType::String => json!({ "type": "string" }),
         FieldType::Bool => json!({ "type": "boolean" }),
-        FieldType::U8 | FieldType::U16 | FieldType::U32 | FieldType::I8 | FieldType::I16 | FieldType::I32 => {
+        FieldType::U8
+        | FieldType::U16
+        | FieldType::U32
+        | FieldType::I8
+        | FieldType::I16
+        | FieldType::I32 => {
             json!({ "type": "integer" })
         }
         FieldType::U64 | FieldType::U128 | FieldType::I64 | FieldType::I128 => {
@@ -205,7 +210,9 @@ fn apply_validation_rule(schema: &mut Value, rule: &ValidationRule, _field_type:
 
 /// Escape special regex characters
 fn regex_escape(s: &str) -> String {
-    let special_chars = ['\\', '.', '+', '*', '?', '(', ')', '[', ']', '{', '}', '^', '$', '|'];
+    let special_chars = [
+        '\\', '.', '+', '*', '?', '(', ')', '[', ']', '{', '}', '^', '$', '|',
+    ];
     let mut result = String::with_capacity(s.len() * 2);
     for c in s.chars() {
         if special_chars.contains(&c) {
@@ -281,7 +288,11 @@ mod tests {
     #[test]
     fn test_max_len_validation() {
         let mut schema = json!({ "type": "string" });
-        apply_validation_rule(&mut schema, &ValidationRule::MaxLen(100), &FieldType::String);
+        apply_validation_rule(
+            &mut schema,
+            &ValidationRule::MaxLen(100),
+            &FieldType::String,
+        );
         assert_eq!(schema["maxLength"], 100);
     }
 
@@ -329,7 +340,11 @@ mod tests {
     #[test]
     fn test_alphanumeric_validation() {
         let mut schema = json!({ "type": "string" });
-        apply_validation_rule(&mut schema, &ValidationRule::Alphanumeric, &FieldType::String);
+        apply_validation_rule(
+            &mut schema,
+            &ValidationRule::Alphanumeric,
+            &FieldType::String,
+        );
         assert_eq!(schema["pattern"], "^[a-zA-Z0-9]*$");
     }
 

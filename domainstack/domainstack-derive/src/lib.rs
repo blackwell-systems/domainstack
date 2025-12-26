@@ -368,12 +368,22 @@ fn generate_validate_impl(input: &DeriveInput) -> syn::Result<proc_macro2::Token
 
     match &input.data {
         Data::Struct(data) => match &data.fields {
-            Fields::Named(fields) => {
-                generate_named_struct_validate(name, &impl_generics, &ty_generics, where_clause, &fields.named, input)
-            }
-            Fields::Unnamed(fields) => {
-                generate_tuple_struct_validate(name, &impl_generics, &ty_generics, where_clause, &fields.unnamed, input)
-            }
+            Fields::Named(fields) => generate_named_struct_validate(
+                name,
+                &impl_generics,
+                &ty_generics,
+                where_clause,
+                &fields.named,
+                input,
+            ),
+            Fields::Unnamed(fields) => generate_tuple_struct_validate(
+                name,
+                &impl_generics,
+                &ty_generics,
+                where_clause,
+                &fields.unnamed,
+                input,
+            ),
             Fields::Unit => {
                 // Unit structs always pass validation
                 Ok(quote! {
@@ -385,15 +395,18 @@ fn generate_validate_impl(input: &DeriveInput) -> syn::Result<proc_macro2::Token
                 })
             }
         },
-        Data::Enum(data) => {
-            generate_enum_validate(name, &impl_generics, &ty_generics, where_clause, &data.variants, input)
-        }
-        Data::Union(_) => {
-            Err(syn::Error::new_spanned(
-                input,
-                "#[derive(Validate)] does not support unions",
-            ))
-        }
+        Data::Enum(data) => generate_enum_validate(
+            name,
+            &impl_generics,
+            &ty_generics,
+            where_clause,
+            &data.variants,
+            input,
+        ),
+        Data::Union(_) => Err(syn::Error::new_spanned(
+            input,
+            "#[derive(Validate)] does not support unions",
+        )),
     }
 }
 
@@ -487,7 +500,9 @@ fn generate_tuple_struct_validate(
     }
 
     // Generate validation code for each field
-    let field_validation_code = field_validations.iter().map(generate_tuple_field_validation);
+    let field_validation_code = field_validations
+        .iter()
+        .map(generate_tuple_field_validation);
 
     // Generate validation code for struct-level checks
     let struct_validation_code = struct_validations.iter().map(generate_struct_validation);
@@ -528,7 +543,9 @@ fn generate_enum_validate(
         match &variant.fields {
             Fields::Named(fields) => {
                 // Struct variant: EnumName::Variant { field1, field2, ... }
-                let field_names: Vec<_> = fields.named.iter()
+                let field_names: Vec<_> = fields
+                    .named
+                    .iter()
                     .map(|f| f.ident.as_ref().unwrap())
                     .collect();
 
@@ -540,7 +557,8 @@ fn generate_enum_validate(
                     let rules = parse_field_attributes(field)?;
 
                     for rule in rules {
-                        let validation_code = generate_enum_field_validation(field_name, &field_name_str, &rule);
+                        let validation_code =
+                            generate_enum_field_validation(field_name, &field_name_str, &rule);
                         validations.push(validation_code);
                     }
                 }
@@ -560,7 +578,9 @@ fn generate_enum_validate(
             Fields::Unnamed(fields) => {
                 // Tuple variant: EnumName::Variant(field0, field1, ...)
                 let field_bindings: Vec<_> = (0..fields.unnamed.len())
-                    .map(|i| syn::Ident::new(&format!("field_{}", i), proc_macro2::Span::call_site()))
+                    .map(|i| {
+                        syn::Ident::new(&format!("field_{}", i), proc_macro2::Span::call_site())
+                    })
                     .collect();
 
                 // Parse validation rules for each field
@@ -571,7 +591,8 @@ fn generate_enum_validate(
                     let rules = parse_field_attributes(field)?;
 
                     for rule in rules {
-                        let validation_code = generate_enum_tuple_field_validation(binding, &field_name_str, &rule);
+                        let validation_code =
+                            generate_enum_tuple_field_validation(binding, &field_name_str, &rule);
                         validations.push(validation_code);
                     }
                 }

@@ -209,39 +209,21 @@ domainstack-axum = "1.0"  # or domainstack-actix, domainstack-rocket
 domainstack-schema = "1.0"  # OpenAPI generation
 ```
 
-**Common features:**
-- `derive` - `#[derive(Validate)]` macro (recommended)
-- `regex` - Email, URL, pattern matching
-- `async` - Database/API validation
-- `chrono` - Date/time rules
-
 **For complete installation guide, feature flags, and companion crates, see [INSTALLATION.md](./domainstack/domainstack/docs/INSTALLATION.md)**
 
 ## Key Features
 
-### Core Capabilities
-
-- **37 Validation Rules** - String, numeric, collection, and date/time validation out of the box
-- **Composable Rules** - Combine with `.and()`, `.or()`, `.when()` for complex logic
+- **37 Validation Rules** - String, numeric, collection, and date/time validation → [RULES.md](./domainstack/domainstack/docs/RULES.md)
+- **Derive Macros** - `#[derive(Validate)]` for declarative validation → [DERIVE_MACRO.md](./domainstack/domainstack/docs/DERIVE_MACRO.md)
+- **Composable Rules** - `.and()`, `.or()`, `.when()` combinators for complex logic
 - **Nested Validation** - Automatic path tracking for deeply nested structures
 - **Collection Validation** - Array indices in error paths (`items[0].field`)
-- **Builder Customization** - Customize error codes, messages, and metadata
-
-**📖 [Complete Rules Reference](./domainstack/domainstack/docs/RULES.md)**
-
-### Advanced Features
-
-- **Serde Integration** - Validate during JSON/YAML deserialization with `#[derive(ValidateOnDeserialize)]`. [Learn more →](./domainstack/domainstack/docs/SERDE_INTEGRATION.md)
-
-- **Async Validation** - Database uniqueness checks, external API validation, rate limiting with `AsyncValidate` trait. [Learn more →](./domainstack/domainstack/docs/ADVANCED_PATTERNS.md#async-validation)
-
-- **Cross-Field Validation** - Password confirmation, date ranges, mutually exclusive fields with `#[validate(check = "...")]`. [Learn more →](./domainstack/domainstack/docs/DERIVE_MACRO.md#cross-field-validation)
-
-- **Type-State Validation** - Compile-time validation guarantees with phantom types. [Learn more →](./domainstack/domainstack/docs/ADVANCED_PATTERNS.md#type-state-validation)
-
-- **OpenAPI Schema Generation** - Auto-generate OpenAPI 3.0 schemas from validation rules. [Learn more →](./domainstack/domainstack/docs/OPENAPI_SCHEMA.md)
-
-- **Framework Adapters** - One-line DTO→Domain extraction for Axum, Actix-web, and Rocket. [Learn more →](./domainstack/domainstack/docs/HTTP_INTEGRATION.md)
+- **Serde Integration** - Validate during deserialization → [SERDE_INTEGRATION.md](./domainstack/domainstack/docs/SERDE_INTEGRATION.md)
+- **Async Validation** - Database/API checks with `AsyncValidate` → [ADVANCED_PATTERNS.md](./domainstack/domainstack/docs/ADVANCED_PATTERNS.md#async-validation)
+- **Cross-Field Validation** - Password confirmation, date ranges → [DERIVE_MACRO.md](./domainstack/domainstack/docs/DERIVE_MACRO.md#cross-field-validation)
+- **Type-State Validation** - Compile-time guarantees with phantom types → [ADVANCED_PATTERNS.md](./domainstack/domainstack/docs/ADVANCED_PATTERNS.md#type-state-validation)
+- **OpenAPI Schema Generation** - Auto-generate schemas from rules → [OPENAPI_SCHEMA.md](./domainstack/domainstack/docs/OPENAPI_SCHEMA.md)
+- **Framework Adapters** - Axum, Actix-web, Rocket extractors → [HTTP_INTEGRATION.md](./domainstack/domainstack/docs/HTTP_INTEGRATION.md)
 
 ## Examples
 
@@ -269,85 +251,15 @@ let user = User { username, email, age };
 user.validate()?;  // ✓ Validates all constraints
 ```
 
-**📖 [Derive Macro Guide](./domainstack/domainstack/docs/DERIVE_MACRO.md)**
-
-### Nested Validation
-
-Compose complex domain models with automatic path tracking:
-
-```rust
-#[derive(Debug, Validate)]
-struct Booking {
-    #[validate(nested)]
-    guest: Guest,
-
-    #[validate(each(nested))]
-    rooms: Vec<Room>,
-
-    #[validate(range(min = 1, max = 30))]
-    nights: u8,
-}
-
-// Errors include full paths: "rooms[0].adults", "guest.email.value"
-```
-
-### Collection Item Validation
-
-Validate each item in a collection with any validation rule:
-
-```rust
-#[derive(Debug, Validate)]
-struct BlogPost {
-    #[validate(min_len = 1)]
-    #[validate(max_len = 200)]
-    title: String,
-
-    // Validate each email in the list
-    #[validate(each(email))]
-    #[validate(min_items = 1)]
-    #[validate(max_items = 5)]
-    author_emails: Vec<String>,
-
-    // Validate each tag's length
-    #[validate(each(length(min = 1, max = 50)))]
-    tags: Vec<String>,
-
-    // Validate each URL format
-    #[validate(each(url))]
-    related_links: Vec<String>,
-
-    // Validate each keyword is alphanumeric
-    #[validate(each(alphanumeric))]
-    keywords: Vec<String>,
-}
-```
-
-Error paths include array indices for precise error tracking:
-- `author_emails[0]` - "Invalid email format"
-- `tags[2]` - "Must be at most 50 characters"
-- `related_links[1]` - "Invalid URL format"
-
-### Manual Validation (For Primitives & Fine-Grained Control)
-
-For newtype wrappers or custom logic:
-
-```rust
-use domainstack::prelude::*;
-
-struct Username(String);
-
-impl Username {
-    pub fn new(raw: String) -> Result<Self, ValidationError> {
-        let rule = rules::min_len(3)
-            .and(rules::max_len(20))
-            .and(rules::alphanumeric());
-        validate("username", raw.as_str(), &rule)?;
-        Ok(Self(raw))
-    }
-}
-```
-
-**📖 [Manual Validation Guide](./domainstack/domainstack/docs/MANUAL_VALIDATION.md)**
+See `examples/` folder for more:
+- Nested validation with path tracking
+- Collection item validation
+- Manual validation for newtypes
+- Cross-field validation
+- Async validation
+- Type-state patterns
+- OpenAPI schema generation
+- Framework integration examples
 
 ## Running Examples
 

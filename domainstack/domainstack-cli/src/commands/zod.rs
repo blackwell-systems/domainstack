@@ -10,7 +10,7 @@ pub fn run(args: ZodArgs) -> Result<()> {
     }
 
     if args.verbose {
-        println!("🔍 Parsing Rust files in: {}", args.input.display());
+        println!("Parsing Rust files in: {}", args.input.display());
     }
 
     // Parse Rust files to find types with validation rules
@@ -18,7 +18,10 @@ pub fn run(args: ZodArgs) -> Result<()> {
         .with_context(|| format!("Failed to parse directory: {}", args.input.display()))?;
 
     if args.verbose {
-        println!("[ok] Found {} types with validation rules", parsed_types.len());
+        println!(
+            "[ok] Found {} types with validation rules",
+            parsed_types.len()
+        );
     }
 
     // Generate Zod schemas

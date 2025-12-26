@@ -306,18 +306,18 @@ fn main() {
             println!("Key Features Demonstrated:");
             println!("======================\n");
 
-            println!("✓ Email validation → format: 'email'");
-            println!("✓ URL validation → format: 'uri'");
-            println!("✓ min_len/max_len → minLength/maxLength");
-            println!("✓ range(min, max) → minimum/maximum");
-            println!("✓ alphanumeric → pattern: '^[a-zA-Z0-9]*$'");
-            println!("✓ ascii → pattern: '^[\\x00-\\x7F]*$'");
-            println!("✓ min_items/max_items → minItems/maxItems");
-            println!("✓ Optional<T> → excluded from required array");
-            println!("✓ Nested types → $ref to component schema");
-            println!("✓ Vec<T> with each_nested → array with $ref items");
-            println!("✓ Vec<T> with each(rule) → array items with validation constraints");
-            println!("✓ #[schema(...)] → descriptions and examples");
+            println!("[ok] Email validation → format: 'email'");
+            println!("[ok] URL validation → format: 'uri'");
+            println!("[ok] min_len/max_len → minLength/maxLength");
+            println!("[ok] range(min, max) → minimum/maximum");
+            println!("[ok] alphanumeric → pattern: '^[a-zA-Z0-9]*$'");
+            println!("[ok] ascii → pattern: '^[\\x00-\\x7F]*$'");
+            println!("[ok] min_items/max_items → minItems/maxItems");
+            println!("[ok] Optional<T> → excluded from required array");
+            println!("[ok] Nested types → $ref to component schema");
+            println!("[ok] Vec<T> with each_nested → array with $ref items");
+            println!("[ok] Vec<T> with each(rule) → array items with validation constraints");
+            println!("[ok] #[schema(...)] → descriptions and examples");
 
             println!("\n======================");
             println!("Registered Schemas:");

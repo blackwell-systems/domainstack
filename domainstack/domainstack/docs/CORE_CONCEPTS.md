@@ -37,10 +37,10 @@ impl Email {
 
 // Usage
 let email = Email::new("user@example.com".to_string())?;
-// ✓ If this succeeds, email is GUARANTEED valid
+// [ok] If this succeeds, email is GUARANTEED valid
 
 let invalid = Email::new("not-an-email".to_string());
-// ✗ Returns ValidationError - invalid email cannot exist!
+// [error] Returns ValidationError - invalid email cannot exist!
 ```
 
 **Key benefits:**
@@ -126,10 +126,10 @@ let path = Path::root()
 
 **Type safety:**
 ```rust
-// ✓ Type-safe - compiler catches mistakes
+// [ok] Type-safe - compiler catches mistakes
 let path = Path::root().field("email");
 
-// ✗ String concat - typos become runtime bugs
+// [error] String concat - typos become runtime bugs
 let path = format!("emial");  // Oops!
 ```
 
@@ -356,7 +356,7 @@ let user = User::try_from(dto)?;  // One line - validates everything!
 
 **Without separation:**
 ```rust
-// ❌ BAD: Same type for DTO and domain
+// [x] BAD: Same type for DTO and domain
 #[derive(Deserialize, Validate)]
 pub struct User {  // Public fields - anyone can set!
     pub name: String,
@@ -375,7 +375,7 @@ let invalid_user = User {
 
 **With separation:**
 ```rust
-// ✓ GOOD: DTO at boundary, Domain inside
+// [ok] GOOD: DTO at boundary, Domain inside
 let dto = UserDto { ... };  // From JSON - untrusted
 let user = User::try_from(dto)?;  // Validates
 // ↑ If this succeeds, user is guaranteed valid
@@ -405,8 +405,8 @@ impl Email {
 }
 
 // Usage
-let email = Email::new("user@example.com".to_string())?;  // ✓ Valid
-let bad = Email::new("invalid".to_string());               // ✗ Returns error
+let email = Email::new("user@example.com".to_string())?;  // [ok] Valid
+let bad = Email::new("invalid".to_string());               // [error] Returns error
 ```
 
 ### Multi-Field Smart Constructor

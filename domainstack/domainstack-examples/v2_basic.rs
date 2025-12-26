@@ -18,8 +18,8 @@ fn main() {
         age: 30,
     };
     match user.validate() {
-        Ok(_) => println!("   ✓ User is valid: {:?}\n", user),
-        Err(e) => println!("   ✗ Validation errors:\n{}\n", e),
+        Ok(_) => println!("   [ok] User is valid: {:?}\n", user),
+        Err(e) => println!("   [error] Validation errors:\n{}\n", e),
     }
 
     println!("2. Invalid: name too long (60 chars):");
@@ -28,8 +28,8 @@ fn main() {
         age: 30,
     };
     match user.validate() {
-        Ok(_) => println!("   ✓ User is valid\n"),
-        Err(e) => println!("   ✗ Validation errors:\n{}\n", e),
+        Ok(_) => println!("   [ok] User is valid\n"),
+        Err(e) => println!("   [error] Validation errors:\n{}\n", e),
     }
 
     println!("3. Invalid: name empty:");
@@ -38,8 +38,8 @@ fn main() {
         age: 30,
     };
     match user.validate() {
-        Ok(_) => println!("   ✓ User is valid\n"),
-        Err(e) => println!("   ✗ Validation errors:\n{}\n", e),
+        Ok(_) => println!("   [ok] User is valid\n"),
+        Err(e) => println!("   [error] Validation errors:\n{}\n", e),
     }
 
     println!("4. Invalid: age below minimum (17):");
@@ -48,8 +48,8 @@ fn main() {
         age: 17,
     };
     match user.validate() {
-        Ok(_) => println!("   ✓ User is valid\n"),
-        Err(e) => println!("   ✗ Validation errors:\n{}\n", e),
+        Ok(_) => println!("   [ok] User is valid\n"),
+        Err(e) => println!("   [error] Validation errors:\n{}\n", e),
     }
 
     println!("5. Invalid: age above maximum (150):");
@@ -58,8 +58,8 @@ fn main() {
         age: 150,
     };
     match user.validate() {
-        Ok(_) => println!("   ✓ User is valid\n"),
-        Err(e) => println!("   ✗ Validation errors:\n{}\n", e),
+        Ok(_) => println!("   [ok] User is valid\n"),
+        Err(e) => println!("   [error] Validation errors:\n{}\n", e),
     }
 
     println!("6. Multiple errors (empty name + invalid age):");
@@ -68,7 +68,7 @@ fn main() {
         age: 200,
     };
     match user.validate() {
-        Ok(_) => println!("   ✓ User is valid\n"),
-        Err(e) => println!("   ✗ Validation errors:\n{}", e),
+        Ok(_) => println!("   [ok] User is valid\n"),
+        Err(e) => println!("   [error] Validation errors:\n{}", e),
     }
 }

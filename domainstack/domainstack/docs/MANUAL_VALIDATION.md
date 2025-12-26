@@ -369,16 +369,16 @@ struct User {
 ```
 
 **When derive is better:**
-- ✅ Less boilerplate (3 lines vs 15 lines)
-- ✅ Declarative and readable
-- ✅ Compile-time code generation
-- ✅ Automatic path tracking
+- Less boilerplate (3 lines vs 15 lines)
+- Declarative and readable
+- Compile-time code generation
+- Automatic path tracking
 
 **When manual is better:**
-- ✅ Custom error messages
-- ✅ Complex business logic
-- ✅ Newtype wrappers
-- ✅ Runtime-determined rules
+- Custom error messages
+- Complex business logic
+- Newtype wrappers
+- Runtime-determined rules
 
 ## Advanced Patterns
 

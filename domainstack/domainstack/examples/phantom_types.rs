@@ -200,7 +200,7 @@ fn save_to_database(user: &UserRegistration<Validated>) -> Result<i64, String> {
 
     // Simulate database insert
     let user_id = 12345; // Simulated ID
-    println!("   ✓ User saved with ID: {}\n", user_id);
+    println!("   [ok] User saved with ID: {}\n", user_id);
 
     Ok(user_id)
 }
@@ -210,7 +210,7 @@ fn save_to_database(user: &UserRegistration<Validated>) -> Result<i64, String> {
 /// The type signature ensures only validated emails can be sent.
 fn send_welcome_email(email: &Email<Validated>) {
     println!("📧 Sending welcome email to: {}", email.as_str());
-    println!("   ✓ Email sent successfully\n");
+    println!("   [ok] Email sent successfully\n");
 }
 
 /// Complete user registration workflow.
@@ -229,7 +229,7 @@ fn complete_registration(user: UserRegistration<Validated>) -> Result<(), String
 
     send_welcome_email(&email);
 
-    println!("✓ Registration complete! User ID: {}\n", user_id);
+    println!("[ok] Registration complete! User ID: {}\n", user_id);
     Ok(())
 }
 
@@ -246,14 +246,14 @@ fn main() {
     println!("Created unvalidated email: {}", email.as_str());
 
     // This would NOT compile - send_welcome_email requires Email<Validated>:
-    // send_welcome_email(&email);  // ❌ Compile error!
+    // send_welcome_email(&email);  // [x] Compile error!
 
     match email.validate() {
         Ok(validated_email) => {
-            println!("✓ Email validated successfully");
-            send_welcome_email(&validated_email); // ✅ Compiles!
+            println!("[ok] Email validated successfully");
+            send_welcome_email(&validated_email); // Compiles!
         }
-        Err(e) => println!("✗ Email validation failed: {}\n", e),
+        Err(e) => println!("[error] Email validation failed: {}\n", e),
     }
 
     // ========================================
@@ -266,9 +266,9 @@ fn main() {
     println!("Created unvalidated email: {}", invalid_email.as_str());
 
     match invalid_email.validate() {
-        Ok(_) => println!("✓ Email validated (unexpected)\n"),
+        Ok(_) => println!("[ok] Email validated (unexpected)\n"),
         Err(e) => {
-            println!("✗ Email validation failed as expected:");
+            println!("[error] Email validation failed as expected:");
             for v in &e.violations {
                 println!("   [{}] {}: {}", v.path, v.code, v.message);
             }
@@ -292,15 +292,15 @@ fn main() {
     println!("Built unvalidated user: {}", user.username());
 
     // This would NOT compile - complete_registration requires UserRegistration<Validated>:
-    // complete_registration(user);  // ❌ Compile error!
+    // complete_registration(user);  // [x] Compile error!
 
     match user.validate() {
         Ok(validated_user) => {
-            println!("✓ User validated successfully");
+            println!("[ok] User validated successfully");
             complete_registration(validated_user).unwrap();
         }
         Err(e) => {
-            println!("✗ User validation failed:");
+            println!("[error] User validation failed:");
             for v in &e.violations {
                 println!("   [{}] {}: {}", v.path, v.code, v.message);
             }
@@ -324,10 +324,10 @@ fn main() {
     println!("Built invalid user: {}", invalid_user.username());
 
     match invalid_user.validate() {
-        Ok(_) => println!("✓ User validated (unexpected)\n"),
+        Ok(_) => println!("[ok] User validated (unexpected)\n"),
         Err(e) => {
             println!(
-                "✗ User validation failed with {} errors:",
+                "[error] User validation failed with {} errors:",
                 e.violations.len()
             );
             for v in &e.violations {
@@ -351,9 +351,9 @@ fn main() {
         .build();
 
     match partial_invalid.validate() {
-        Ok(_) => println!("✓ User validated (unexpected)\n"),
+        Ok(_) => println!("[ok] User validated (unexpected)\n"),
         Err(e) => {
-            println!("✗ User validation failed:");
+            println!("[error] User validation failed:");
             for v in &e.violations {
                 println!("   [{}] {}: {}", v.path, v.code, v.message);
             }
@@ -379,7 +379,7 @@ fn main() {
         "Size of String:             {} bytes",
         std::mem::size_of::<String>()
     );
-    println!("✓ PhantomData adds ZERO bytes of overhead!\n");
+    println!("[ok] PhantomData adds ZERO bytes of overhead!\n");
 
     println!("=== Example Completed ===");
 }

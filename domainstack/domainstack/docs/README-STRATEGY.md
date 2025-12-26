@@ -108,11 +108,11 @@ Each README links to others:
 
 | Change | Root | Workspace | Core |
 |--------|------|-----------|------|
-| New feature | ✅ Yes | ✅ Yes | Maybe |
-| New crate | ✅ Yes | ✅ Yes | ❌ No |
-| API change | ❌ No | ✅ Yes | ✅ Yes |
-| New rule | ❌ No | ✅ Yes | ✅ Yes |
-| Example | Maybe | ✅ Yes | Maybe |
+| New feature | Yes | Yes | Maybe |
+| New crate | Yes | Yes | [x] No |
+| API change | [x] No | Yes | Yes |
+| New rule | [x] No | Yes | Yes |
+| Example | Maybe | Yes | Maybe |
 
 ## Target Audiences
 

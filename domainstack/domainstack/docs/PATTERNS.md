@@ -93,13 +93,13 @@ async fn create_user(Json(dto): Json<UserDto>) -> Result<Json<User>, Error> {
 
 ### Why TryFrom?
 
-**✅ Benefits:**
+**Benefits:**
 - Standard library trait - idiomatic Rust
 - Type signature enforces validation
 - Works with `?` operator
 - Self-documenting conversion
 
-**❌ Alternatives to avoid:**
+**[x] Alternatives to avoid:**
 ```rust
 // BAD: Direct construction bypasses validation
 let user = User {
@@ -195,7 +195,7 @@ impl BookingRequest {
 ### Why Private Fields Matter
 
 ```rust
-// ❌ BAD: Public fields allow invalid states
+// [x] BAD: Public fields allow invalid states
 pub struct User {
     pub email: String,  // Anyone can set this!
     pub age: u8,
@@ -208,7 +208,7 @@ user.age = 200;  // Also invalid!
 ```
 
 ```rust
-// ✅ GOOD: Private fields enforce invariants
+// GOOD: Private fields enforce invariants
 #[derive(Validate)]
 pub struct User {
     #[validate(email, max_len = 255)]

@@ -39,11 +39,11 @@ struct User {
 
 // Runtime validation works
 let user = User { email, age };
-user.validate()?;  // ✓ Validates email format, length, age range
+user.validate()?;  // [ok] Validates email format, length, age range
 
 // Schema generation works
 let schema = User::schema();
-// ✓ Automatically includes:
+// [ok] Automatically includes:
 //   - email: format="email", maxLength=255
 //   - age: minimum=18, maximum=120
 //   - required=["email", "age"]
@@ -78,10 +78,10 @@ struct CreateUser {
     name: String,
 }
 
-// ✓ Runtime validation works automatically
+// [ok] Runtime validation works automatically
 let user = CreateUser::new(email, age, name)?;  // Validates all rules
 
-// ✓ Schema generation works automatically
+// [ok] Schema generation works automatically
 let schema = CreateUser::schema();  // Includes all constraints
 ```
 
@@ -117,11 +117,11 @@ let schema = CreateUser::schema();  // Includes all constraints
 ```
 
 **Benefits:**
-- ✅ Write validation rules **once**
-- ✅ Schema **always matches** validation
-- ✅ Less boilerplate
-- ✅ Single source of truth
-- ✅ Impossible for docs to drift from validation
+- Write validation rules **once**
+- Schema **always matches** validation
+- Less boilerplate
+- Single source of truth
+- Impossible for docs to drift from validation
 
 ## Rule Mapping Reference
 

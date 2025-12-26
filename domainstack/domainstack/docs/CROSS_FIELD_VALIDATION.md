@@ -84,14 +84,14 @@ let booking = EventBooking {
     end_date: Utc::now() + Duration::days(30),
     event_name: "Conference".to_string(),
 };
-booking.validate()?;  // ✓ Valid
+booking.validate()?;  // [ok] Valid
 
 let invalid = EventBooking {
     start_date: Utc::now() + Duration::days(30),
     end_date: Utc::now() + Duration::days(1),  // Before start!
     event_name: "Conference".to_string(),
 };
-invalid.validate()?;  // ✗ Error: invalid_date_range
+invalid.validate()?;  // [error] Error: invalid_date_range
 ```
 
 ### Password Confirmation
@@ -115,13 +115,13 @@ let change = PasswordChange {
     password: "SecureP@ss123".to_string(),
     password_confirmation: "SecureP@ss123".to_string(),
 };
-change.validate()?;  // ✓ Valid
+change.validate()?;  // [ok] Valid
 
 let mismatch = PasswordChange {
     password: "SecureP@ss123".to_string(),
     password_confirmation: "DifferentPass".to_string(),
 };
-mismatch.validate()?;  // ✗ Error: password_mismatch
+mismatch.validate()?;  // [error] Error: password_mismatch
 ```
 
 ### Multiple Cross-Field Rules
@@ -389,14 +389,14 @@ let order = FlexibleOrder {
     minimum_order: 100.0,
     requires_minimum: false,  // Condition is false, validation skipped
 };
-order.validate()?;  // ✓ Valid - condition not met
+order.validate()?;  // [ok] Valid - condition not met
 
 let required = FlexibleOrder {
     total: 50.0,
     minimum_order: 100.0,
     requires_minimum: true,  // Condition is true, validation runs
 };
-required.validate()?;  // ✗ Error: below_minimum
+required.validate()?;  // [error] Error: below_minimum
 ```
 
 ### Multiple Conditional Rules
@@ -584,14 +584,14 @@ if self.min_value > self.max_value {
 ### 1. Use Derive for Simple Comparisons
 
 ```rust
-// ✅ GOOD: Simple comparison in derive
+// GOOD: Simple comparison in derive
 #[validate(
     check = "self.end > self.start",
     code = "invalid_range",
     message = "End must be after start"
 )]
 
-// ❌ BAD: Complex logic in derive (hard to read/debug)
+// [x] BAD: Complex logic in derive (hard to read/debug)
 #[validate(
     check = "self.items.iter().map(|i| i.price).sum::<f64>() == self.total",
     ...
@@ -601,7 +601,7 @@ if self.min_value > self.max_value {
 ### 2. Use Manual for Calculations
 
 ```rust
-// ✅ GOOD: Complex logic in manual implementation
+// GOOD: Complex logic in manual implementation
 impl Validate for Order {
     fn validate(&self) -> Result<(), ValidationError> {
         let calculated_total: f64 = self.items.iter().map(|i| i.price).sum();
@@ -615,26 +615,26 @@ impl Validate for Order {
 ### 3. Include Context in Error Messages
 
 ```rust
-// ✅ GOOD: Specific, actionable message
+// GOOD: Specific, actionable message
 err.push(
     "end_date",
     "duration_too_short",
     format!("Stay of {} nights is below minimum of 2 nights", nights)
 );
 
-// ❌ BAD: Generic message
+// [x] BAD: Generic message
 err.push("end_date", "invalid", "Invalid date");
 ```
 
 ### 4. Choose Meaningful Error Codes
 
 ```rust
-// ✅ GOOD: Specific, machine-readable codes
+// GOOD: Specific, machine-readable codes
 err.push("password_confirmation", "password_mismatch", ...);
 err.push("end_date", "before_start_date", ...);
 err.push("discount", "exceeds_maximum_percent", ...);
 
-// ❌ BAD: Generic codes
+// [x] BAD: Generic codes
 err.push("password_confirmation", "invalid", ...);
 err.push("end_date", "error", ...);
 ```

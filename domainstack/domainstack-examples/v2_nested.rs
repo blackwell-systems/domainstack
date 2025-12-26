@@ -38,8 +38,8 @@ fn main() {
         guests_count: 2,
     };
     match booking.validate() {
-        Ok(_) => println!("   ✓ Booking is valid: {:?}\n", booking),
-        Err(e) => println!("   ✗ Validation errors:\n{}\n", e),
+        Ok(_) => println!("   [ok] Booking is valid: {:?}\n", booking),
+        Err(e) => println!("   [error] Validation errors:\n{}\n", e),
     }
 
     println!("2. Invalid: email value is empty (nested error):");
@@ -53,9 +53,9 @@ fn main() {
         guests_count: 2,
     };
     match booking.validate() {
-        Ok(_) => println!("   ✓ Booking is valid\n"),
+        Ok(_) => println!("   [ok] Booking is valid\n"),
         Err(e) => {
-            println!("   ✗ Validation errors:\n{}", e);
+            println!("   [error] Validation errors:\n{}", e);
             println!(
                 "   Note: Error path is 'guest.email.value' - nested structure is preserved!\n"
             );
@@ -73,9 +73,9 @@ fn main() {
         guests_count: 15,
     };
     match booking.validate() {
-        Ok(_) => println!("   ✓ Booking is valid\n"),
+        Ok(_) => println!("   [ok] Booking is valid\n"),
         Err(e) => {
-            println!("   ✗ Validation errors:\n{}", e);
+            println!("   [error] Validation errors:\n{}", e);
             println!("   Note: All three error paths are preserved:");
             println!("     - guest.name");
             println!("     - guest.email.value");

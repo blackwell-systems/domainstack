@@ -93,9 +93,9 @@ fn main() {
     };
 
     match team.validate() {
-        Ok(_) => println!("✓ Team is valid"),
+        Ok(_) => println!("[ok] Team is valid"),
         Err(e) => {
-            println!("✗ Validation failed with {} errors:", e.violations.len());
+            println!("[error] Validation failed with {} errors:", e.violations.len());
             for v in &e.violations {
                 println!("  [{}] {} - {}", v.path, v.code, v.message);
             }
@@ -530,7 +530,7 @@ serde = { version = "1", features = ["derive"] }
 
 ### Advanced Features
 
-#### Serde Integration - Validate on Deserialize ⚡
+#### Serde Integration - Validate on Deserialize 
 
 **NEW!** Automatically validate during JSON/YAML deserialization with a single derive:
 
@@ -553,10 +553,10 @@ let user: User = serde_json::from_str(json)?;
 ```
 
 **Benefits:**
-- ✅ **Single step** - No separate `.validate()` call needed
-- ✅ **Better errors** - "age must be between 18 and 120" vs "expected u8"
-- ✅ **Type safety** - If you have `User`, it's guaranteed valid
-- ✅ **Serde compatible** - Works with `#[serde(rename)]`, `#[serde(default)]`, etc.
+- **Single step** - No separate `.validate()` call needed
+- **Better errors** - "age must be between 18 and 120" vs "expected u8"
+- **Type safety** - If you have `User`, it's guaranteed valid
+- **Serde compatible** - Works with `#[serde(rename)]`, `#[serde(default)]`, etc.
 
 **Use cases:** API request parsing, configuration file loading, message queue consumers, CLI argument validation.
 
@@ -804,7 +804,7 @@ struct User {
 
 // Validate all fields at once
 let user = User { username, email, age };
-user.validate()?;  // ✓ Validates all constraints
+user.validate()?;  // [ok] Validates all constraints
 ```
 
 ### Nested Validation

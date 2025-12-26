@@ -101,7 +101,7 @@ fn send_newsletter(email: Email<Validated>) {
 }
 
 let email = Email::new("user@example.com").validate()?;
-send_newsletter(email);  // ✅ Compiles!
+send_newsletter(email);  // Compiles!
 ```
 
 **Key patterns:**

@@ -251,7 +251,7 @@ struct User {
 
 // Validate all fields at once
 let user = User { username, email, age };
-user.validate()?;  // ✓ Validates all constraints
+user.validate()?;  // [ok] Validates all constraints
 ```
 
 See `examples/` folder for more:

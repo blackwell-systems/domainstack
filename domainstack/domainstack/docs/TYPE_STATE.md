@@ -37,7 +37,7 @@ let raw = Email::new("user@example.com".to_string());
 
 // Must validate first
 let validated = raw.validate()?;
-send_newsletter(validated);  // ✅ Compiles!
+send_newsletter(validated);  // Compiles!
 ```
 
 ## Why Type-State?
@@ -174,14 +174,14 @@ impl<State> Email<State> {
 let raw = Email::new("user@example.com".to_string());
 
 // Cannot access value yet!
-// raw.as_str();  // ❌ Compile error - method not available
+// raw.as_str();  // [x] Compile error - method not available
 
 // Validate and get validated email
 let email = raw.validate()?;
 
 // Now we can access value
-println!("Email: {}", email.as_str());  // ✅ Works!
-println!("Domain: {}", email.domain());  // ✅ Works!
+println!("Email: {}", email.as_str());  // Works!
+println!("Domain: {}", email.domain());  // Works!
 
 // Function that requires validated email
 fn send_email(email: Email<Validated>) {
@@ -189,7 +189,7 @@ fn send_email(email: Email<Validated>) {
     smtp.send(&email.as_str());
 }
 
-send_email(email);  // ✅ Compiles!
+send_email(email);  // Compiles!
 ```
 
 ## Multi-Field Type-State
@@ -381,7 +381,7 @@ let user = UserBuilder::new()
     .build()?           // Returns UserBuilder<Validated>
     .into_user();       // Returns User<Validated>
 
-insert_user(&db, user).await?;  // ✅ Type-safe!
+insert_user(&db, user).await?;  // Type-safe!
 ```
 
 ## Database Operations
@@ -433,11 +433,11 @@ let user = User::new(
 );
 
 // Cannot insert unvalidated user!
-// repo.insert(user).await?;  // ❌ Compile error
+// repo.insert(user).await?;  // [x] Compile error
 
 // Must validate first
 let validated = user.validate()?;
-repo.insert(validated).await?;  // ✅ Compiles!
+repo.insert(validated).await?;  // Compiles!
 ```
 
 ## Workflow States
@@ -527,12 +527,12 @@ impl Document<Approved> {
 let doc = Document::new("My Article".to_string(), content);
 
 // Cannot publish draft!
-// doc.publish();  // ❌ Compile error - method doesn't exist
+// doc.publish();  // [x] Compile error - method doesn't exist
 
 // Must go through workflow
 let submitted = doc.submit()?;
 let approved = submitted.approve(&admin);
-approved.publish()?;  // ✅ Only works for approved documents
+approved.publish()?;  // Only works for approved documents
 ```
 
 ## Performance
@@ -614,7 +614,7 @@ Need compile-time guarantees? ──────┐
 ### 1. Default to Unvalidated
 
 ```rust
-// ✅ GOOD: Default is Unvalidated
+// GOOD: Default is Unvalidated
 pub struct Email<State = Unvalidated> { ... }
 
 let email = Email::new(value);  // Email<Unvalidated>
@@ -623,22 +623,22 @@ let email = Email::new(value);  // Email<Unvalidated>
 ### 2. Consume Self in Validation
 
 ```rust
-// ✅ GOOD: Takes ownership, returns new type
+// GOOD: Takes ownership, returns new type
 pub fn validate(self) -> Result<Email<Validated>, ValidationError> { ... }
 
-// ❌ BAD: Doesn't enforce transition
+// [x] BAD: Doesn't enforce transition
 pub fn validate(&self) -> Result<(), ValidationError> { ... }
 ```
 
 ### 3. Restrict Methods by State
 
 ```rust
-// ✅ GOOD: as_str only available after validation
+// GOOD: as_str only available after validation
 impl Email<Validated> {
     pub fn as_str(&self) -> &str { ... }
 }
 
-// ❌ BAD: Allows access to potentially invalid value
+// [x] BAD: Allows access to potentially invalid value
 impl<S> Email<S> {
     pub fn as_str(&self) -> &str { ... }
 }

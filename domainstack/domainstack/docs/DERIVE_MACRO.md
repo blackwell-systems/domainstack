@@ -32,7 +32,7 @@ struct User {
 
 // Validate automatically
 let user = User { name: "Alice".to_string(), age: 25 };
-user.validate()?;  // ✓ Valid
+user.validate()?;  // [ok] Valid
 ```
 
 ## Basic Attributes
@@ -315,13 +315,13 @@ let range = DateRange {
     start_date: Utc::now() + Duration::days(1),
     end_date: Utc::now() + Duration::days(30),
 };
-range.validate()?;  // ✓ Valid
+range.validate()?;  // [ok] Valid
 
 let invalid = DateRange {
     start_date: Utc::now() + Duration::days(30),
     end_date: Utc::now() + Duration::days(1),  // Before start!
 };
-invalid.validate()?;  // ✗ Error: invalid_date_range
+invalid.validate()?;  // [error] Error: invalid_date_range
 ```
 
 ### Multiple Cross-Field Rules
@@ -372,14 +372,14 @@ let order = FlexibleOrder {
     minimum_order: 100.0,
     requires_minimum: false,  // Validation skipped!
 };
-order.validate()?;  // ✓ Valid - condition is false
+order.validate()?;  // [ok] Valid - condition is false
 
 let required = FlexibleOrder {
     total: 50.0,
     minimum_order: 100.0,
     requires_minimum: true,  // Validation runs!
 };
-required.validate()?;  // ✗ Error: below_minimum
+required.validate()?;  // [error] Error: below_minimum
 ```
 
 ### Password Confirmation Example

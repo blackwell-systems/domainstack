@@ -435,10 +435,10 @@ async fn main() {
 
 | Feature | Axum | Actix-web | Rocket |
 |---------|------|-----------|--------|
-| **DomainJson** | ✅ | ✅ | ✅ |
-| **ValidatedJson** | ✅ | ✅ | ✅ |
-| **Automatic ErrorResponse** | ✅ | ✅ | ✅ (needs catcher) |
-| **Async Validation** | ✅ Native | ⚠️ `block_on()` | ✅ Native |
+| **DomainJson** | | | |
+| **ValidatedJson** | | | |
+| **Automatic ErrorResponse** | | | (needs catcher) |
+| **Async Validation** | Native | ⚠️ `block_on()` | Native |
 | **Setup Complexity** | Low | Low | Medium |
 | **Type Safety** | High | High | High |
 

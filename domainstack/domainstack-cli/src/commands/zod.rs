@@ -18,7 +18,7 @@ pub fn run(args: ZodArgs) -> Result<()> {
         .with_context(|| format!("Failed to parse directory: {}", args.input.display()))?;
 
     if args.verbose {
-        println!("✓ Found {} types with validation rules", parsed_types.len());
+        println!("[ok] Found {} types with validation rules", parsed_types.len());
     }
 
     // Generate Zod schemas
@@ -34,7 +34,7 @@ pub fn run(args: ZodArgs) -> Result<()> {
     fs::write(&args.output, typescript_code)
         .with_context(|| format!("Failed to write output file: {}", args.output.display()))?;
 
-    println!("✓ Generated Zod schemas: {}", args.output.display());
+    println!("[ok] Generated Zod schemas: {}", args.output.display());
     println!("  {} types processed", parsed_types.len());
 
     Ok(())

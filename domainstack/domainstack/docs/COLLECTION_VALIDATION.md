@@ -559,7 +559,7 @@ struct UploadBatch {
 ### 1. Validate Collection Before Items
 
 ```rust
-// ✅ GOOD: Collection rules first in attribute list
+// GOOD: Collection rules first in attribute list
 #[validate(min_items = 1)]  // Fail fast if empty
 #[validate(max_items = 10)]
 #[validate(each(email))]    // Then validate items
@@ -569,32 +569,32 @@ emails: Vec<String>,
 ### 2. Use Specific Error Paths
 
 ```rust
-// ✅ GOOD: Error points to exact item
+// GOOD: Error points to exact item
 err.push(
     Path::root().field("items").index(i).field("quantity"),
     "invalid_quantity",
     "Quantity must be positive"
 );
 
-// ❌ BAD: Generic path loses context
+// [x] BAD: Generic path loses context
 err.push("items", "invalid", "Invalid item");
 ```
 
 ### 3. Include Context in Messages
 
 ```rust
-// ✅ GOOD: Helpful message with limits
+// GOOD: Helpful message with limits
 #[validate(min_items = 1, message = "At least one recipient required")]
 #[validate(max_items = 100, message = "Maximum 100 recipients allowed")]
 
-// ❌ BAD: Generic message
+// [x] BAD: Generic message
 #[validate(min_items = 1)]  // "Must have at least 1 items"
 ```
 
 ### 4. Combine Related Rules
 
 ```rust
-// ✅ GOOD: All tag rules together
+// GOOD: All tag rules together
 #[validate(min_items = 1)]
 #[validate(max_items = 10)]
 #[validate(unique)]

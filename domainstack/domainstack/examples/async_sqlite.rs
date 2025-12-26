@@ -156,7 +156,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Initialize schema and data
     setup_database(&pool).await?;
-    println!("✓ Database initialized with sample users\n");
+    println!("[ok] Database initialized with sample users\n");
 
     // Create validation context with database pool
     let ctx = ValidationContext::new().with_resource("db", Arc::new(pool.clone()));
@@ -172,11 +172,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     match user1.validate_async(&ctx).await {
         Ok(()) => {
             let user_id = register_user(&pool, &user1).await?;
-            println!("✓ User registered successfully (ID: {})", user_id);
+            println!("[ok] User registered successfully (ID: {})", user_id);
             println!("  Username: {}", user1.username);
             println!("  Email: {}\n", user1.email);
         }
-        Err(e) => println!("✗ Validation failed:\n{}\n", e),
+        Err(e) => println!("[error] Validation failed:\n{}\n", e),
     }
 
     // Example 2: Username already taken
@@ -188,8 +188,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     match user2.validate_async(&ctx).await {
-        Ok(()) => println!("✓ User registered successfully\n"),
-        Err(e) => println!("✗ Validation failed:\n{}\n", e),
+        Ok(()) => println!("[ok] User registered successfully\n"),
+        Err(e) => println!("[error] Validation failed:\n{}\n", e),
     }
 
     // Example 3: Email already taken
@@ -201,8 +201,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     match user3.validate_async(&ctx).await {
-        Ok(()) => println!("✓ User registered successfully\n"),
-        Err(e) => println!("✗ Validation failed:\n{}\n", e),
+        Ok(()) => println!("[ok] User registered successfully\n"),
+        Err(e) => println!("[error] Validation failed:\n{}\n", e),
     }
 
     // Example 4: Multiple validation errors
@@ -214,8 +214,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     match user4.validate_async(&ctx).await {
-        Ok(()) => println!("✓ User registered successfully\n"),
-        Err(e) => println!("✗ Validation failed:\n{}\n", e),
+        Ok(()) => println!("[ok] User registered successfully\n"),
+        Err(e) => println!("[error] Validation failed:\n{}\n", e),
     }
 
     // Example 5: Both username and email taken
@@ -227,8 +227,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     match user5.validate_async(&ctx).await {
-        Ok(()) => println!("✓ User registered successfully\n"),
-        Err(e) => println!("✗ Validation failed:\n{}\n", e),
+        Ok(()) => println!("[ok] User registered successfully\n"),
+        Err(e) => println!("[error] Validation failed:\n{}\n", e),
     }
 
     // Show all users in database

@@ -52,9 +52,9 @@ validate("website", &user.website, &optional_url_rule)?;
 let rule = rules::min_len(10).when(|s: &String| !s.is_empty());
 
 // Validate - empty strings skip the rule
-assert!(rule.apply(&"".to_string()).is_empty());       // ✓ Skipped
-assert!(rule.apply(&"hello world".to_string()).is_empty()); // ✓ Valid
-assert!(!rule.apply(&"short".to_string()).is_empty()); // ✗ Invalid (5 < 10)
+assert!(rule.apply(&"".to_string()).is_empty());       // [ok] Skipped
+assert!(rule.apply(&"hello world".to_string()).is_empty()); // [ok] Valid
+assert!(!rule.apply(&"short".to_string()).is_empty()); // [error] Invalid (5 < 10)
 ```
 
 ### Closure Conditions
@@ -627,7 +627,7 @@ pub struct UserProfile {
 ### 1. Validate Unconditionally First
 
 ```rust
-// ✅ GOOD: Common validation first, then conditional
+// GOOD: Common validation first, then conditional
 impl Validate for Order {
     fn validate(&self) -> Result<(), ValidationError> {
         let mut err = ValidationError::new();
@@ -664,18 +664,18 @@ pub fn validate(&self) -> Result<(), ValidationError> { ... }
 ### 3. Use Descriptive Error Codes
 
 ```rust
-// ✅ GOOD: Specific codes for conditional failures
+// GOOD: Specific codes for conditional failures
 err.push("shipping_address", "required_for_physical", "Required for physical products");
 err.push("card_cvv", "required_for_card", "CVV required for card payments");
 
-// ❌ BAD: Generic codes
+// [x] BAD: Generic codes
 err.push("shipping_address", "required", "Required");
 ```
 
 ### 4. Avoid Deep Nesting
 
 ```rust
-// ❌ BAD: Deeply nested conditions
+// [x] BAD: Deeply nested conditions
 if self.is_premium {
     if self.order_type == OrderType::Express {
         if self.total > 100.0 {
@@ -684,7 +684,7 @@ if self.is_premium {
     }
 }
 
-// ✅ GOOD: Early returns or flat structure
+// GOOD: Early returns or flat structure
 if !self.is_premium || self.order_type != OrderType::Express {
     return validate_standard_order(self);
 }

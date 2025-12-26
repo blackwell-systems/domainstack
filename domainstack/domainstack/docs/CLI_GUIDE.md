@@ -96,10 +96,10 @@ pnpm add zod
 - Inconsistent error messages
 
 **The Solution:** Generate frontend schemas from backend Rust code:
-- ✅ **Single source of truth** - Change validation once, regenerate schemas
-- ✅ **Frontend/backend in sync** - Guaranteed consistency
-- ✅ **Zero maintenance** - No manual schema writing
-- ✅ **Type-safe** - Zod's type inference works automatically
+- **Single source of truth** - Change validation once, regenerate schemas
+- **Frontend/backend in sync** - Guaranteed consistency
+- **Zero maintenance** - No manual schema writing
+- **Type-safe** - Zod's type inference works automatically
 
 ### Supported Validation Rules
 
@@ -546,7 +546,7 @@ jobs:
       - name: Check for uncommitted changes
         run: |
           git diff --exit-code frontend/src/schemas.ts || \
-            (echo "❌ Schemas out of date! Run: npm run codegen" && exit 1)
+            (echo "[x] Schemas out of date! Run: npm run codegen" && exit 1)
 
       - name: Commit generated schemas
         if: github.ref == 'refs/heads/main'

@@ -191,10 +191,10 @@ Resources are stored by key and type. Mismatched types return an error:
 ```rust
 ctx.insert_resource("db", PgPool::connect(...).await?);
 
-// ✅ Correct type
+// Correct type
 let db: &PgPool = ctx.get_resource("db")?;
 
-// ❌ Wrong type - returns error
+// [x] Wrong type - returns error
 let wrong: &MySqlPool = ctx.get_resource("db")?;  // Error!
 ```
 
@@ -721,7 +721,7 @@ impl AsyncValidate for VATRegistration {
 ### 1. Run Sync Validation First
 
 ```rust
-// ✅ GOOD: Check format before hitting database
+// GOOD: Check format before hitting database
 if let Err(e) = self.validate() {
     return Err(e);  // Don't waste DB query on invalid email format
 }
@@ -735,7 +735,7 @@ if email_exists(db, &self.email).await? { ... }
 ```rust
 use futures::future::try_join3;
 
-// ✅ GOOD: Run checks in parallel
+// GOOD: Run checks in parallel
 let (email_exists, username_exists, phone_exists) = try_join3(
     check_email(db, &self.email),
     check_username(db, &self.username),
@@ -746,10 +746,10 @@ let (email_exists, username_exists, phone_exists) = try_join3(
 ### 3. Use Connection Pooling
 
 ```rust
-// ✅ GOOD: Reuse connections from pool
+// GOOD: Reuse connections from pool
 let db = ctx.get_resource::<PgPool>("db")?;
 
-// ❌ BAD: Create new connection per request
+// [x] BAD: Create new connection per request
 let conn = PgConnection::connect(&db_url).await?;
 ```
 

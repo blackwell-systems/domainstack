@@ -2,18 +2,18 @@
 
 This roadmap outlines potential future features for domainstack, ranked by impact and alignment with the library's philosophy of "write once, derive everything."
 
-## Status: v1.0.0 Released + domainstack-cli v0.1.0 ✅
+## Status: v1.0.0 Released + domainstack-cli v0.1.0 
 
 The core library is production-ready with:
-- ✅ Derive macro for validation
-- ✅ 37+ built-in validation rules
-- ✅ OpenAPI 3.0 schema generation
-- ✅ Framework adapters (Axum, Actix, Rocket)
-- ✅ Async validation with context
-- ✅ Type-state validation
-- ✅ Nested validation with path tracking
-- ✅ Serde integration (validate on deserialize)
-- ✅ **NEW:** Code generation CLI (`domainstack-cli`)
+- Derive macro for validation
+- 37+ built-in validation rules
+- OpenAPI 3.0 schema generation
+- Framework adapters (Axum, Actix, Rocket)
+- Async validation with context
+- Type-state validation
+- Nested validation with path tracking
+- Serde integration (validate on deserialize)
+- **NEW:** Code generation CLI (`domainstack-cli`)
   - TypeScript/Zod schema generation
   - 26+ validation rules supported
   - Unified CLI architecture for future generators
@@ -24,9 +24,9 @@ The core library is production-ready with:
 
 ### 🔥 Tier 1: High Impact, Core Extensions
 
-#### 1. Serde Integration (Validate on Deserialize) ✅
+#### 1. Serde Integration (Validate on Deserialize) 
 
-**Status**: ✅ **Implemented in v1.0.0**
+**Status**: **Implemented in v1.0.0**
 **Impact**: 🔥🔥🔥 Very High
 **Effort**: Medium
 **Feature Flag**: `serde`
@@ -63,9 +63,9 @@ let user: User = serde_json::from_str(json)?;
 
 ---
 
-#### 2. Code Generation CLI (TypeScript/Zod) ✅
+#### 2. Code Generation CLI (TypeScript/Zod) 
 
-**Status**: ✅ **Phase 1 Complete - v0.1.0**
+**Status**: **Phase 1 Complete - v0.1.0**
 **Impact**: 🔥🔥🔥 Very High
 **Effort**: 6 days for MVP - **COMPLETED**
 **Crate**: `domainstack-cli`
@@ -108,23 +108,23 @@ export type User = z.infer<typeof UserSchema>;
 ```
 
 **Implemented Features:**
-- ✅ Unified CLI with subcommand architecture
-- ✅ Zod schema generation with 26+ validation rules
-- ✅ All string validations (email, url, length, patterns)
-- ✅ All numeric validations (range, min/max, positive/negative)
-- ✅ Optional fields with correct `.optional()` ordering
-- ✅ Arrays and nested types
-- ✅ Custom type references
-- ✅ Precision warnings for large integers (u64, i128, etc.)
-- ✅ Auto-generated headers with timestamps
-- ✅ Comprehensive test coverage (32 unit tests)
+- Unified CLI with subcommand architecture
+- Zod schema generation with 26+ validation rules
+- All string validations (email, url, length, patterns)
+- All numeric validations (range, min/max, positive/negative)
+- Optional fields with correct `.optional()` ordering
+- Arrays and nested types
+- Custom type references
+- Precision warnings for large integers (u64, i128, etc.)
+- Auto-generated headers with timestamps
+- Comprehensive test coverage (32 unit tests)
 
 **Benefits:**
-- ✅ Single source of truth for validation
-- ✅ Frontend/backend validation stays in sync automatically
-- ✅ No duplicate validation logic
-- ✅ Type-safe schemas with Zod's type inference
-- ✅ Zero maintenance - regenerate when Rust types change
+- Single source of truth for validation
+- Frontend/backend validation stays in sync automatically
+- No duplicate validation logic
+- Type-safe schemas with Zod's type inference
+- Zero maintenance - regenerate when Rust types change
 
 **Future Generators (Planned):**
 - 📋 Yup schemas (`domainstack yup`)
@@ -353,8 +353,8 @@ Track which validation rules are tested:
 cargo test --features validation-coverage
 
 Coverage Report:
-✓ User.email (email format): 15 tests
-✓ User.age (range): 12 tests
+[ok] User.email (email format): 15 tests
+[ok] User.age (range): 12 tests
 ⚠ User.nickname (length): 0 tests  ← Not tested!
 ```
 

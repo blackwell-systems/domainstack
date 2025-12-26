@@ -20,10 +20,10 @@ fn main() {
     };
 
     match user.validate() {
-        Ok(_) => println!("   ✓ User is valid\n"),
+        Ok(_) => println!("   [ok] User is valid\n"),
         Err(e) => {
             let envelope = e.into_envelope_error();
-            println!("   ✗ Error envelope:");
+            println!("   [error] Error envelope:");
             println!("     Status: {}", envelope.status);
             println!("     Message: {}", envelope.message);
             println!("     Retryable: {}\n", envelope.retryable);
@@ -37,10 +37,10 @@ fn main() {
     };
 
     match user.validate() {
-        Ok(_) => println!("   ✓ User is valid\n"),
+        Ok(_) => println!("   [ok] User is valid\n"),
         Err(e) => {
             let envelope = e.into_envelope_error();
-            println!("   ✗ Error envelope:");
+            println!("   [error] Error envelope:");
             println!("     Status: {}", envelope.status);
             println!("     Message: {}", envelope.message);
             println!("     Retryable: {}", envelope.retryable);
@@ -60,10 +60,10 @@ fn main() {
     };
 
     match user.validate() {
-        Ok(_) => println!("   ✓ User is valid\n"),
+        Ok(_) => println!("   [ok] User is valid\n"),
         Err(e) => {
             let envelope = e.into_envelope_error();
-            println!("   ✗ Error envelope:");
+            println!("   [error] Error envelope:");
             println!("     Status: {}", envelope.status);
             println!("     Message: {}", envelope.message);
             println!("     Retryable: {}", envelope.retryable);

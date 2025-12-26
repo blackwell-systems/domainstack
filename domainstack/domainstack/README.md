@@ -328,34 +328,24 @@ See **[examples/README.md](https://github.com/blackwell-systems/domainstack/tree
 
 ## Documentation
 
-**Start here:**
-- **[Core Concepts](./docs/CORE_CONCEPTS.md)** - Valid-by-construction types, error paths, rule composition
-- **[Domain Modeling Patterns](./docs/PATTERNS.md)** - DTO→Domain conversion, smart constructors, private fields
+| | |
+|---|---|
+| **Getting Started** | |
+| [Core Concepts](./docs/CORE_CONCEPTS.md) | Valid-by-construction types, error paths |
+| [Domain Modeling](./docs/PATTERNS.md) | DTO→Domain, smart constructors |
+| [Installation](./docs/INSTALLATION.md) | Feature flags, companion crates |
+| **Guides** | |
+| [Derive Macro](./docs/DERIVE_MACRO.md) | `#[derive(Validate)]` reference |
+| [Validation Rules](./docs/RULES.md) | All 37 built-in rules |
+| [Error Handling](./docs/ERROR_HANDLING.md) | Violations, paths, i18n |
+| [HTTP Integration](./docs/HTTP_INTEGRATION.md) | Axum / Actix / Rocket |
+| **Advanced** | |
+| [Async Validation](./docs/ADVANCED_PATTERNS.md) | DB/API checks, context |
+| [OpenAPI Schema](./docs/OPENAPI_SCHEMA.md) | Generate from rules |
+| [CLI / Zod](./docs/CLI_GUIDE.md) | TypeScript codegen |
+| [Serde Integration](./docs/SERDE_INTEGRATION.md) | Validate on deserialize |
 
-**How-to guides:**
-- **[Derive Macro](./docs/DERIVE_MACRO.md)** - Complete `#[derive(Validate)]` guide
-- **[Manual Validation](./docs/MANUAL_VALIDATION.md)** - Implementing `Validate` manually
-- **[Error Handling](./docs/ERROR_HANDLING.md)** - `ValidationError`, violations, i18n
-
-**Feature deep dives:**
-- **[Validation Rules](./docs/RULES.md)** - All built-in rules (reference)
-- **[Advanced Patterns](./docs/ADVANCED_PATTERNS.md)** - Async validation, type-state, context-dependent validation
-- **[Serde Integration](./docs/SERDE_INTEGRATION.md)** - Validate on deserialize
-- **[OpenAPI Schema](./docs/OPENAPI_SCHEMA.md)** - Generate schemas from rules
-- **[CLI Guide](./docs/CLI_GUIDE.md)** - Generate TypeScript/Zod
-
-**Integrations:**
-- **[HTTP Integration](./docs/HTTP_INTEGRATION.md)** - Axum / Actix-web / Rocket adapters
-- **[Installation Guide](./docs/INSTALLATION.md)** - Feature flags, companion crates, version compatibility
-
-**Reference:**
-- **[API Guide](./docs/api-guide.md)** - Complete API documentation
-- **[Architecture](./docs/architecture.md)** - System design and data flow
-- **[API Documentation](https://docs.rs/domainstack)** - Generated API reference
-
-**Project tooling:**
-- **[Examples](https://github.com/blackwell-systems/domainstack/tree/main/domainstack/domainstack-examples)** - Runnable examples
-- **[Coverage Guide](https://github.com/blackwell-systems/domainstack/blob/main/COVERAGE.md)** - Running coverage locally
+**Reference:** [API Docs](https://docs.rs/domainstack) · [Architecture](./docs/architecture.md) · [Examples](https://github.com/blackwell-systems/domainstack/tree/main/domainstack/domainstack-examples)
 
 ## License
 

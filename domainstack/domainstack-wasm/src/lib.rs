@@ -711,5 +711,320 @@ mod tests {
             assert!(json.contains("parse_error"));
             assert!(json.contains("Invalid JSON"));
         }
+
+        #[test]
+        fn test_empty_violations_list() {
+            let result = ValidationResult::validation_failed(vec![]);
+            let json = serde_json::to_string(&result).unwrap();
+            assert!(json.contains("\"ok\":false"));
+            assert!(json.contains("\"errors\":[]"));
+        }
+
+        #[test]
+        fn test_violation_with_meta_serialization() {
+            let mut meta = HashMap::new();
+            meta.insert("min".to_string(), "1".to_string());
+            meta.insert("max".to_string(), "10".to_string());
+
+            let violations = vec![WasmViolation {
+                path: "count".to_string(),
+                code: "out_of_range".to_string(),
+                message: "Must be between 1 and 10".to_string(),
+                meta: Some(meta),
+            }];
+            let result = ValidationResult::validation_failed(violations);
+            let json = serde_json::to_string(&result).unwrap();
+            assert!(json.contains("\"meta\""));
+            assert!(json.contains("\"min\":\"1\""));
+            assert!(json.contains("\"max\":\"10\""));
+        }
+
+        #[test]
+        fn test_special_characters_in_message() {
+            let result = ValidationResult::system_error(
+                "parse_error",
+                r#"Expected "}" at line 1, column 5"#.to_string(),
+            );
+            let json = serde_json::to_string(&result).unwrap();
+            assert!(json.contains("parse_error"));
+            // Message should be properly escaped - verify valid JSON by parsing as Value
+            assert!(serde_json::from_str::<serde_json::Value>(&json).is_ok());
+        }
+    }
+
+    // Tests for TypeRegistry edge cases
+    mod registry_edge_cases {
+        use super::*;
+        use serde::Deserialize;
+
+        #[derive(Debug, Validate, Deserialize)]
+        struct TypeA {
+            #[validate(length(min = 1))]
+            name: String,
+        }
+
+        #[derive(Debug, Validate, Deserialize)]
+        struct TypeB {
+            #[validate(range(min = 0, max = 100))]
+            value: i32,
+        }
+
+        #[test]
+        fn test_registry_default_impl() {
+            let registry = TypeRegistry::default();
+            assert!(registry.type_names().is_empty());
+        }
+
+        #[test]
+        fn test_multiple_types_registration() {
+            let mut registry = TypeRegistry::new();
+            registry.register::<TypeA>("TypeA");
+            registry.register::<TypeB>("TypeB");
+
+            assert!(registry.has_type("TypeA"));
+            assert!(registry.has_type("TypeB"));
+            assert_eq!(registry.type_names().len(), 2);
+        }
+
+        #[test]
+        fn test_type_overwriting() {
+            let mut registry = TypeRegistry::new();
+            registry.register::<TypeA>("SharedName");
+
+            // Validate with TypeA rules (length validation)
+            let result = registry.validate("SharedName", r#"{"name": ""}"#);
+            assert!(matches!(result, Err(DispatchError::Validation(_))));
+
+            // Overwrite with TypeB
+            registry.register::<TypeB>("SharedName");
+
+            // Now validates with TypeB rules (range validation)
+            let result = registry.validate("SharedName", r#"{"value": 50}"#);
+            assert!(result.is_ok());
+        }
+
+        #[test]
+        fn test_empty_type_name() {
+            let mut registry = TypeRegistry::new();
+            registry.register::<TypeA>("");
+
+            assert!(registry.has_type(""));
+            let result = registry.validate("", r#"{"name": "test"}"#);
+            assert!(result.is_ok());
+        }
+
+        #[test]
+        fn test_type_name_with_special_characters() {
+            let mut registry = TypeRegistry::new();
+            registry.register::<TypeA>("Type::With::Colons");
+            registry.register::<TypeB>("Type<Generic>");
+
+            assert!(registry.has_type("Type::With::Colons"));
+            assert!(registry.has_type("Type<Generic>"));
+        }
+
+        #[test]
+        fn test_validate_with_whitespace_in_json() {
+            let mut registry = TypeRegistry::new();
+            registry.register::<TypeA>("TypeA");
+
+            let json = r#"
+                {
+                    "name": "test"
+                }
+            "#;
+            let result = registry.validate("TypeA", json);
+            assert!(result.is_ok());
+        }
+
+        #[test]
+        fn test_validate_with_extra_fields_in_json() {
+            let mut registry = TypeRegistry::new();
+            registry.register::<TypeA>("TypeA");
+
+            // Extra fields should be ignored (default serde behavior)
+            let json = r#"{"name": "test", "extra": "ignored"}"#;
+            let result = registry.validate("TypeA", json);
+            assert!(result.is_ok());
+        }
+
+        #[test]
+        fn test_unicode_in_validation_values() {
+            let mut registry = TypeRegistry::new();
+            registry.register::<TypeA>("TypeA");
+
+            let json = r#"{"name": "日本語テスト 🎉"}"#;
+            let result = registry.validate("TypeA", json);
+            assert!(result.is_ok());
+        }
+
+        #[test]
+        fn test_null_value_in_json() {
+            let mut registry = TypeRegistry::new();
+            registry.register::<TypeA>("TypeA");
+
+            let json = r#"{"name": null}"#;
+            let result = registry.validate("TypeA", json);
+            // String field can't be null, should fail parse
+            assert!(matches!(result, Err(DispatchError::ParseError(_))));
+        }
+
+        #[test]
+        fn test_empty_string_validation() {
+            let mut registry = TypeRegistry::new();
+            registry.register::<TypeA>("TypeA");
+
+            let json = r#"{"name": ""}"#;
+            let result = registry.validate("TypeA", json);
+            // Empty string fails min length 1 validation
+            assert!(matches!(result, Err(DispatchError::Validation(_))));
+        }
+    }
+
+    // Tests for WasmViolation conversion edge cases
+    mod wasm_violation_edge_cases {
+        use super::*;
+
+        #[test]
+        fn test_violation_with_empty_path() {
+            let violation = domainstack::Violation {
+                path: domainstack::Path::root(),
+                code: "invalid",
+                message: "Invalid".to_string(),
+                meta: domainstack::Meta::default(),
+            };
+
+            let wasm_violation = WasmViolation::from(&violation);
+            assert_eq!(wasm_violation.path, "");
+        }
+
+        #[test]
+        fn test_violation_with_complex_nested_path() {
+            let path = domainstack::Path::root()
+                .field("orders")
+                .index(0)
+                .field("items")
+                .index(5)
+                .field("variant");
+
+            let violation = domainstack::Violation {
+                path,
+                code: "invalid",
+                message: "Invalid".to_string(),
+                meta: domainstack::Meta::default(),
+            };
+
+            let wasm_violation = WasmViolation::from(&violation);
+            assert_eq!(wasm_violation.path, "orders[0].items[5].variant");
+        }
+
+        #[test]
+        fn test_violation_with_special_chars_in_code() {
+            let violation = domainstack::Violation {
+                path: domainstack::Path::from("field"),
+                code: "error_code_with_underscores",
+                message: "Error".to_string(),
+                meta: domainstack::Meta::default(),
+            };
+
+            let wasm_violation = WasmViolation::from(&violation);
+            assert_eq!(wasm_violation.code, "error_code_with_underscores");
+        }
+
+        #[test]
+        fn test_violation_preserves_long_message() {
+            let long_message = "A".repeat(1000);
+            let violation = domainstack::Violation {
+                path: domainstack::Path::from("field"),
+                code: "error",
+                message: long_message.clone(),
+                meta: domainstack::Meta::default(),
+            };
+
+            let wasm_violation = WasmViolation::from(&violation);
+            assert_eq!(wasm_violation.message, long_message);
+        }
+
+        #[test]
+        fn test_violation_meta_numeric_values() {
+            let mut meta = domainstack::Meta::default();
+            meta.insert("min", 1);
+            meta.insert("max", 100);
+            meta.insert("actual", 150);
+
+            let violation = domainstack::Violation {
+                path: domainstack::Path::from("field"),
+                code: "out_of_range",
+                message: "Out of range".to_string(),
+                meta,
+            };
+
+            let wasm_violation = WasmViolation::from(&violation);
+            let meta = wasm_violation.meta.unwrap();
+            // Numeric values should be converted to strings
+            assert_eq!(meta.get("min"), Some(&"1".to_string()));
+            assert_eq!(meta.get("max"), Some(&"100".to_string()));
+            assert_eq!(meta.get("actual"), Some(&"150".to_string()));
+        }
+    }
+
+    // Tests for dispatch error handling
+    mod dispatch_error_tests {
+        use super::*;
+        use serde::Deserialize;
+
+        #[derive(Debug, Validate, Deserialize)]
+        struct SimpleType {
+            value: i32,
+        }
+
+        #[test]
+        fn test_dispatch_error_unknown_type_message() {
+            let registry = TypeRegistry::new();
+            let result = registry.validate("DoesNotExist", "{}");
+
+            match result {
+                Err(DispatchError::UnknownType) => {}
+                _ => panic!("Expected UnknownType error"),
+            }
+        }
+
+        #[test]
+        fn test_dispatch_error_parse_error_contains_details() {
+            let mut registry = TypeRegistry::new();
+            registry.register::<SimpleType>("SimpleType");
+
+            let result = registry.validate("SimpleType", r#"{"value": "not_a_number"}"#);
+
+            match result {
+                Err(DispatchError::ParseError(msg)) => {
+                    assert!(!msg.is_empty());
+                }
+                _ => panic!("Expected ParseError"),
+            }
+        }
+
+        #[test]
+        fn test_dispatch_error_validation_boxed() {
+            let mut registry = TypeRegistry::new();
+
+            #[derive(Debug, Validate, Deserialize)]
+            struct AlwaysInvalid {
+                #[validate(range(min = 10, max = 5))] // Invalid range, will fail
+                value: i32,
+            }
+
+            registry.register::<AlwaysInvalid>("AlwaysInvalid");
+
+            // Any value should trigger validation error
+            let result = registry.validate("AlwaysInvalid", r#"{"value": 7}"#);
+
+            match result {
+                Err(DispatchError::Validation(boxed_err)) => {
+                    assert!(!boxed_err.violations.is_empty());
+                }
+                _ => panic!("Expected Validation error"),
+            }
+        }
     }
 }

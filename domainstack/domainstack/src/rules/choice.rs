@@ -260,4 +260,125 @@ mod tests {
         assert!(!result.is_empty());
         assert_eq!(result.violations[0].code, "not_in_set");
     }
+
+    #[test]
+    fn test_one_of_single_element() {
+        let rule = one_of(&[42]);
+        assert!(rule.apply(&42).is_empty());
+        assert!(!rule.apply(&0).is_empty());
+    }
+
+    #[test]
+    fn test_equals_with_boolean() {
+        let rule = equals(true);
+        assert!(rule.apply(&true).is_empty());
+        assert!(!rule.apply(&false).is_empty());
+    }
+
+    #[test]
+    fn test_not_equals_with_boolean() {
+        let rule = not_equals(false);
+        assert!(rule.apply(&true).is_empty());
+        assert!(!rule.apply(&false).is_empty());
+    }
+
+    #[test]
+    fn test_one_of_with_booleans() {
+        let rule = one_of(&[true]);
+        assert!(rule.apply(&true).is_empty());
+        assert!(!rule.apply(&false).is_empty());
+    }
+
+    #[test]
+    fn test_equals_message_format() {
+        let rule = equals("expected_value");
+        let result = rule.apply(&"wrong_value");
+        assert_eq!(result.violations[0].message, "Must equal 'expected_value'");
+    }
+
+    #[test]
+    fn test_not_equals_message_format() {
+        let rule = not_equals("forbidden");
+        let result = rule.apply(&"forbidden");
+        assert_eq!(result.violations[0].message, "Must not equal 'forbidden'");
+    }
+
+    #[test]
+    fn test_one_of_message_contains_allowed_values() {
+        let rule = one_of(&["a", "b", "c"]);
+        let result = rule.apply(&"z");
+        assert!(result.violations[0].message.contains("a"));
+        assert!(result.violations[0].message.contains("b"));
+        assert!(result.violations[0].message.contains("c"));
+    }
+
+    #[test]
+    fn test_equals_with_empty_string() {
+        let rule = equals("");
+        assert!(rule.apply(&"").is_empty());
+        assert!(!rule.apply(&" ").is_empty());
+    }
+
+    #[test]
+    fn test_not_equals_with_empty_string() {
+        let rule = not_equals("");
+        assert!(!rule.apply(&"").is_empty());
+        assert!(rule.apply(&" ").is_empty());
+    }
+
+    #[test]
+    fn test_equals_with_negative_number() {
+        let rule = equals(-42);
+        assert!(rule.apply(&-42).is_empty());
+        assert!(!rule.apply(&42).is_empty());
+    }
+
+    #[test]
+    fn test_not_equals_with_zero() {
+        let rule = not_equals(0i32);
+        assert!(!rule.apply(&0).is_empty());
+        assert!(rule.apply(&1).is_empty());
+        assert!(rule.apply(&-1).is_empty());
+    }
+
+    #[test]
+    fn test_one_of_with_negative_numbers() {
+        let rule = one_of(&[-3, -2, -1, 0, 1, 2, 3]);
+        assert!(rule.apply(&-3).is_empty());
+        assert!(rule.apply(&0).is_empty());
+        assert!(rule.apply(&3).is_empty());
+        assert!(!rule.apply(&-4).is_empty());
+        assert!(!rule.apply(&4).is_empty());
+    }
+
+    #[test]
+    fn test_equals_meta_contains_expected() {
+        let rule = equals("test_value");
+        let result = rule.apply(&"other");
+        assert_eq!(
+            result.violations[0].meta.get("expected"),
+            Some("test_value")
+        );
+    }
+
+    #[test]
+    fn test_not_equals_meta_contains_forbidden() {
+        let rule = not_equals("forbidden_val");
+        let result = rule.apply(&"forbidden_val");
+        assert_eq!(
+            result.violations[0].meta.get("forbidden"),
+            Some("forbidden_val")
+        );
+    }
+
+    #[test]
+    fn test_one_of_meta_contains_allowed() {
+        let rule = one_of(&[1, 2, 3]);
+        let result = rule.apply(&5);
+        let allowed = result.violations[0].meta.get("allowed");
+        assert!(allowed.is_some());
+        assert!(allowed.unwrap().contains("1"));
+        assert!(allowed.unwrap().contains("2"));
+        assert!(allowed.unwrap().contains("3"));
+    }
 }

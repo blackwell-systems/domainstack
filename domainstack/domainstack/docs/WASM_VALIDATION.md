@@ -360,6 +360,104 @@ const result = validate('Booking', data);
 - Zero drift: Server and client produce byte-identical error JSON
 - Adoption: 50% of domainstack users enable WASM within 6 months
 
+## Documentation Plan
+
+### New Documentation
+
+| Document | Location | Purpose |
+|----------|----------|---------|
+| **WASM Quick Start** | `docs/WASM_QUICKSTART.md` | 5-minute setup guide |
+| **WASM API Reference** | `docs/WASM_API.md` | Complete TypeScript API |
+| **Framework Guides** | `docs/WASM_REACT.md`, `WASM_VUE.md`, `WASM_SVELTE.md` | Framework-specific patterns |
+
+### Updates to Existing Docs
+
+| Document | Changes |
+|----------|---------|
+| **README.md** | Add WASM to ecosystem diagram, add to "Progressive adoption" table |
+| **CORE_CONCEPTS.md** | New section: "Client-Side Validation" explaining WASM vs Zod tradeoffs |
+| **INSTALLATION.md** | Add `domainstack-wasm` crate, npm package installation |
+| **DERIVE_MACRO.md** | Document `#[wasm_validate]` attribute and `skip_wasm` |
+| **CLI_GUIDE.md** | Compare Zod codegen vs WASM (when to use each) |
+| **HTTP_INTEGRATION.md** | Add client-side validation flow diagram |
+
+### README Ecosystem Diagram Update
+
+```
+Rust Domain                        Frontend
+     |                                 |
+#[derive(Validate, ToSchema)]    ┌─────┴─────┐
+     |                           │           │
+     v                      WASM module   Zod codegen
+.validate()?                (same code)   (translated)
+     |                           │           │
+     v                           v           v
+Axum / Actix / Rocket  <───► validate()   zodSchema
+     |                           │           │
+     v                           └─────┬─────┘
+Structured errors ◄────────────────────┘
+(identical on both sides)
+```
+
+### Progressive Adoption Table Addition
+
+```markdown
+| Need | Start With |
+|------|------------|
+| ... existing rows ... |
+| + Browser validation (same code) | + `domainstack-wasm` |
+| + Browser validation (codegen) | + `domainstack-cli` (zod) |
+```
+
+### New Section in CORE_CONCEPTS.md
+
+```markdown
+## Client-Side Validation
+
+domainstack offers two paths to browser validation:
+
+| Approach | Pros | Cons |
+|----------|------|------|
+| **WASM** | Zero drift, same code | Requires WASM support, async init |
+| **Zod codegen** | Pure JS, no WASM | Translation layer, potential drift |
+
+**Recommendation:**
+- Use WASM for SPAs where validation accuracy is critical
+- Use Zod for static sites or environments without WASM support
+```
+
+### npm Package README
+
+The `@domainstack/wasm` npm package needs its own README:
+
+```markdown
+# @domainstack/wasm
+
+Browser validation powered by Rust + WebAssembly.
+
+## Install
+npm install @domainstack/wasm
+
+## Quick Start
+import { createValidator } from '@domainstack/wasm';
+const v = await createValidator();
+const result = v.validate('Booking', formData);
+
+## Why WASM?
+- Same validation code as your Rust server
+- No translation drift between client/server
+- Smaller than equivalent JS validation libraries
+```
+
+### Documentation Rollout Timeline
+
+| Phase | Docs |
+|-------|------|
+| **Phase 1** (with MVP) | WASM_QUICKSTART.md, README updates |
+| **Phase 2** (with TS bindings) | WASM_API.md, INSTALLATION.md updates |
+| **Phase 3** (with framework libs) | WASM_REACT.md, WASM_VUE.md, WASM_SVELTE.md |
+| **Phase 4** (polish) | CORE_CONCEPTS.md, CLI_GUIDE.md comparison |
+
 ## References
 
 - [wasm-bindgen Guide](https://rustwasm.github.io/wasm-bindgen/)

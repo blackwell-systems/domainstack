@@ -51,7 +51,7 @@
 //!
 //! ## Documentation
 //!
-//! - [API Guide](https://github.com/blackwell-systems/domainstack/blob/main/domainstack/domainstack/docs/api-guide.md) - Complete API documentation
+//! - [Core Concepts](https://github.com/blackwell-systems/domainstack/blob/main/domainstack/domainstack/docs/CORE_CONCEPTS.md) - Foundation principles and patterns
 //! - [Rules Reference](https://github.com/blackwell-systems/domainstack/blob/main/domainstack/domainstack/docs/RULES.md) - All 37 validation rules
 //! - [Examples](https://github.com/blackwell-systems/domainstack/tree/main/domainstack/domainstack-examples) - 9 runnable examples
 

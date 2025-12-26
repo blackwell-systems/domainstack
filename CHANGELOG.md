@@ -1209,12 +1209,4 @@ Most code uses `Path::field()` and `Path::to_string()` which work identically. N
 
 Initial release with core validation framework, derive macros, and framework adapters for Axum and Actix-web.
 
----
-
-## Unreleased Features (Roadmap)
-
-See `docs/BREAKING_CHANGES_ANALYSIS.md` for planned features in future versions:
-- v0.7.0: Schema generation (OpenAPI, JSON Schema, TypeScript types)
-- v1.0.0: API stabilization, performance optimizations
-
 [0.4.0]: https://github.com/blackwell-systems/domainstack/compare/v0.3.0...v0.4.0

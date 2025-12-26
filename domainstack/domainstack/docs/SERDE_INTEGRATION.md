@@ -100,4 +100,4 @@ struct Profile {
 
 - Example: `domainstack/examples/serde_validation.rs`
 - Tests: 12 comprehensive integration tests in serde_integration.rs
-- Main guide: [API Guide](api-guide.md)
+- Main guide: [Core Concepts](CORE_CONCEPTS.md)

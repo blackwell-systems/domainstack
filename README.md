@@ -272,6 +272,62 @@ user.validate()?;  // ✓ Validates all constraints
 
 **📖 [Derive Macro Guide](./domainstack/domainstack/docs/DERIVE_MACRO.md)**
 
+### Nested Validation
+
+Compose complex domain models with automatic path tracking:
+
+```rust
+#[derive(Debug, Validate)]
+struct Booking {
+    #[validate(nested)]
+    guest: Guest,
+
+    #[validate(each(nested))]
+    rooms: Vec<Room>,
+
+    #[validate(range(min = 1, max = 30))]
+    nights: u8,
+}
+
+// Errors include full paths: "rooms[0].adults", "guest.email.value"
+```
+
+### Collection Item Validation
+
+Validate each item in a collection with any validation rule:
+
+```rust
+#[derive(Debug, Validate)]
+struct BlogPost {
+    #[validate(min_len = 1)]
+    #[validate(max_len = 200)]
+    title: String,
+
+    // Validate each email in the list
+    #[validate(each(email))]
+    #[validate(min_items = 1)]
+    #[validate(max_items = 5)]
+    author_emails: Vec<String>,
+
+    // Validate each tag's length
+    #[validate(each(length(min = 1, max = 50)))]
+    tags: Vec<String>,
+
+    // Validate each URL format
+    #[validate(each(url))]
+    related_links: Vec<String>,
+
+    // Validate each keyword is alphanumeric
+    #[validate(each(alphanumeric))]
+    keywords: Vec<String>,
+}
+```
+
+Error paths include array indices for precise error tracking:
+- `author_emails[0]` - "Invalid email format"
+- `tags[2]` - "Must be at most 50 characters"
+- `related_links[1]` - "Invalid URL format"
+
 ### Manual Validation (For Primitives & Fine-Grained Control)
 
 For newtype wrappers or custom logic:

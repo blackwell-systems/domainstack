@@ -9,6 +9,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### CLI Watch Mode
+
+**FEATURE: `--watch` flag for automatic regeneration**
+
+The CLI now supports watching for file changes and automatically regenerating output:
+
+```bash
+# Watch mode - regenerates when .rs files change
+domainstack zod --input src --output schemas.ts --watch
+
+# With verbose output to see which files changed
+domainstack zod --input src --output schemas.ts --watch --verbose
+```
+
+**Behavior:**
+- Runs initial generation immediately
+- Watches input directory recursively for `.rs` file changes
+- Debounces rapid changes (500ms) to avoid excessive regeneration
+- Continues watching even if regeneration fails (prints error, waits for more changes)
+- Press Ctrl+C to stop
+
+---
+
 #### Tuple Struct (Newtype) and Enum Validation Support
 
 **FEATURE: `#[derive(Validate)]` now supports tuple structs and enums**

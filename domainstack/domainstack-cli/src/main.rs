@@ -34,7 +34,7 @@ struct ZodArgs {
     #[arg(short, long)]
     output: PathBuf,
 
-    /// Watch for changes and regenerate (coming soon)
+    /// Watch for changes and regenerate automatically
     #[arg(short, long)]
     watch: bool,
 

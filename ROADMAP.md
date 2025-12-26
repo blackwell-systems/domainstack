@@ -16,6 +16,7 @@ The core library is production-ready with:
 - Nested validation with path tracking
 - Serde integration (validate on deserialize)
 - Code generation CLI (`domainstack-cli`) with Zod support
+- **CLI watch mode** - `--watch` flag for automatic regeneration on file changes
 - WASM browser validation (`domainstack-wasm`)
 
 ---
@@ -54,32 +55,9 @@ domainstack json-schema --input src --output schemas/
 
 ---
 
-#### 2. CLI Watch Mode
-
-**Status**: Planned (flag exists, not implemented)
-**Impact**: 🔥🔥 High
-**Effort**: Low
-
-Implement the `--watch` flag for automatic regeneration:
-
-```bash
-# Regenerate schemas when Rust files change
-domainstack zod --input src --output frontend/schemas.ts --watch
-
-# Watch mode with specific file patterns
-domainstack zod --input src --output schemas.ts --watch --pattern "**/*.rs"
-```
-
-**Benefits:**
-- Faster development workflow
-- Automatic sync during development
-- No manual regeneration needed
-
----
-
 ### 🚀 Tier 2: Documentation & Examples
 
-#### 3. WASM Integration Example Project
+#### 2. WASM Integration Example Project
 
 **Status**: Planned
 **Impact**: 🔥🔥 High
@@ -107,7 +85,7 @@ examples/
 
 ---
 
-#### 4. CLI Step-by-Step Tutorial
+#### 3. CLI Step-by-Step Tutorial
 
 **Status**: Planned
 **Impact**: 🔥🔥 High
@@ -142,7 +120,7 @@ cargo install domainstack-cli
 
 ### 📊 Tier 3: Framework Improvements
 
-#### 5. Actix Adapter Async Improvement
+#### 4. Actix Adapter Async Improvement
 
 **Status**: Research
 **Impact**: 🔥 Medium
@@ -175,7 +153,7 @@ async fn create_user(
 
 ---
 
-#### 6. Property-Based Test Data Generation
+#### 5. Property-Based Test Data Generation
 
 **Status**: Research
 **Impact**: 🔥🔥 High
@@ -206,7 +184,7 @@ struct User {
 
 ---
 
-#### 7. Database Constraint Generation (SQL DDL)
+#### 6. Database Constraint Generation (SQL DDL)
 
 **Status**: Planned
 **Impact**: 🔥🔥 High
@@ -245,7 +223,7 @@ CREATE TABLE users (
 
 ### 🧪 Tier 4: Advanced Features
 
-#### 8. Localization/i18n Support
+#### 7. Localization/i18n Support
 
 **Status**: Research
 **Impact**: 🔥 Medium
@@ -267,7 +245,7 @@ let error = user.validate_with_locale("es")?;
 
 ---
 
-#### 9. Validation Metrics/Observability
+#### 8. Validation Metrics/Observability
 
 **Status**: Planned
 **Impact**: Medium
@@ -292,7 +270,7 @@ validation_duration_seconds{type="User"} 0.001
 
 ---
 
-#### 10. Validation Coverage Tracking
+#### 9. Validation Coverage Tracking
 
 **Status**: Research
 **Impact**: Medium

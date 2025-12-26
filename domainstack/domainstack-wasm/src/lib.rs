@@ -974,6 +974,7 @@ mod tests {
         use serde::Deserialize;
 
         #[derive(Debug, Validate, Deserialize)]
+        #[allow(dead_code)]
         struct SimpleType {
             value: i32,
         }

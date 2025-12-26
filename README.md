@@ -260,6 +260,7 @@ domainstack-schema = "1.0"  # OpenAPI generation
 - **Type-State Validation** - Compile-time guarantees with phantom types → [ADVANCED_PATTERNS.md](./domainstack/domainstack/docs/ADVANCED_PATTERNS.md#type-state-validation)
 - **OpenAPI Schema Generation** - Auto-generate schemas from rules → [OPENAPI_SCHEMA.md](./domainstack/domainstack/docs/OPENAPI_SCHEMA.md)
 - **Framework Adapters** - Axum, Actix-web, Rocket extractors → [HTTP_INTEGRATION.md](./domainstack/domainstack/docs/HTTP_INTEGRATION.md)
+- **WASM Browser Validation** - Same Rust code runs in browser via WebAssembly → [WASM_VALIDATION.md](./domainstack/domainstack/docs/WASM_VALIDATION.md)
 
 ## Examples
 

@@ -27,18 +27,7 @@ domainstack asks: **"How do I safely construct domain models from untrusted inpu
 
 After domain validation succeeds, you can optionally run **async/context validation** (DB/API checks like uniqueness, rate limits, authorization) as a post-validation phase.
 
-## What that gives you
-
-- **Domain-first modeling**: make invalid states difficult (or impossible) to represent
-- **Composable rule algebra**: reusable rules with `.and()`, `.or()`, `.when()`
-- **Structured error paths**: `rooms[0].adults`, `guest.email.value` (UI-friendly)
-- **Cross-field validation**: invariants like password confirmation, date ranges
-- **Type-state tracking**: phantom types to enforce "validated" at compile time
-- **Schema + client parity**: generate OpenAPI (and TypeScript/Zod via CLI) from the same Rust rules
-- **Framework adapters**: one-line boundary extraction (Axum / Actix / Rocket)
-- **Lean core**: zero-deps base, opt-in features for regex / async / chrono / serde
-
-### Why domainstack over validator/garde/etc.?
+## Why domainstack over validator/garde/etc.?
 
 **validator and garde** focus on: *"Is this struct valid?"*
 
@@ -50,15 +39,26 @@ After domain validation succeeds, you can optionally run **async/context validat
 
 **If you want valid-by-construction domain types with errors that map cleanly to forms and clients, domainstack is purpose-built for that.**
 
+## What that gives you
+
+- **Domain-first modeling**: make invalid states difficult (or impossible) to represent
+- **Composable rule algebra**: reusable rules with `.and()`, `.or()`, `.when()`
+- **Structured error paths**: `rooms[0].adults`, `guest.email.value` (UI-friendly)
+- **Cross-field validation**: invariants like password confirmation, date ranges
+- **Type-state tracking**: phantom types to enforce "validated" at compile time
+- **Schema + client parity**: generate OpenAPI (and TypeScript/Zod via CLI) from the same Rust rules
+- **Framework adapters**: one-line boundary extraction (Axum / Actix / Rocket)
+- **Lean core**: zero-deps base, opt-in features for regex / async / chrono / serde
+
 ## Table of Contents
 
 - [Quick Start](#quick-start)
-- [Mental Model: DTOs → Domain → Business Logic](#mental-model-dtos--domain--business-logic)
-- [How domainstack is Different](#how-domainstack-is-different)
-- [Core Features](#core-features)
 - [Installation](#installation)
+- [Key Features](#key-features)
 - [Examples](#examples)
 - [Documentation](#documentation)
+- [Crates](#-crates)
+- [Testing](#testing)
 
 ## Quick Start
 
@@ -199,272 +199,6 @@ export const bookingSchema = z.object({
 );
 ```
 
-## Mental Model: DTOs → Domain → Business Logic
-
-### 1) DTO at the boundary (untrusted)
-```rust
-#[derive(Deserialize)]
-pub struct BookingDto {
-    pub name: String,
-    pub email: String,
-    pub guests: u8,
-}
-```
-
-### 2) Domain inside (trusted)
-```rust
-use domainstack::prelude::*;
-
-// Smart constructor with validation
-pub struct Email(String);
-
-impl Email {
-    pub fn new(raw: String) -> Result<Self, ValidationError> {
-        validate("email", raw.as_str(), &rules::email().and(rules::max_len(255)))?;
-        Ok(Self(raw))
-    }
-}
-
-// Private fields + automatic validation
-#[derive(Validate)]
-pub struct BookingRequest {
-    #[validate(length(min = 1, max = 50))]
-    name: String,      // Private - can't be constructed in invalid state!
-
-    #[validate(nested)]
-    email: Email,      // Nested validation
-
-    #[validate(range(min = 1, max = 10))]
-    guests: u8,
-}
-
-// DTO → Domain conversion
-impl TryFrom<BookingDto> for BookingRequest {
-    type Error = ValidationError;
-
-    fn try_from(dto: BookingDto) -> Result<Self, Self::Error> {
-        let email = Email::new(dto.email)
-            .map_err(|e| e.prefixed("email"))?;  // Key pattern: prefix nested errors
-
-        let booking = Self {
-            name: dto.name,
-            email,
-            guests: dto.guests,
-        };
-
-        booking.validate()?;  // Validates all fields + cross-field rules
-        Ok(booking)
-    }
-}
-```
-
-**Key insight:** Domain types have private fields and can only be created through validated constructors. Invalid states become difficult (or impossible) to represent.
-
-## Valid-by-Construction Pattern
-
-The recommended approach enforces validation at domain boundaries:
-
-```rust
-use domainstack::prelude::*;
-use domainstack::Validate;
-use serde::Deserialize;
-
-// DTO - Public, for deserialization
-#[derive(Deserialize)]
-pub struct UserDto {
-    pub name: String,
-    pub age: u8,
-    pub email: String,
-}
-
-// Domain - Private fields, enforced validity
-#[derive(Debug, Validate)]
-pub struct User {
-    #[validate(length(min = 2, max = 50))]
-    name: String,     // Private!
-
-    #[validate(range(min = 18, max = 120))]
-    age: u8,
-
-    #[validate(nested)]
-    email: Email,
-}
-
-impl User {
-    // Smart constructor - validation enforced here
-    pub fn new(name: String, age: u8, email_raw: String) -> Result<Self, ValidationError> {
-        let email = Email::new(email_raw).map_err(|e| e.prefixed("email"))?;
-
-        let user = Self { name, age, email };
-        user.validate()?;  // One line - validates all fields!
-        Ok(user)
-    }
-
-    // Getters only - no setters
-    pub fn name(&self) -> &str { &self.name }
-    pub fn age(&self) -> u8 { self.age }
-    pub fn email(&self) -> &Email { &self.email }
-}
-
-// Conversion at boundary
-impl TryFrom<UserDto> for User {
-    type Error = ValidationError;
-
-    fn try_from(dto: UserDto) -> Result<Self, Self::Error> {
-        User::new(dto.name, dto.age, dto.email)
-    }
-}
-
-// HTTP handler
-async fn create_user(Json(dto): Json<UserDto>) -> Result<Json<User>, Error> {
-    let user = User::try_from(dto)
-        .map_err(|e| e.into_envelope_error())?;
-    // user is GUARANTEED valid here - no need to check!
-    Ok(Json(user))
-}
-```
-
-**Key Points**:
-- DTOs are public for deserialization
-- Domain types have private fields
-- `#[derive(Validate)]` eliminates manual error accumulation boilerplate
-- Validation happens in constructors with a single `.validate()` call
-- `TryFrom` enforces validation at boundary
-- Invalid domain objects cannot exist
-
-<details>
-<summary>Manual validation (when you need fine-grained control)</summary>
-
-If you need custom error messages or conditional logic, use the manual approach:
-
-```rust
-impl User {
-    pub fn new(name: String, age: u8, email: String) -> Result<Self, ValidationError> {
-        let mut err = ValidationError::new();
-
-        let name_rule = rules::min_len(2)
-            .and(rules::max_len(50))
-            .code("invalid_name")
-            .message("Name must be between 2 and 50 characters");
-        if let Err(e) = validate("name", name.as_str(), &name_rule) {
-            err.extend(e);
-        }
-
-        let age_rule = rules::range(18, 120)
-            .code("invalid_age")
-            .message("Age must be between 18 and 120");
-        if let Err(e) = validate("age", &age, &age_rule) {
-            err.extend(e);
-        }
-
-        let email = Email::new(email).map_err(|e| e.prefixed("email"))?;
-
-        if !err.is_empty() {
-            return Err(err);
-        }
-
-        Ok(Self { name, age, email })
-    }
-}
-```
-
-</details>
-
-### HTTP Integration (Optional Adapter)
-
-```rust
-use domainstack_envelope::IntoEnvelopeError;
-
-// Before: Manual error handling (lots of boilerplate)
-async fn create_team_manual(Json(team): Json<Team>) -> Result<Json<Team>, StatusCode> {
-    match team.validate() {
-        Ok(_) => Ok(Json(team)),
-        Err(e) => {
-            // 15+ lines of boilerplate to build proper JSON error response
-            let mut field_errors = std::collections::HashMap::new();
-            for violation in e.violations {
-                field_errors.entry(violation.path.to_string())
-                    .or_insert_with(Vec::new)
-                    .push(serde_json::json!({
-                        "code": violation.code,
-                        "message": violation.message
-                    }));
-            }
-            // ... more code to set status, format response, etc.
-            Err(StatusCode::BAD_REQUEST)  // Lost all error details!
-        }
-    }
-}
-
-// After: One line with error-envelope
-async fn create_team(Json(team): Json<Team>) -> Result<Json<Team>, Error> {
-    team.validate().map_err(|e| e.into_envelope_error())?;  // ← One line!
-    Ok(Json(team))
-}
-
-// Automatic error response with perfect structure:
-// {
-//   "code": "VALIDATION",
-//   "status": 400,
-//   "message": "Validation failed with 2 errors",
-//   "details": {
-//     "fields": {
-//       "members[1].name": [
-//         {"code": "min_length", "message": "Must be at least 2 characters"}
-//       ],
-//       "members[1].age": [
-//         {"code": "out_of_range", "message": "Must be between 18 and 120"}
-//       ]
-//     }
-//   }
-// }
-```
-
-## Framework Adapters
-
-One-line DTO→Domain extraction for Axum and Actix-web.
-
-### Axum
-
-```rust
-use domainstack_axum::{DomainJson, ErrorResponse};
-use axum::{routing::post, Router, Json};
-
-type UserJson = DomainJson<User, UserDto>;
-
-async fn create_user(
-    UserJson { domain: user, .. }: UserJson
-) -> Result<Json<User>, ErrorResponse> {
-    Ok(Json(save_user(user).await?))  // user is guaranteed valid!
-}
-
-let app = Router::new().route("/users", post(create_user));
-```
-
-### Actix-web
-
-```rust
-use domainstack_actix::{DomainJson, ErrorResponse};
-use actix_web::{post, web};
-
-type UserJson = DomainJson<User, UserDto>;
-
-#[post("/users")]
-async fn create_user(
-    UserJson { domain: user, .. }: UserJson
-) -> Result<web::Json<User>, ErrorResponse> {
-    Ok(web::Json(save_user(user).await?))  // user is guaranteed valid!
-}
-```
-
-**What the adapters provide:**
-- `DomainJson<T, Dto>` extractor - Deserialize JSON → validate → convert to domain
-- `ErrorResponse` - Automatic 400 responses with structured field-level errors
-- `From` impls - `?` operator works with `ValidationError` and `error_envelope::Error`
-- **Identical APIs** - Same pattern across both frameworks
-
-See [domainstack-axum](./domainstack/domainstack-axum/) and [domainstack-actix](./domainstack/domainstack-actix/) for complete documentation.
-
 ## Installation
 
 ```toml
@@ -494,216 +228,21 @@ domainstack-schema = "1.0"  # OpenAPI generation
 - **Collection Validation** - Array indices in error paths (`items[0].field`)
 - **Builder Customization** - Customize error codes, messages, and metadata
 
+**📖 [Complete Rules Reference](./domainstack/domainstack/docs/RULES.md)**
+
 ### Advanced Features
 
-#### Serde Integration - Validate on Deserialize ⚡
+- **Serde Integration** - Validate during JSON/YAML deserialization with `#[derive(ValidateOnDeserialize)]`. [Learn more →](./domainstack/domainstack/docs/SERDE_INTEGRATION.md)
 
-**NEW!** Automatically validate during JSON/YAML deserialization with a single derive:
+- **Async Validation** - Database uniqueness checks, external API validation, rate limiting with `AsyncValidate` trait. [Learn more →](./domainstack/domainstack/docs/ADVANCED_PATTERNS.md#async-validation)
 
-```rust
-use domainstack_derive::ValidateOnDeserialize;
+- **Cross-Field Validation** - Password confirmation, date ranges, mutually exclusive fields with `#[validate(check = "...")]`. [Learn more →](./domainstack/domainstack/docs/DERIVE_MACRO.md#cross-field-validation)
 
-#[derive(ValidateOnDeserialize, Debug)]
-struct User {
-    #[validate(email)]
-    #[validate(max_len = 255)]
-    email: String,
+- **Type-State Validation** - Compile-time validation guarantees with phantom types. [Learn more →](./domainstack/domainstack/docs/ADVANCED_PATTERNS.md#type-state-validation)
 
-    #[validate(range(min = 18, max = 120))]
-    age: u8,
-}
+- **OpenAPI Schema Generation** - Auto-generate OpenAPI 3.0 schemas from validation rules. [Learn more →](./domainstack/domainstack/docs/OPENAPI_SCHEMA.md)
 
-// Single step: deserialize + validate automatically
-let user: User = serde_json::from_str(json)?;
-// ↑ If this succeeds, user is guaranteed valid!
-```
-
-**Benefits:**
-- ✅ **Single step** - No separate `.validate()` call needed
-- ✅ **Better errors** - "age must be between 18 and 120" vs "expected u8"
-- ✅ **Type safety** - If you have `User`, it's guaranteed valid
-- ✅ **Serde compatible** - Works with `#[serde(rename)]`, `#[serde(default)]`, etc.
-
-**Use cases:** API request parsing, configuration file loading, message queue consumers, CLI argument validation.
-
-**Example with serde attributes:**
-```rust
-#[derive(ValidateOnDeserialize)]
-#[serde(rename_all = "camelCase")]
-struct Config {
-    #[validate(range(min = 1024, max = 65535))]
-    server_port: u16,
-
-    #[serde(default = "default_workers")]
-    #[validate(range(min = 1, max = 128))]
-    worker_threads: u8,
-}
-```
-
-See [`examples/serde_validation.rs`](https://github.com/blackwell-systems/domainstack/blob/main/domainstack/domainstack/examples/serde_validation.rs) for complete examples.
-
-#### Async Validation
-
-Perform database queries, API calls, and I/O operations in validation:
-
-```rust
-use domainstack::{AsyncValidate, ValidationContext, ValidationError};
-use async_trait::async_trait;
-
-#[async_trait]
-impl AsyncValidate for UserRegistration {
-    async fn validate_async(&self, ctx: &ValidationContext) -> Result<(), ValidationError> {
-        let db = ctx.get_resource::<Database>("db")?;
-
-        // Check email uniqueness in database
-        if db.email_exists(&self.email).await {
-            return Err(ValidationError::single(
-                Path::from("email"),
-                "email_taken",
-                "Email is already registered"
-            ));
-        }
-        Ok(())
-    }
-}
-```
-
-**Use cases:** Database uniqueness checks, external API validation, rate limiting, cross-service validation.
-
-#### Cross-Field Validation
-
-Validate relationships between multiple fields:
-
-```rust
-#[derive(Validate)]
-#[validate(
-    check = "self.password == self.password_confirmation",
-    code = "passwords_mismatch",
-    message = "Passwords must match"
-)]
-struct RegisterForm {
-    #[validate(length(min = 8))]
-    password: String,
-    password_confirmation: String,
-}
-```
-
-**Use cases:** Password confirmation, date ranges, mutually exclusive fields, conditional business rules.
-
-#### Type-State Validation
-
-Compile-time guarantees with phantom types:
-
-```rust
-use domainstack::typestate::{Validated, Unvalidated};
-use std::marker::PhantomData;
-
-pub struct Email<State = Unvalidated> {
-    value: String,
-    _state: PhantomData<State>,
-}
-
-impl Email<Unvalidated> {
-    pub fn validate(self) -> Result<Email<Validated>, ValidationError> {
-        validate("email", self.value.as_str(), &rules::email())?;
-        Ok(Email { value: self.value, _state: PhantomData })
-    }
-}
-
-// Only accept validated emails!
-fn send_email(email: Email<Validated>) {
-    // Compiler GUARANTEES email is validated!
-}
-```
-
-**Benefits:** Zero runtime cost, compile-time safety, self-documenting APIs.
-
-#### OpenAPI Schema Generation
-
-Auto-generate OpenAPI 3.0 schemas directly from your validation rules—**zero duplication**:
-
-```rust
-use domainstack_derive::{Validate, ToSchema};
-use domainstack_schema::OpenApiBuilder;
-
-// Write validation rules ONCE, get BOTH runtime validation AND OpenAPI schemas!
-#[derive(Validate, ToSchema)]
-#[schema(description = "User in the system")]
-struct User {
-    #[validate(email)]
-    #[validate(max_len = 255)]
-    #[schema(description = "User's email", example = "user@example.com")]
-    email: String,
-
-    #[validate(range(min = 18, max = 120))]
-    #[schema(description = "User's age")]
-    age: u8,
-
-    #[validate(min_len = 1)]
-    #[validate(max_len = 100)]
-    name: String,
-
-    // Optional fields automatically excluded from required array
-    #[validate(min_len = 1)]
-    nickname: Option<String>,
-}
-
-// Generate OpenAPI spec with automatic constraint mapping
-let spec = OpenApiBuilder::new("User API", "1.0.0")
-    .register::<User>()
-    .build();
-
-// → email: { type: "string", format: "email", maxLength: 255, ... }
-// → age: { type: "integer", minimum: 18, maximum: 120 }
-// → name: { type: "string", minLength: 1, maxLength: 100 }
-// → required: ["email", "age", "name"]  (nickname excluded)
-```
-
-**Automatic Rule → Schema Mapping:**
-- `email()` → `format: "email"`
-- `url()` → `format: "uri"`
-- `min_len(n)` / `max_len(n)` → `minLength` / `maxLength`
-- `range(min, max)` → `minimum` / `maximum`
-- `min_items(n)` / `max_items(n)` → `minItems` / `maxItems`
-- `alphanumeric()` → `pattern: "^[a-zA-Z0-9]*$"`
-- `ascii()` → `pattern: "^[\x00-\x7F]*$"`
-- `Option<T>` → excluded from `required` array
-- `#[validate(nested)]` → `$ref: "#/components/schemas/TypeName"`
-- `Vec<T>` with `each_nested` → `type: "array"` with `$ref` items
-
-**Manual implementation** still supported for complex cases:
-
-```rust
-impl ToSchema for CustomType {
-    fn schema() -> Schema {
-        Schema::object()
-            .property("field", Schema::string().pattern("custom"))
-            .required(&["field"])
-    }
-}
-```
-
-**What you get:**
-- **Interactive docs** - Swagger UI, ReDoc, Postman collections
-- **Client generation** - TypeScript, Python, Java clients (via openapi-generator)
-- **Contract testing** - Frontend/backend validation agreement
-- **API gateway integration** - Kong, AWS API Gateway, Traefik
-- **Single source of truth** - Change Rust validation, docs update automatically
-
-**Features:**
-- Schema composition (anyOf/allOf/oneOf)
-- Rich metadata (default, example, examples)
-- Request/response modifiers (readOnly, writeOnly, deprecated)
-- Vendor extensions for non-mappable validations
-- Type-safe fluent API
-
-See [domainstack-schema/OPENAPI_CAPABILITIES.md](./domainstack/domainstack-schema/OPENAPI_CAPABILITIES.md) for complete documentation.
-
-### Validation Rules
-
-**37 built-in rules** across string (17), numeric (8), collection (4), date/time (5), and choice (3) validation—with composable `.and()`, `.or()`, `.when()` combinators. All rules work with `each(rule)` for collection validation with array indices in errors (`tags[0]`, `emails[1]`).
-
-📖 **[Complete Rules Reference](./domainstack/domainstack/docs/RULES.md)** - Detailed documentation with examples for all 37 rules.
+- **Framework Adapters** - One-line DTO→Domain extraction for Axum, Actix-web, and Rocket. [Learn more →](./domainstack/domainstack/docs/HTTP_INTEGRATION.md)
 
 ## Examples
 
@@ -731,65 +270,11 @@ let user = User { username, email, age };
 user.validate()?;  // ✓ Validates all constraints
 ```
 
-### Nested Validation
-
-Compose complex domain models with automatic path tracking:
-
-```rust
-#[derive(Debug, Validate)]
-struct Booking {
-    #[validate(nested)]
-    guest: Guest,
-
-    #[validate(each(nested))]
-    rooms: Vec<Room>,
-
-    #[validate(range(min = 1, max = 30))]
-    nights: u8,
-}
-
-// Errors include full paths: "rooms[0].adults", "guest.email.value"
-```
-
-### Collection Item Validation
-
-Validate each item in a collection with any validation rule:
-
-```rust
-#[derive(Debug, Validate)]
-struct BlogPost {
-    #[validate(min_len = 1)]
-    #[validate(max_len = 200)]
-    title: String,
-
-    // Validate each email in the list
-    #[validate(each(email))]
-    #[validate(min_items = 1)]
-    #[validate(max_items = 5)]
-    author_emails: Vec<String>,
-
-    // Validate each tag's length
-    #[validate(each(length(min = 1, max = 50)))]
-    tags: Vec<String>,
-
-    // Validate each URL format
-    #[validate(each(url))]
-    related_links: Vec<String>,
-
-    // Validate each keyword is alphanumeric
-    #[validate(each(alphanumeric))]
-    keywords: Vec<String>,
-}
-```
-
-Error paths include array indices for precise error tracking:
-- `author_emails[0]` - "Invalid email format"
-- `tags[2]` - "Must be at most 50 characters"
-- `related_links[1]` - "Invalid URL format"
+**📖 [Derive Macro Guide](./domainstack/domainstack/docs/DERIVE_MACRO.md)**
 
 ### Manual Validation (For Primitives & Fine-Grained Control)
 
-For newtype wrappers or custom logic, use manual validation:
+For newtype wrappers or custom logic:
 
 ```rust
 use domainstack::prelude::*;
@@ -807,10 +292,7 @@ impl Username {
 }
 ```
 
-**When to use manual:**
-- Newtype wrappers (tuple structs like `Email(String)`)
-- Custom validation logic beyond declarative rules
-- Fine-grained error message control
+**📖 [Manual Validation Guide](./domainstack/domainstack/docs/MANUAL_VALIDATION.md)**
 
 ## Running Examples
 
@@ -902,6 +384,26 @@ cargo llvm-cov --all-features --workspace --html
 
 ## 📚 Documentation
 
+### Guides
+
+**Foundation:**
+- **[Core Concepts](./domainstack/domainstack/docs/CORE_CONCEPTS.md)** - Valid-by-construction types, structured error paths, composable rules
+- **[Domain Modeling Patterns](./domainstack/domainstack/docs/PATTERNS.md)** - DTO→Domain conversion, smart constructors, private fields
+- **[Manual Validation](./domainstack/domainstack/docs/MANUAL_VALIDATION.md)** - When and how to implement `Validate` trait manually
+- **[Error Handling](./domainstack/domainstack/docs/ERROR_HANDLING.md)** - Working with `ValidationError`, violations, i18n
+
+**Features:**
+- **[Derive Macro](./domainstack/domainstack/docs/DERIVE_MACRO.md)** - Complete `#[derive(Validate)]` guide
+- **[Validation Rules](./domainstack/domainstack/docs/RULES.md)** - All 37 built-in validation rules
+- **[Advanced Patterns](./domainstack/domainstack/docs/ADVANCED_PATTERNS.md)** - Async validation, type-state, context-dependent validation
+
+**Integration:**
+- **[Installation Guide](./domainstack/domainstack/docs/INSTALLATION.md)** - Feature flags, companion crates, version compatibility
+- **[Serde Integration](./domainstack/domainstack/docs/SERDE_INTEGRATION.md)** - Validate on deserialize
+- **[HTTP Integration](./domainstack/domainstack/docs/HTTP_INTEGRATION.md)** - Axum, Actix-web, Rocket adapters
+- **[OpenAPI Schema Generation](./domainstack/domainstack/docs/OPENAPI_SCHEMA.md)** - Auto-generate schemas from rules
+- **[CLI Guide](./domainstack/domainstack/docs/CLI_GUIDE.md)** - Generate TypeScript/Zod schemas
+
 ### Multi-README Structure
 
 This project has **multiple README files** for different audiences:
@@ -913,11 +415,9 @@ This project has **multiple README files** for different audiences:
 ### Additional Documentation
 
 - **[API Guide](./domainstack/domainstack/docs/api-guide.md)** - Complete API documentation
-- **[Rules Reference](./domainstack/domainstack/docs/RULES.md)** - All validation rules
 - **[Architecture](./domainstack/domainstack/docs/architecture.md)** - System design and data flow
-- **[OpenAPI Schema Derivation](./domainstack/domainstack/docs/SCHEMA_DERIVATION.md)** - OpenAPI 3.0 schema generation guide
-- **[Examples](./domainstack/domainstack-examples/)** - 9 runnable examples
 - **[API Documentation](https://docs.rs/domainstack)** - Generated API reference
+- **[Examples](./domainstack/domainstack-examples/)** - 9 runnable examples
 - **[Publishing Guide](./PUBLISHING.md)** - How to publish to crates.io
 - **[Coverage Guide](./COVERAGE.md)** - Running coverage locally
 

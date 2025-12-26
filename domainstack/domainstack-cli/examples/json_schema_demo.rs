@@ -11,7 +11,7 @@
 //! domainstack json-schema --input examples --output schema.json --verbose
 //! ```
 
-use domainstack_derive::Validate;
+use domainstack::Validate;
 
 // =============================================================================
 // TUPLE STRUCTS (Newtype Patterns)
@@ -32,10 +32,6 @@ pub struct Username(
     #[validate(length(min = 3, max = 30))]
     pub String,
 );
-
-/// Price newtype - validates positive value
-#[derive(Debug, Validate)]
-pub struct Price(#[validate(positive)] pub f64);
 
 /// URL newtype - validates URL format
 #[derive(Debug, Validate)]
@@ -87,23 +83,6 @@ pub enum PaymentMethod {
         #[validate(length(min = 6, max = 11))]
         routing_number: String,
     },
-
-    /// Cryptocurrency payment
-    Crypto {
-        #[validate(length(min = 26, max = 62))]
-        wallet_address: String,
-
-        currency: CryptoCurrency,
-    },
-}
-
-/// Cryptocurrency type
-#[derive(Debug, Validate)]
-pub enum CryptoCurrency {
-    Bitcoin,
-    Ethereum,
-    Solana,
-    Other(#[validate(length(min = 2, max = 10))] String),
 }
 
 /// Contact preference enum
@@ -133,6 +112,19 @@ pub enum OrderStatus {
     Refunded,
 }
 
+/// Product category enum
+#[derive(Debug, Validate)]
+pub enum ProductCategory {
+    Electronics,
+    Clothing,
+    Books,
+    HomeAndGarden,
+    Sports,
+    Toys,
+    Food,
+    Other(#[validate(length(min = 2, max = 50))] String),
+}
+
 // =============================================================================
 // NAMED STRUCTS
 // =============================================================================
@@ -153,14 +145,6 @@ pub struct UserProfile {
 
     #[validate(range(min = 13, max = 120))]
     pub age: u8,
-
-    #[validate(url)]
-    pub avatar_url: Option<String>,
-
-    #[validate(max_len = 500)]
-    pub bio: Option<String>,
-
-    pub contact_preference: ContactPreference,
 }
 
 /// Address with full validation
@@ -169,7 +153,7 @@ pub struct Address {
     #[validate(length(min = 1, max = 100))]
     pub street_line_1: String,
 
-    #[validate(max_len = 100)]
+    // Note: String validations on Option<T> require special handling
     pub street_line_2: Option<String>,
 
     #[validate(length(min = 2, max = 50))]
@@ -191,31 +175,16 @@ pub struct Product {
     #[validate(length(min = 1, max = 200))]
     pub name: String,
 
-    #[validate(max_len = 2000)]
+    // Note: String validations on Option<T> require special handling
     pub description: Option<String>,
 
     #[validate(positive)]
-    pub price: Price,
+    pub price: f64,
 
     #[validate(range(min = 0, max = 1000000))]
     pub stock_quantity: u32,
 
     pub tags: Vec<String>,
-
-    pub category: ProductCategory,
-}
-
-/// Product category enum
-#[derive(Debug, Validate)]
-pub enum ProductCategory {
-    Electronics,
-    Clothing,
-    Books,
-    HomeAndGarden,
-    Sports,
-    Toys,
-    Food,
-    Other(#[validate(length(min = 2, max = 50))] String),
 }
 
 /// Shopping cart item
@@ -227,52 +196,29 @@ pub struct CartItem {
     #[validate(range(min = 1, max = 100))]
     pub quantity: u32,
 
-    pub unit_price: Price,
-}
-
-/// Complete order
-#[derive(Debug, Validate)]
-pub struct Order {
-    #[validate(length(min = 1, max = 50))]
-    pub order_id: String,
-
-    #[validate(nested)]
-    pub customer: UserProfile,
-
-    #[validate(nested)]
-    pub shipping_address: Address,
-
-    #[validate(nested)]
-    pub billing_address: Option<Address>,
-
-    pub items: Vec<CartItem>,
-
-    pub payment_method: PaymentMethod,
-
-    pub status: OrderStatus,
-
     #[validate(positive)]
-    pub total_amount: Price,
-
-    #[validate(max_len = 500)]
-    pub notes: Option<String>,
+    pub unit_price: f64,
 }
 
 /// API request for creating a user
 #[derive(Debug, Validate)]
 pub struct CreateUserRequest {
-    pub email: Email,
-    pub username: Username,
+    #[validate(email)]
+    #[validate(max_len = 255)]
+    pub email: String,
+
+    #[validate(alphanumeric)]
+    #[validate(length(min = 3, max = 30))]
+    pub username: String,
 
     #[validate(length(min = 8, max = 128))]
     pub password: String,
 
-    pub age: Age,
+    #[validate(range(min = 0, max = 150))]
+    pub age: u8,
 
-    #[validate(url)]
+    // Note: String validations on Option<T> require special handling
     pub website: Option<String>,
-
-    pub phone: Option<PhoneNumber>,
 }
 
 /// API response for user creation
@@ -281,8 +227,11 @@ pub struct CreateUserResponse {
     #[validate(length(min = 1, max = 50))]
     pub user_id: String,
 
-    pub email: Email,
-    pub username: Username,
+    #[validate(email)]
+    pub email: String,
+
+    #[validate(alphanumeric)]
+    pub username: String,
 
     #[validate(url)]
     pub profile_url: String,
@@ -302,8 +251,8 @@ fn main() {
     println!("  domainstack json-schema --input examples --output schema.json --verbose");
     println!();
     println!("Types included:");
-    println!("  - Tuple structs: Email, Age, Username, Price, Url, PhoneNumber");
+    println!("  - Tuple structs: Email, Age, Username, Url, PhoneNumber");
     println!("  - Enums: PaymentMethod, ContactPreference, OrderStatus, ProductCategory");
-    println!("  - Named structs: UserProfile, Address, Product, CartItem, Order");
+    println!("  - Named structs: UserProfile, Address, Product, CartItem");
     println!("  - API types: CreateUserRequest, CreateUserResponse");
 }

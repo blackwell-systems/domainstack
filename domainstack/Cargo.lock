@@ -961,6 +961,8 @@ dependencies = [
  "anyhow",
  "chrono",
  "clap",
+ "domainstack",
+ "domainstack-derive",
  "notify",
  "notify-debouncer-mini",
  "proc-macro2",

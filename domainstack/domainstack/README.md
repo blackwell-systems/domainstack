@@ -259,6 +259,7 @@ domainstack-schema = "1.0"  # OpenAPI generation
 - **Cross-Field Validation** - Password confirmation, date ranges → [CROSS_FIELD_VALIDATION.md](./docs/CROSS_FIELD_VALIDATION.md)
 - **Type-State Validation** - Compile-time guarantees with phantom types → [TYPE_STATE.md](./docs/TYPE_STATE.md)
 - **OpenAPI Schema Generation** - Auto-generate schemas from rules → [OPENAPI_SCHEMA.md](./docs/OPENAPI_SCHEMA.md)
+- **JSON Schema Generation** - Draft 2020-12 schemas from validation rules → [CLI_GUIDE.md](./docs/CLI_GUIDE.md)
 - **Framework Adapters** - Axum, Actix-web, Rocket extractors → [HTTP_INTEGRATION.md](./docs/HTTP_INTEGRATION.md)
 
 ## Examples
@@ -342,7 +343,7 @@ See **[examples/README.md](https://github.com/blackwell-systems/domainstack/tree
 | **Advanced** | |
 | [Async Validation](./docs/ADVANCED_PATTERNS.md) | DB/API checks, context |
 | [OpenAPI Schema](./docs/OPENAPI_SCHEMA.md) | Generate from rules |
-| [CLI / Zod](./docs/CLI_GUIDE.md) | TypeScript codegen |
+| [CLI / Zod / JSON Schema](./docs/CLI_GUIDE.md) | TypeScript and JSON Schema codegen |
 | [Serde Integration](./docs/SERDE_INTEGRATION.md) | Validate on deserialize |
 
 **Reference:** [API Docs](https://docs.rs/domainstack) · [Architecture](./docs/architecture.md) · [Examples](https://github.com/blackwell-systems/domainstack/tree/main/domainstack/domainstack-examples)

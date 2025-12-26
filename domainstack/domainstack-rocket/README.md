@@ -5,65 +5,110 @@
 [![Documentation](https://docs.rs/domainstack-rocket/badge.svg)](https://docs.rs/domainstack-rocket)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/blackwell-systems/domainstack/blob/main/LICENSE)
 
-Rocket request guards for the [domainstack](https://crates.io/crates/domainstack) full-stack validation ecosystem.
+**Rocket request guards for the [domainstack](https://crates.io/crates/domainstack) full-stack validation ecosystem**
 
-## Overview
+One-line DTO→Domain extraction with automatic structured error responses. Define validation once, get type-safe handlers and UI-friendly errors.
 
-`domainstack-rocket` provides Rocket request guards for automatic JSON validation and domain conversion with structured error responses.
+## Hero Example
+
+```rust
+use domainstack::prelude::*;
+use domainstack_derive::Validate;
+use domainstack_rocket::{DomainJson, ErrorResponse};
+use rocket::{launch, post, routes, serde::json::Json};
+use serde::{Deserialize, Serialize};
+
+// DTO: What the client sends
+#[derive(Deserialize)]
+struct CreateBookingDto {
+    guest_email: String,
+    rooms: u8,
+    nights: u8,
+    promo_code: Option<String>,
+}
+
+// Domain: Valid-by-construction with derive macro
+#[derive(Debug, Serialize, Validate)]
+#[validate(check = "self.rooms > 0 || self.nights > 0", message = "Booking must have rooms or nights")]
+struct Booking {
+    #[validate(email)]
+    #[validate(max_len = 255)]
+    guest_email: String,
+
+    #[validate(range(min = 1, max = 10))]
+    rooms: u8,
+
+    #[validate(range(min = 1, max = 30))]
+    nights: u8,
+
+    #[validate(alphanumeric)]
+    #[validate(length(min = 4, max = 20))]
+    promo_code: Option<String>,
+}
+
+impl TryFrom<CreateBookingDto> for Booking {
+    type Error = ValidationError;
+    fn try_from(dto: CreateBookingDto) -> Result<Self, Self::Error> {
+        let booking = Self {
+            guest_email: dto.guest_email,
+            rooms: dto.rooms,
+            nights: dto.nights,
+            promo_code: dto.promo_code,
+        };
+        booking.validate()?;
+        Ok(booking)
+    }
+}
+
+// Handler: ONE LINE - extraction, validation, conversion all handled
+#[post("/bookings", data = "<booking>")]
+fn create_booking(
+    booking: DomainJson<Booking, CreateBookingDto>,
+) -> Result<Json<Booking>, ErrorResponse> {
+    // booking.domain is GUARANTEED valid - use with confidence!
+    Ok(Json(booking.domain))
+}
+
+#[launch]
+fn rocket() -> _ {
+    rocket::build().mount("/", routes![create_booking])
+}
+```
+
+**Send invalid data:**
+```bash
+curl -X POST http://localhost:8000/bookings \
+  -H "Content-Type: application/json" \
+  -d '{"guest_email": "bad", "rooms": 0, "nights": 50}'
+```
+
+**Get structured, UI-friendly errors:**
+```json
+{
+  "code": "VALIDATION",
+  "status": 400,
+  "message": "Validation failed with 3 errors",
+  "details": {
+    "fields": {
+      "guest_email": [{"code": "invalid_email", "message": "Invalid email format"}],
+      "rooms": [{"code": "out_of_range", "message": "Must be between 1 and 10"}],
+      "nights": [{"code": "out_of_range", "message": "Must be between 1 and 30"}]
+    }
+  }
+}
+```
+
+**Your frontend can map these directly to form fields. No parsing. No guessing.**
 
 ## Installation
 
 ```toml
 [dependencies]
-domainstack-rocket = "0.4.0"
-```
-
-## Quick Start
-
-```rust
-use domainstack::prelude::*;
-use domainstack_rocket::{DomainJson, ErrorResponse};
-use rocket::{post, routes, serde::json::Json};
-use serde::Deserialize;
-
-#[derive(Deserialize)]
-struct CreateUserDto {
-    name: String,
-    email: String,
-    age: u8,
-}
-
-struct User {
-    name: String,
-    email: String,
-    age: u8,
-}
-
-impl TryFrom<CreateUserDto> for User {
-    type Error = domainstack::ValidationError;
-
-    fn try_from(dto: CreateUserDto) -> Result<Self, Self::Error> {
-        validate("name", &dto.name, &rules::min_len(2).and(rules::max_len(50)))?;
-        validate("email", &dto.email, &rules::email())?;
-        validate("age", &dto.age, &rules::range(18, 120))?;
-        Ok(Self { name: dto.name, email: dto.email, age: dto.age })
-    }
-}
-
-#[post("/users", data = "<user>")]
-fn create_user(user: DomainJson<User, CreateUserDto>) -> Result<Json<String>, ErrorResponse> {
-    // user.domain is guaranteed valid here!
-    Ok(Json(format!("Created user: {}", user.domain.name)))
-}
-
-#[rocket::main]
-async fn main() {
-    rocket::build()
-        .mount("/", routes![create_user])
-        .launch()
-        .await
-        .unwrap();
-}
+domainstack-rocket = "1.0"
+domainstack = { version = "1.0", features = ["derive", "regex"] }
+domainstack-derive = "1.0"
+serde = { version = "1", features = ["derive"] }
+rocket = { version = "0.5", features = ["json"] }
 ```
 
 ## Features

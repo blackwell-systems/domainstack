@@ -829,4 +829,286 @@ mod tests {
 
         assert!(matches!(schema.schema_type, Some(SchemaType::Number)));
     }
+
+    // Tests for try_* methods
+    #[test]
+    fn test_try_enum_values_valid() {
+        let schema = Schema::string().try_enum_values(&["red", "green", "blue"]);
+
+        assert!(schema.is_ok());
+        let schema = schema.unwrap();
+        assert!(schema.r#enum.is_some());
+        assert_eq!(schema.r#enum.as_ref().unwrap().len(), 3);
+    }
+
+    #[test]
+    fn test_try_enum_values_with_numbers() {
+        let schema = Schema::integer().try_enum_values(&[1, 2, 3, 5, 8]);
+
+        assert!(schema.is_ok());
+        let schema = schema.unwrap();
+        assert_eq!(schema.r#enum.as_ref().unwrap().len(), 5);
+    }
+
+    #[test]
+    fn test_try_enum_values_empty() {
+        let schema = Schema::string().try_enum_values::<&str>(&[]);
+
+        assert!(schema.is_ok());
+        let schema = schema.unwrap();
+        assert!(schema.r#enum.is_some());
+        assert!(schema.r#enum.as_ref().unwrap().is_empty());
+    }
+
+    #[test]
+    fn test_try_default_valid() {
+        let schema = Schema::string().try_default("guest");
+
+        assert!(schema.is_ok());
+        let schema = schema.unwrap();
+        assert_eq!(schema.default, Some(serde_json::json!("guest")));
+    }
+
+    #[test]
+    fn test_try_default_with_number() {
+        let schema = Schema::integer().try_default(42);
+
+        assert!(schema.is_ok());
+        let schema = schema.unwrap();
+        assert_eq!(schema.default, Some(serde_json::json!(42)));
+    }
+
+    #[test]
+    fn test_try_default_with_object() {
+        use serde_json::json;
+
+        let schema = Schema::object().try_default(json!({"name": "default"}));
+
+        assert!(schema.is_ok());
+        let schema = schema.unwrap();
+        assert_eq!(schema.default, Some(json!({"name": "default"})));
+    }
+
+    #[test]
+    fn test_try_example_valid() {
+        let schema = Schema::string().try_example("john_doe");
+
+        assert!(schema.is_ok());
+        let schema = schema.unwrap();
+        assert_eq!(schema.example, Some(serde_json::json!("john_doe")));
+    }
+
+    #[test]
+    fn test_try_example_with_complex_value() {
+        use serde_json::json;
+
+        let schema = Schema::object().try_example(json!({
+            "name": "Alice",
+            "age": 30,
+            "active": true
+        }));
+
+        assert!(schema.is_ok());
+    }
+
+    #[test]
+    fn test_try_examples_valid() {
+        use serde_json::json;
+
+        let schema = Schema::string().try_examples(vec![json!("alice"), json!("bob")]);
+
+        assert!(schema.is_ok());
+        let schema = schema.unwrap();
+        assert_eq!(schema.examples.as_ref().unwrap().len(), 2);
+    }
+
+    #[test]
+    fn test_try_examples_empty() {
+        let schema = Schema::string().try_examples::<serde_json::Value>(vec![]);
+
+        assert!(schema.is_ok());
+        let schema = schema.unwrap();
+        assert!(schema.examples.as_ref().unwrap().is_empty());
+    }
+
+    #[test]
+    fn test_try_examples_many() {
+        let examples: Vec<_> = (0..100).collect();
+        let schema = Schema::integer().try_examples(examples);
+
+        assert!(schema.is_ok());
+        let schema = schema.unwrap();
+        assert_eq!(schema.examples.as_ref().unwrap().len(), 100);
+    }
+
+    #[test]
+    fn test_try_extension_valid() {
+        use serde_json::json;
+
+        let schema = Schema::object().try_extension("x-custom", json!({"rule": "end > start"}));
+
+        assert!(schema.is_ok());
+        let schema = schema.unwrap();
+        assert!(schema.extensions.as_ref().unwrap().contains_key("x-custom"));
+    }
+
+    #[test]
+    fn test_try_extension_multiple() {
+        use serde_json::json;
+
+        let schema = Schema::object()
+            .try_extension("x-first", json!("value1"))
+            .and_then(|s| s.try_extension("x-second", json!("value2")));
+
+        assert!(schema.is_ok());
+        let schema = schema.unwrap();
+        let exts = schema.extensions.as_ref().unwrap();
+        assert_eq!(exts.len(), 2);
+    }
+
+    // Composition edge cases
+    #[test]
+    fn test_any_of_empty() {
+        let schema = Schema::any_of(vec![]);
+
+        assert!(schema.any_of.is_some());
+        assert!(schema.any_of.as_ref().unwrap().is_empty());
+    }
+
+    #[test]
+    fn test_all_of_empty() {
+        let schema = Schema::all_of(vec![]);
+
+        assert!(schema.all_of.is_some());
+        assert!(schema.all_of.as_ref().unwrap().is_empty());
+    }
+
+    #[test]
+    fn test_one_of_empty() {
+        let schema = Schema::one_of(vec![]);
+
+        assert!(schema.one_of.is_some());
+        assert!(schema.one_of.as_ref().unwrap().is_empty());
+    }
+
+    #[test]
+    fn test_nested_composition() {
+        let schema = Schema::any_of(vec![
+            Schema::all_of(vec![Schema::string(), Schema::integer()]),
+            Schema::one_of(vec![Schema::boolean(), Schema::number()]),
+        ]);
+
+        assert!(schema.any_of.is_some());
+        let any_of = schema.any_of.as_ref().unwrap();
+        assert!(any_of[0].all_of.is_some());
+        assert!(any_of[1].one_of.is_some());
+    }
+
+    // Builder chaining edge cases
+    #[test]
+    fn test_multiple_format_calls() {
+        let schema = Schema::string().format("email").format("hostname");
+
+        // Last format wins
+        assert_eq!(schema.format, Some("hostname".to_string()));
+    }
+
+    #[test]
+    fn test_multiple_description_calls() {
+        let schema = Schema::string()
+            .description("First description")
+            .description("Second description");
+
+        assert_eq!(schema.description, Some("Second description".to_string()));
+    }
+
+    #[test]
+    fn test_multiple_min_max_calls() {
+        let schema = Schema::integer()
+            .minimum(0)
+            .maximum(100)
+            .minimum(10)
+            .maximum(50);
+
+        // Last values win
+        assert_eq!(schema.minimum, Some(10.0));
+        assert_eq!(schema.maximum, Some(50.0));
+    }
+
+    // Reference edge cases
+    #[test]
+    fn test_reference_with_path() {
+        let schema = Schema::reference("nested/Type");
+
+        assert_eq!(
+            schema.reference,
+            Some("#/components/schemas/nested/Type".to_string())
+        );
+    }
+
+    #[test]
+    fn test_reference_empty_name() {
+        let schema = Schema::reference("");
+
+        assert_eq!(schema.reference, Some("#/components/schemas/".to_string()));
+    }
+
+    // Complex property building
+    #[test]
+    fn test_deep_object_nesting() {
+        let schema = Schema::object()
+            .property(
+                "level1",
+                Schema::object().property(
+                    "level2",
+                    Schema::object().property("level3", Schema::string()),
+                ),
+            )
+            .required(&["level1"]);
+
+        let props = schema.properties.as_ref().unwrap();
+        assert!(props.contains_key("level1"));
+    }
+
+    #[test]
+    fn test_array_of_objects() {
+        let item_schema = Schema::object()
+            .property("id", Schema::integer())
+            .property("name", Schema::string())
+            .required(&["id", "name"]);
+
+        let schema = Schema::array(item_schema).min_items(0).max_items(100);
+
+        assert!(schema.items.is_some());
+        assert_eq!(schema.min_items, Some(0));
+    }
+
+    // Default trait
+    #[test]
+    fn test_schema_default_trait() {
+        let schema: Schema = Default::default();
+
+        assert!(schema.schema_type.is_none());
+        assert!(schema.properties.is_none());
+    }
+
+    // Serialization with all fields
+    #[test]
+    fn test_full_schema_serialization() {
+        use serde_json::json;
+
+        let schema = Schema::object()
+            .property("id", Schema::string().read_only(true))
+            .property("name", Schema::string().min_length(1).max_length(100))
+            .property("score", Schema::number().minimum(0.0).maximum(100.0))
+            .property("tags", Schema::array(Schema::string()).unique_items(true))
+            .required(&["name"])
+            .description("A user object")
+            .deprecated(false)
+            .example(json!({"name": "Alice", "score": 95.5}));
+
+        let json_str = serde_json::to_string(&schema).unwrap();
+        assert!(json_str.contains("\"description\""));
+        assert!(json_str.contains("\"readOnly\""));
+    }
 }

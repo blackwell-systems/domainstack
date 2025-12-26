@@ -1,11 +1,11 @@
 # domainstack Roadmap
 
-This roadmap outlines potential future features for domainstack, ranked by impact and alignment with the library's philosophy of "write once, derive everything."
+This roadmap outlines future features for domainstack, ranked by impact and alignment with the library's philosophy of "write once, derive everything."
 
-## Status: v1.0.0 Released + domainstack-cli v0.1.0 
+## Status: v1.0.0 Released
 
 The core library is production-ready with:
-- Derive macro for validation
+- Derive macro for validation (`Validate`, `ToSchema`, `ValidateOnDeserialize`)
 - 37+ built-in validation rules
 - OpenAPI 3.0 schema generation
 - Framework adapters (Axum, Actix, Rocket)
@@ -13,10 +13,8 @@ The core library is production-ready with:
 - Type-state validation
 - Nested validation with path tracking
 - Serde integration (validate on deserialize)
-- **NEW:** Code generation CLI (`domainstack-cli`)
-  - TypeScript/Zod schema generation
-  - 26+ validation rules supported
-  - Unified CLI architecture for future generators
+- Code generation CLI (`domainstack-cli`) with Zod support
+- WASM browser validation (`domainstack-wasm`)
 
 ---
 
@@ -24,124 +22,208 @@ The core library is production-ready with:
 
 ### 🔥 Tier 1: High Impact, Core Extensions
 
-#### 1. Serde Integration (Validate on Deserialize) 
+#### 1. Enum and Tuple Struct Support for Derive Macros
 
-**Status**: **Implemented in v1.0.0**
+**Status**: Planned
 **Impact**: 🔥🔥🔥 Very High
 **Effort**: Medium
-**Feature Flag**: `serde`
 
-Automatically validate during JSON/YAML/etc. deserialization:
+Currently `#[derive(Validate)]` only supports structs with named fields. Adding support for:
 
-```rust
-#[derive(Deserialize, ValidateOnDeserialize)]
-struct User {
-    #[validate(email)]
-    email: String,
-
-    #[validate(range(min = 18, max = 120))]
-    age: u8,
-}
-
-// Validation happens automatically during parsing
-let user: User = serde_json::from_str(json)?;
-// ↑ Returns ValidationError if invalid, not just serde::Error
-```
-
-**Benefits:**
-- Eliminates `dto.validate()` boilerplate
-- Guaranteed valid after deserialization
-- Better error messages (field-level validation errors vs "unexpected value")
-- Single step: parse + validate
-
-**Technical Approach:**
-- Custom serde deserializer that runs validation rules during parsing
-- Integrates with existing `#[validate(...)]` attributes
-- Returns `ValidationError` with field paths matching serde's error reporting
-
-**See**: [Serde Integration Deep Dive](#serde-integration-deep-dive) below
-
----
-
-#### 2. Code Generation CLI (TypeScript/Zod) 
-
-**Status**: **Phase 1 Complete - v0.1.0**
-**Impact**: 🔥🔥🔥 Very High
-**Effort**: 6 days for MVP - **COMPLETED**
-**Crate**: `domainstack-cli`
-
-Generate TypeScript Zod schemas from Rust validation rules:
-
-```bash
-# Install the CLI
-cargo install domainstack-cli
-
-# Generate Zod schemas
-domainstack zod --input src --output frontend/schemas.ts
-```
-
-**From Rust:**
+**Enum Validation:**
 ```rust
 #[derive(Validate)]
-struct User {
-    #[validate(email)]
-    #[validate(max_len = 255)]
-    email: String,
-
-    #[validate(range(min = 18, max = 120))]
-    age: u8,
-
-    #[validate(url)]
-    profile_url: Option<String>,
+enum PaymentMethod {
+    Card {
+        #[validate(length(min = 16, max = 19))]
+        number: String,
+        #[validate(matches_regex = r"^\d{3,4}$")]
+        cvv: String,
+    },
+    BankTransfer {
+        #[validate(alphanumeric)]
+        account_number: String,
+    },
+    Cash,
 }
 ```
 
-**Generates TypeScript/Zod:**
-```typescript
-export const UserSchema = z.object({
-  email: z.string().email().max(255),
-  age: z.number().min(18).max(120),
-  profile_url: z.string().url().optional(),
-});
+**Tuple Struct / Newtype Validation:**
+```rust
+#[derive(Validate)]
+struct Email(#[validate(email)] String);
 
-export type User = z.infer<typeof UserSchema>;
+#[derive(Validate)]
+struct Age(#[validate(range(min = 0, max = 150))] u8);
+
+// Enables the newtype pattern with derive
+let email = Email("user@example.com".to_string());
+email.validate()?;
 ```
 
-**Implemented Features:**
-- Unified CLI with subcommand architecture
-- Zod schema generation with 26+ validation rules
-- All string validations (email, url, length, patterns)
-- All numeric validations (range, min/max, positive/negative)
-- Optional fields with correct `.optional()` ordering
-- Arrays and nested types
-- Custom type references
-- Precision warnings for large integers (u64, i128, etc.)
-- Auto-generated headers with timestamps
-- Comprehensive test coverage (32 unit tests)
-
 **Benefits:**
-- Single source of truth for validation
-- Frontend/backend validation stays in sync automatically
-- No duplicate validation logic
-- Type-safe schemas with Zod's type inference
-- Zero maintenance - regenerate when Rust types change
-
-**Future Generators (Planned):**
-- 📋 Yup schemas (`domainstack yup`)
-- 📋 GraphQL SDL (`domainstack graphql`)
-- 📋 Prisma schemas (`domainstack prisma`)
-- 📋 JSON Schema (`domainstack json-schema`)
-
-**See:** `domainstack/domainstack-cli/README.md` for full documentation
+- Enables type-safe newtype patterns with derive
+- Supports sum types (enums) in domain modeling
+- More idiomatic Rust validation
 
 ---
 
-#### 3. Property-Based Test Data Generation
+#### 2. CLI Additional Generators
+
+**Status**: Planned (Architecture ready)
+**Impact**: 🔥🔥🔥 Very High
+**Effort**: Medium per generator
+
+The CLI architecture supports multiple generators. Planned additions:
+
+```bash
+# Yup schemas (popular React form library)
+domainstack yup --input src --output frontend/schemas.ts
+
+# GraphQL SDL with validation directives
+domainstack graphql --input src --output schema.graphql
+
+# Prisma schema generation
+domainstack prisma --input src --output prisma/schema.prisma
+
+# JSON Schema (Draft 2020-12)
+domainstack json-schema --input src --output schemas/
+```
+
+**Benefits:**
+- Single source of truth across all platforms
+- Support for major frontend validation libraries
+- API gateway integration (JSON Schema)
+- Database schema generation (Prisma)
+
+---
+
+#### 3. CLI Watch Mode
+
+**Status**: Planned (flag exists, not implemented)
+**Impact**: 🔥🔥 High
+**Effort**: Low
+
+Implement the `--watch` flag for automatic regeneration:
+
+```bash
+# Regenerate schemas when Rust files change
+domainstack zod --input src --output frontend/schemas.ts --watch
+
+# Watch mode with specific file patterns
+domainstack zod --input src --output schemas.ts --watch --pattern "**/*.rs"
+```
+
+**Benefits:**
+- Faster development workflow
+- Automatic sync during development
+- No manual regeneration needed
+
+---
+
+### 🚀 Tier 2: Documentation & Examples
+
+#### 4. WASM Integration Example Project
+
+**Status**: Planned
+**Impact**: 🔥🔥 High
+**Effort**: Low-Medium
+
+Create a complete example showing WASM browser validation:
+
+```
+examples/
+└── wasm-react-demo/
+    ├── rust/
+    │   └── src/lib.rs        # Types with validation
+    ├── frontend/
+    │   ├── src/App.tsx       # React form with WASM validation
+    │   └── package.json
+    └── README.md             # Step-by-step setup guide
+```
+
+**Demonstrates:**
+- Building WASM module with `wasm-pack`
+- Registering types for validation
+- Calling validation from JavaScript/TypeScript
+- Displaying field-level errors in React
+- Same error structure as server responses
+
+---
+
+#### 5. CLI Step-by-Step Tutorial
+
+**Status**: Planned
+**Impact**: 🔥🔥 High
+**Effort**: Low
+
+Create comprehensive CLI documentation:
+
+```markdown
+# CLI Tutorial: From Rust to TypeScript
+
+## Step 1: Install the CLI
+cargo install domainstack-cli
+
+## Step 2: Add validation rules to your Rust types
+...
+
+## Step 3: Generate TypeScript schemas
+...
+
+## Step 4: Use in your frontend
+...
+```
+
+**Contents:**
+- Installation and setup
+- Basic usage examples
+- Handling custom types
+- CI/CD integration
+- Troubleshooting common issues
+
+---
+
+### 📊 Tier 3: Framework Improvements
+
+#### 6. Actix Adapter Async Improvement
+
+**Status**: Research
+**Impact**: 🔥 Medium
+**Effort**: Medium
+
+The Actix adapter currently uses `futures::executor::block_on()` due to Actix-web's sync extractor pattern. Research options:
+
+**Current (works, documented limitation):**
+```rust
+fn from_request(req: &HttpRequest, payload: &mut Payload) -> Self::Future {
+    ready(match futures::executor::block_on(json_fut) { ... })
+}
+```
+
+**Potential improvements:**
+1. Document the limitation more prominently in README
+2. Provide alternative truly-async pattern in documentation
+3. Track Actix-web updates for potential native async extractors
+
+**Workaround documentation:**
+```rust
+// For truly async extraction, use this pattern:
+async fn create_user(
+    Json(dto): Json<CreateUserDto>
+) -> Result<Json<User>, ErrorResponse> {
+    let user = domainstack_http::into_domain::<User, _>(dto)?;
+    Ok(Json(user))
+}
+```
+
+---
+
+#### 7. Property-Based Test Data Generation
 
 **Status**: Research
 **Impact**: 🔥🔥 High
 **Effort**: Medium
-**RFC**: TBD
 
 Auto-generate test data from validation rules:
 
@@ -153,16 +235,12 @@ struct User {
 
     #[validate(range(min = 18, max = 120))]
     age: u8,
-
-    #[validate(length(min = 3, max = 20))]
-    #[validate(alphanumeric)]
-    username: String,
 }
 
 // Auto-generates:
-// - Valid users (random emails, ages 18-120, alphanumeric usernames)
+// - Valid users (random emails, ages 18-120)
 // - Invalid users for each validation rule
-// - Edge cases (age=18, age=120, username length 3, etc.)
+// - Edge cases (age=18, age=120, etc.)
 ```
 
 **Integration with:**
@@ -170,17 +248,9 @@ struct User {
 - `quickcheck` - Random test generation
 - `arbitrary` - Arbitrary trait implementation
 
-**Benefits:**
-- Comprehensive test coverage without manual test data
-- Finds edge cases automatically
-- Tests validation rules are correct
-- Mutation testing for validation logic
-
 ---
 
-### 🚀 Tier 2: High Value, Ecosystem Integration
-
-#### 4. Database Constraint Generation (SQL DDL)
+#### 8. Database Constraint Generation (SQL DDL)
 
 **Status**: Planned
 **Impact**: 🔥🔥 High
@@ -215,45 +285,11 @@ CREATE TABLE users (
 - `diesel` - ORM integration
 - `sea-orm` - Async ORM integration
 
-**Benefits:**
-- Database enforces same rules as application
-- Prevents invalid data at multiple layers
-- Single source of truth for constraints
-
 ---
 
-#### 5. JSON Schema Generation
+### 🧪 Tier 4: Advanced Features
 
-**Status**: Planned
-**Impact**: 🔥 Medium-High
-**Effort**: Low
-
-Generate JSON Schema (Draft 2020-12) from validation rules:
-
-```rust
-#[derive(Validate, ToJsonSchema)]
-struct User {
-    #[validate(email)]
-    email: String,
-}
-```
-
-**Benefits:**
-- Works with JSON Schema validators in any language
-- API gateway integration (Kong, AWS API Gateway)
-- Schema registries (Confluent, Apicurio)
-- Cross-language validation
-
-**Similar to OpenAPI but:**
-- Broader ecosystem support
-- Used for validation, not just documentation
-- Can validate events, configs, etc. (not just API requests)
-
----
-
-### 📊 Tier 3: Developer Experience & Tooling
-
-#### 6. Localization/i18n Support
+#### 9. Localization/i18n Support
 
 **Status**: Research
 **Impact**: 🔥 Medium
@@ -265,7 +301,7 @@ Multi-language validation error messages:
 #[derive(Validate)]
 struct User {
     #[validate(email)]
-    #[message(en = "Invalid email format", es = "Formato de correo inválido", fr = "Format d'email invalide")]
+    #[message(en = "Invalid email format", es = "Formato de correo inválido")]
     email: String,
 }
 
@@ -273,15 +309,9 @@ struct User {
 let error = user.validate_with_locale("es")?;
 ```
 
-**Alternative approach:**
-```rust
-// Auto-generate translation keys
-// error.email.invalid_format -> load from i18n files
-```
-
 ---
 
-#### 7. Validation Metrics/Observability
+#### 10. Validation Metrics/Observability
 
 **Status**: Planned
 **Impact**: Medium
@@ -304,44 +334,9 @@ validation_failures_total{field="email", code="invalid_email"} 42
 validation_duration_seconds{type="User"} 0.001
 ```
 
-**Benefits:**
-- Identify data quality issues
-- Track which fields fail most
-- Performance monitoring
-- Alert on validation failure spikes
-
 ---
 
-#### 8. GraphQL Schema Generation
-
-**Status**: Research
-**Impact**: Medium
-**Effort**: Low
-
-Generate GraphQL schemas from validation rules:
-
-```rust
-#[derive(Validate, ToGraphQL)]
-struct User {
-    #[validate(email)]
-    email: String,
-}
-```
-
-**Generates:**
-```graphql
-type User {
-  email: String! @constraint(format: "email")
-}
-```
-
-**Integration with:**
-- `async-graphql` - GraphQL server
-- `juniper` - GraphQL library
-
----
-
-#### 9. Validation Coverage Tracking
+#### 11. Validation Coverage Tracking
 
 **Status**: Research
 **Impact**: Medium
@@ -358,271 +353,14 @@ Coverage Report:
 ⚠ User.nickname (length): 0 tests  ← Not tested!
 ```
 
-**Benefits:**
-- Ensure all validation rules have tests
-- Identify untested edge cases
-- CI/CD integration
-
----
-
-#### 10. Contract Testing Generator
-
-**Status**: Research
-**Impact**: Medium
-**Effort**: High
-
-Generate contract tests from validation rules:
-
-```rust
-#[derive(Validate, ContractTest)]
-struct CreateUserRequest { ... }
-```
-
-**Generates:**
-- Pact contract tests
-- Invalid input test cases
-- Boundary condition tests
-- Property-based tests
-
 ---
 
 ## 🧪 Experimental / Future Research
 
-### WebAssembly Validation
-
-Compile validation rules to WASM for browser-side validation.
-
-### Machine Learning Rule Inference
-
-Suggest validation rules based on sample data analysis.
-
-### Visual Rule Builder
-
-GUI tool for building complex validation rules visually.
-
-### Real-time Validation Streaming
-
-Stream validation results for large datasets.
-
----
-
-## Serde Integration Deep Dive
-
-### Problem Statement
-
-Current workflow requires two steps:
-
-```rust
-// Step 1: Deserialize (can fail)
-let dto: UserDto = serde_json::from_str(json)?;
-
-// Step 2: Validate (can fail)
-dto.validate()?;
-```
-
-**Issues:**
-- Boilerplate (always need both steps)
-- Two different error types to handle
-- Invalid data gets deserialized before being rejected
-- Confusing error messages for users ("expected integer" vs "age must be between 18 and 120")
-
-### Solution: ValidateOnDeserialize
-
-```rust
-#[derive(Deserialize, ValidateOnDeserialize)]
-struct User {
-    #[validate(email)]
-    email: String,
-
-    #[validate(range(min = 18, max = 120))]
-    age: u8,
-}
-
-// Single step: deserialize + validate
-let user: User = serde_json::from_str(json)?;
-// ↑ Already validated! Returns ValidationError if invalid
-```
-
-### How It Works
-
-#### Technical Implementation
-
-1. **Derive Macro Analysis:**
-   - Scans `#[validate(...)]` attributes
-   - Generates a custom `Deserialize` implementation
-   - Wraps serde's deserializer with validation layer
-
-2. **Two-Phase Deserialization:**
-   ```rust
-   // Phase 1: Deserialize into intermediate type
-   let intermediate: UserIntermediate = Deserialize::deserialize(deserializer)?;
-
-   // Phase 2: Validate and convert
-   let user = User::try_from_intermediate(intermediate)?;
-   ```
-
-3. **Error Mapping:**
-   - serde errors → ValidationError with field paths
-   - Validation errors → already have field paths
-   - Consistent error format for API consumers
-
-#### Generated Code Example
-
-```rust
-// What the macro generates
-impl<'de> Deserialize<'de> for User {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        // Intermediate struct without validation
-        #[derive(Deserialize)]
-        struct UserIntermediate {
-            email: String,
-            age: u8,
-        }
-
-        // Deserialize first
-        let intermediate = UserIntermediate::deserialize(deserializer)?;
-
-        // Then validate
-        let user = User {
-            email: intermediate.email,
-            age: intermediate.age,
-        };
-
-        // Run validation rules
-        user.validate()
-            .map_err(|e| serde::de::Error::custom(e.to_string()))?;
-
-        Ok(user)
-    }
-}
-```
-
-### Benefits in Detail
-
-#### 1. Single Step API
-```rust
-// Before
-let dto: UserDto = serde_json::from_str(json)?;
-let domain = dto.try_into()?;
-
-// After
-let domain: User = serde_json::from_str(json)?;
-```
-
-#### 2. Better Error Messages
-```rust
-// Before (serde error)
-"invalid type: string "abc", expected u8 at line 1 column 10"
-
-// After (validation error)
-"age: Must be between 18 and 120"
-```
-
-#### 3. Fail Fast
-```rust
-// Before: Deserializes whole object, then validates
-// Memory allocated for invalid data
-
-// After: Validates fields as they're deserialized
-// Can fail early, less memory waste
-```
-
-#### 4. Type Safety
-```rust
-// If you have User, it's GUARANTEED valid
-fn process_user(user: User) {
-    // No need to check user.age is valid
-    // Type system guarantees it
-}
-```
-
-### Edge Cases & Design Decisions
-
-#### Optional Fields
-```rust
-#[derive(ValidateOnDeserialize)]
-struct User {
-    #[validate(email)]
-    email: String,
-
-    // How to validate Option<T>?
-    #[validate(min_len = 1)]
-    nickname: Option<String>,  // Validate if present
-}
-```
-
-**Decision:** Validation runs only if value is `Some(_)`
-
-#### Default Values
-```rust
-#[derive(ValidateOnDeserialize)]
-struct User {
-    #[serde(default = "default_age")]
-    #[validate(range(min = 18, max = 120))]
-    age: u8,
-}
-```
-
-**Decision:** Validate default values (prevent invalid defaults)
-
-#### Custom Deserializers
-```rust
-#[derive(ValidateOnDeserialize)]
-struct User {
-    #[serde(deserialize_with = "custom_deser")]
-    #[validate(email)]
-    email: String,
-}
-```
-
-**Decision:** Run validation after custom deserializer
-
-### Performance Considerations
-
-**Overhead:**
-- Minimal: Validation happens in-place during deserialization
-- No extra allocations
-- Same memory usage as two-step approach
-
-**Benchmark (estimated):**
-```
-Two-step (deserialize + validate):  1000 ns
-ValidateOnDeserialize:              1050 ns  (~5% overhead)
-```
-
-The 5% overhead is from the intermediate struct, but you save the manual validation call.
-
-### Migration Path
-
-**Opt-in, not breaking:**
-```rust
-// Existing code still works
-#[derive(Deserialize, Validate)]
-struct User { ... }
-
-// New opt-in feature
-#[derive(Deserialize, ValidateOnDeserialize)]
-struct User { ... }
-```
-
-**Feature flag:**
-```toml
-domainstack = { version = "1.0", features = ["serde-integration"] }
-```
-
-### Related Work
-
-**Similar to:**
-- Pydantic (Python) - Validates during parsing
-- Go validator tags - Validates during JSON unmarshal
-- JSON Schema validators - Validates during parsing
-
-**Different from:**
-- Most Rust validators - Separate validate step
-- serde itself - No validation, only deserialization
+- **Machine Learning Rule Inference** - Suggest validation rules based on sample data
+- **Visual Rule Builder** - GUI tool for building complex validation rules
+- **Real-time Validation Streaming** - Stream validation results for large datasets
+- **Contract Testing Generator** - Generate Pact/contract tests from validation rules
 
 ---
 

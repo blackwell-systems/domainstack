@@ -1,6 +1,6 @@
 //! # domainstack-envelope
 //!
-//! Convert domainstack validation errors into RFC 9457 compliant HTTP error responses.
+//! Convert domainstack validation errors into structured HTTP error responses.
 //!
 //! This crate provides the `IntoEnvelopeError` trait to convert `ValidationError` into
 //! `error_envelope::Error`, producing structured JSON error responses with field-level details.
@@ -9,7 +9,7 @@
 //!
 //! - **`IntoEnvelopeError`** trait - Convert `ValidationError` to `error_envelope::Error`
 //! - **Field-level error mapping** - Preserves error paths like `rooms[0].adults`, `guest.email`
-//! - **RFC 9457 compliance** - Standard HTTP error response format
+//! - **Structured error format** - Consistent HTTP error response format with field-level details
 //! - **Metadata preservation** - Includes validation metadata (min, max, etc.) in responses
 //!
 //! ## Example
@@ -24,7 +24,7 @@
 //!
 //! let envelope = err.into_envelope_error();
 //!
-//! // Produces RFC 9457 error:
+//! // Produces structured error response:
 //! // {
 //! //   "code": "VALIDATION",
 //! //   "status": 400,

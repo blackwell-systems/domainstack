@@ -367,7 +367,7 @@ async fn create_user(Json(dto): Json<UserDto>) -> Result<Json<User>, Error> {
 }
 ```
 
-**Produces RFC 9457-compliant responses:**
+**Produces structured error responses:**
 
 ```json
 {

@@ -487,7 +487,7 @@ domainstack = { version = "1.0", features = ["derive", "chrono"] }
 # OpenAPI 3.0 schema generation
 domainstack-schema = "1.0"
 
-# HTTP error envelope integration (RFC 9457 Problem Details)
+# HTTP error envelope integration (structured error responses)
 domainstack-envelope = "1.0"
 
 # HTTP utilities (framework-agnostic)

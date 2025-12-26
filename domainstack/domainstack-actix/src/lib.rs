@@ -3,13 +3,13 @@
 //! Actix-web integration for domainstack validation with automatic DTO→Domain conversion.
 //!
 //! This crate provides Actix-web extractors that automatically deserialize, validate, and convert
-//! DTOs to domain types—returning structured RFC 9457 error responses on validation failure.
+//! DTOs to domain types—returning structured error responses on validation failure.
 //!
 //! ## What it provides
 //!
 //! - **`DomainJson<T, Dto>`** - Extract JSON, validate, and convert DTO to domain type in one step
 //! - **`ValidatedJson<Dto>`** - Extract and validate a DTO without domain conversion
-//! - **`ErrorResponse`** - Automatic RFC 9457 compliant error responses with field-level details
+//! - **`ErrorResponse`** - Automatic structured error responses with field-level details
 //!
 //! ## Example - DomainJson
 //!

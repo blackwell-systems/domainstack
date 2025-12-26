@@ -244,7 +244,7 @@ let schema = User::schema();
 
 ### domainstack-envelope - HTTP Error Envelopes
 
-RFC 9457-compliant HTTP error responses:
+Structured HTTP error responses:
 
 ```toml
 [dependencies]
@@ -259,7 +259,7 @@ use domainstack_envelope::IntoEnvelopeError;
 
 async fn create_user(Json(dto): Json<UserDto>) -> Result<Json<User>, ErrorResponse> {
     let user = User::try_from(dto)
-        .map_err(|e| e.into_envelope_error())?;  // Convert to RFC 9457 format
+        .map_err(|e| e.into_envelope_error())?;  // Convert to structured error format
     Ok(Json(user))
 }
 ```

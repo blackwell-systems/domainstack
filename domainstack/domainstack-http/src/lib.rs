@@ -3,7 +3,7 @@
 //! Framework-agnostic HTTP validation helpers for domainstack.
 //!
 //! This crate provides reusable helper functions for converting DTOs to domain types and
-//! validating DTOs, with automatic conversion to RFC 9457 error responses.
+//! validating DTOs, with automatic conversion to structured error responses.
 //!
 //! ## What it provides
 //!

@@ -5,10 +5,10 @@ edition = "2021"
 rust-version = "1.76"
 license = "Apache-2.0"
 authors = ["Dayna Blackwell <blackwellsystems@protonmail.com>"]
-description = "Error envelope integration for domainstack: convert validation errors to RFC 9457 problem details"
+description = "Error envelope integration for domainstack: convert validation errors to structured HTTP error responses"
 repository = "https://github.com/blackwell-systems/domainstack"
 documentation = "https://docs.rs/domainstack-envelope"
-keywords = ["validation", "http", "api", "rfc9457", "errors"]
+keywords = ["validation", "http", "api", "errors", "envelope"]
 categories = ["web-programming", "web-programming::http-server"]
 
 [dependencies]

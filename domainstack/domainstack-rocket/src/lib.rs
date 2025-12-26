@@ -4,7 +4,7 @@
 //!
 //! - [`DomainJson<T, Dto>`] - Deserialize JSON, convert DTO to domain type, return structured errors
 //! - [`ValidatedJson<Dto>`] - Deserialize and validate a DTO without domain conversion
-//! - [`ErrorResponse`] - RFC 9457 compliant error responses
+//! - [`ErrorResponse`] - Structured error responses with field-level details
 //!
 //! ## Example
 //!
@@ -220,7 +220,7 @@ where
     }
 }
 
-/// RFC 9457 compliant error response for Rocket
+/// Structured error response for Rocket
 ///
 /// Automatically converts ValidationError into structured JSON error responses.
 ///
@@ -607,7 +607,7 @@ mod tests {
         assert_eq!(response.status(), Status::BadRequest);
         let body = response.into_string().unwrap();
 
-        // Verify RFC 9457-style error format
+        // Verify structured error format
         let error: serde_json::Value = serde_json::from_str(&body).expect("Failed to parse JSON");
         assert_eq!(error["code"], "VALIDATION_FAILED");
         assert!(error["message"].as_str().unwrap().contains("errors"));

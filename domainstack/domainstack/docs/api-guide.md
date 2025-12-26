@@ -193,7 +193,7 @@ pub struct Violation {
 - Adding and merging violations
 - Extracting error information (maps, iteration)
 - Message transformation for i18n
-- HTTP integration with RFC 9457 format
+- HTTP integration with structured error format
 - Best practices for error codes and paths
 
 ## Validation Rules
@@ -332,7 +332,7 @@ fn send_email(email: Email<Validated>) {
 4. **Structured error paths** - Use Path API for type-safe error paths, not string formatting
 5. **Framework-agnostic core** - Keep domain logic separate from HTTP layer
 6. **One validation point** - Validate at domain boundaries (DTO → Domain), not everywhere
-7. **Use error-envelope for HTTP** - Automatic RFC 9457-compliant structured responses
+7. **Use error-envelope for HTTP** - Automatic structured error responses
 8. **Custom functions for domain rules** - Encapsulate business logic in reusable validation functions
 
 ## See Also

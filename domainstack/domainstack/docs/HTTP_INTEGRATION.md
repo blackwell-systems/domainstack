@@ -31,7 +31,7 @@ async fn create_user(
 
 ## Error Response Format
 
-Structured RFC 9457-compliant error responses:
+Structured error responses with field-level details:
 
 ```json
 {

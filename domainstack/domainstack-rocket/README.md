@@ -4,7 +4,7 @@ Rocket request guards for [domainstack](https://crates.io/crates/domainstack) va
 
 ## Overview
 
-`domainstack-rocket` provides Rocket request guards for automatic JSON validation and domain conversion with RFC 9457 compliant error responses.
+`domainstack-rocket` provides Rocket request guards for automatic JSON validation and domain conversion with structured error responses.
 
 ## Installation
 
@@ -98,7 +98,7 @@ fn update_user(id: u64, dto: ValidatedJson<UpdateUserDto>) -> Json<UpdateUserDto
 
 ### Error Handling
 
-Validation errors are automatically converted to RFC 9457 compliant JSON responses:
+Validation errors are automatically converted to structured JSON responses:
 
 **Important:** You need to register an error catcher to properly handle validation errors:
 

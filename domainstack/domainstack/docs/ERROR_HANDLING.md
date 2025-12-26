@@ -459,9 +459,9 @@ async fn create_user(
 }
 ```
 
-### RFC 9457 Response Format
+### Structured Error Response Format
 
-Validation errors are serialized to RFC 9457 problem details:
+Validation errors are serialized to structured error responses:
 
 ```json
 {

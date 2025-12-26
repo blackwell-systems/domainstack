@@ -70,7 +70,7 @@ fn main() {
 
     match serde_json::from_str::<UserRegistration>(valid_json) {
         Ok(user) => {
-            println!("   ✓ Successfully deserialized and validated:");
+            println!("   [ok] Successfully deserialized and validated:");
             println!("     - Email: {}", user.email);
             println!("     - Age: {}", user.age);
             println!("     - Username: {}", user.username);
@@ -79,7 +79,7 @@ fn main() {
                 user.display_name.as_deref().unwrap_or("None")
             );
         }
-        Err(e) => println!("   ✗ Unexpected error: {}", e),
+        Err(e) => println!("   [error] Unexpected error: {}", e),
     }
 
     // ============================================
@@ -94,9 +94,9 @@ fn main() {
     }"#;
 
     match serde_json::from_str::<UserRegistration>(invalid_email_json) {
-        Ok(_) => println!("   ✗ Should have failed validation!"),
+        Ok(_) => println!("   [error] Should have failed validation!"),
         Err(e) => {
-            println!("   ✓ Validation failed during deserialization:");
+            println!("   [ok] Validation failed during deserialization:");
             println!("     Error: {}", e);
         }
     }
@@ -113,9 +113,9 @@ fn main() {
     }"#;
 
     match serde_json::from_str::<UserRegistration>(invalid_age_json) {
-        Ok(_) => println!("   ✗ Should have failed validation!"),
+        Ok(_) => println!("   [error] Should have failed validation!"),
         Err(e) => {
-            println!("   ✓ Age validation failed:");
+            println!("   [ok] Age validation failed:");
             println!("     Error: {}", e);
         }
     }
@@ -132,9 +132,9 @@ fn main() {
     }"#;
 
     match serde_json::from_str::<UserRegistration>(invalid_username_json) {
-        Ok(_) => println!("   ✗ Should have failed validation!"),
+        Ok(_) => println!("   [error] Should have failed validation!"),
         Err(e) => {
-            println!("   ✓ Username validation failed:");
+            println!("   [ok] Username validation failed:");
             println!("     Error: {}", e);
         }
     }
@@ -152,12 +152,12 @@ fn main() {
 
     match serde_json::from_str::<ServerConfig>(config_json) {
         Ok(config) => {
-            println!("   ✓ Config deserialized with serde attributes:");
+            println!("   [ok] Config deserialized with serde attributes:");
             println!("     - Server port: {}", config.server_port);
             println!("     - Server host: {}", config.server_host);
             println!("     - Worker threads: {} (default)", config.worker_threads);
         }
-        Err(e) => println!("   ✗ Unexpected error: {}", e),
+        Err(e) => println!("   [error] Unexpected error: {}", e),
     }
 
     // ============================================
@@ -171,9 +171,9 @@ fn main() {
     }"#;
 
     match serde_json::from_str::<ServerConfig>(invalid_config_json) {
-        Ok(_) => println!("   ✗ Should have failed validation!"),
+        Ok(_) => println!("   [error] Should have failed validation!"),
         Err(e) => {
-            println!("   ✓ Port validation failed:");
+            println!("   [ok] Port validation failed:");
             println!("     Error: {}", e);
         }
     }
@@ -182,12 +182,12 @@ fn main() {
     // 7. KEY BENEFITS
     // ============================================
     println!("\n7. Key Benefits:\n");
-    println!("   ✓ Single step: deserialize + validate in one call");
-    println!("   ✓ Better errors: 'age must be between 18 and 120'");
-    println!("   ✓ Type safety: if you have User, it's guaranteed valid");
-    println!("   ✓ Serde attributes work: rename, default, etc.");
-    println!("   ✓ Same validation rules as #[derive(Validate)]");
-    println!("   ✓ ~5% overhead vs two-step approach");
+    println!("   [ok] Single step: deserialize + validate in one call");
+    println!("   [ok] Better errors: 'age must be between 18 and 120'");
+    println!("   [ok] Type safety: if you have User, it's guaranteed valid");
+    println!("   [ok] Serde attributes work: rename, default, etc.");
+    println!("   [ok] Same validation rules as #[derive(Validate)]");
+    println!("   [ok] ~5% overhead vs two-step approach");
 
     println!("\n=============================================");
     println!("Example complete! ValidateOnDeserialize provides single-step validation during deserialization.");

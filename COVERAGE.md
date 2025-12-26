@@ -104,10 +104,10 @@ As of the latest run:
 
 | Crate | Line Coverage | Status |
 |-------|--------------|--------|
-| **domainstack** | 98-100% | ✅ Excellent |
+| **domainstack** | 98-100% | Excellent |
 | **domainstack-derive** | 77% | ⚠️ Needs improvement |
-| **domainstack-envelope** | 100% | ✅ Excellent |
-| **Overall** | 94% | ✅ Great |
+| **domainstack-envelope** | 100% | Excellent |
+| **Overall** | 94% | Great |
 
 ## Improving Coverage
 

@@ -90,16 +90,16 @@ fn main() {
     println!("1. Valid even number:");
     let num = EvenNumber { value: 42 };
     match num.validate() {
-        Ok(_) => println!("   ✓ Number is valid: {:?}\n", num),
-        Err(e) => println!("   ✗ Validation errors:\n{}\n", e),
+        Ok(_) => println!("   [ok] Number is valid: {:?}\n", num),
+        Err(e) => println!("   [error] Validation errors:\n{}\n", e),
     }
 
     println!("2. Invalid: odd number (custom validation fails):");
     let num = EvenNumber { value: 43 };
     match num.validate() {
-        Ok(_) => println!("   ✓ Number is valid\n"),
+        Ok(_) => println!("   [ok] Number is valid\n"),
         Err(e) => {
-            println!("   ✗ Validation errors:\n{}", e);
+            println!("   [error] Validation errors:\n{}", e);
             println!("   Note: Custom function 'validate_even' checked parity\n");
         }
     }
@@ -107,9 +107,9 @@ fn main() {
     println!("3. Invalid: both range and custom fail:");
     let num = EvenNumber { value: 101 };
     match num.validate() {
-        Ok(_) => println!("   ✓ Number is valid\n"),
+        Ok(_) => println!("   [ok] Number is valid\n"),
         Err(e) => {
-            println!("   ✗ Validation errors:\n{}", e);
+            println!("   [error] Validation errors:\n{}", e);
             println!("   Note: Both range (>100) and custom (odd) violations reported\n");
         }
     }
@@ -120,8 +120,8 @@ fn main() {
         balance: 1500,
     };
     match account.validate() {
-        Ok(_) => println!("   ✓ Account is valid: {:?}\n", account),
-        Err(e) => println!("   ✗ Validation errors:\n{}\n", e),
+        Ok(_) => println!("   [ok] Account is valid: {:?}\n", account),
+        Err(e) => println!("   [error] Validation errors:\n{}\n", e),
     }
 
     println!("5. Invalid: negative balance (custom validation):");
@@ -130,9 +130,9 @@ fn main() {
         balance: -500,
     };
     match account.validate() {
-        Ok(_) => println!("   ✓ Account is valid\n"),
+        Ok(_) => println!("   [ok] Account is valid\n"),
         Err(e) => {
-            println!("   ✗ Validation errors:\n{}", e);
+            println!("   [error] Validation errors:\n{}", e);
             println!("   Note: Custom validation caught negative balance\n");
         }
     }
@@ -143,8 +143,8 @@ fn main() {
         password: "SecurePass123".to_string(),
     };
     match user.validate() {
-        Ok(_) => println!("   ✓ User is valid: {:?}\n", user),
-        Err(e) => println!("   ✗ Validation errors:\n{}\n", e),
+        Ok(_) => println!("   [ok] User is valid: {:?}\n", user),
+        Err(e) => println!("   [error] Validation errors:\n{}\n", e),
     }
 
     println!("7. Invalid: weak password (multiple custom violations):");
@@ -153,9 +153,9 @@ fn main() {
         password: "weakpass".to_string(),
     };
     match user.validate() {
-        Ok(_) => println!("   ✓ User is valid\n"),
+        Ok(_) => println!("   [ok] User is valid\n"),
         Err(e) => {
-            println!("   ✗ Validation errors:\n{}", e);
+            println!("   [error] Validation errors:\n{}", e);
             println!("   Note: Custom function can return multiple violations:");
             println!("     - no_uppercase");
             println!("     - no_digit");

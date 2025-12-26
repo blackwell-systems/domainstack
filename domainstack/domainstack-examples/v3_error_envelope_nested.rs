@@ -62,10 +62,10 @@ fn main() {
     };
 
     match booking.validate() {
-        Ok(_) => println!("   ✓ Booking is valid\n"),
+        Ok(_) => println!("   [ok] Booking is valid\n"),
         Err(e) => {
             let envelope = e.into_envelope_error();
-            println!("   ✗ Error: {}\n", envelope.message);
+            println!("   [error] Error: {}\n", envelope.message);
         }
     }
 
@@ -85,10 +85,10 @@ fn main() {
     };
 
     match booking.validate() {
-        Ok(_) => println!("   ✓ Booking is valid\n"),
+        Ok(_) => println!("   [ok] Booking is valid\n"),
         Err(e) => {
             let envelope = e.into_envelope_error();
-            println!("   ✗ Error envelope:");
+            println!("   [error] Error envelope:");
             println!("     Status: {}", envelope.status);
             println!("     Message: {}", envelope.message);
 
@@ -127,10 +127,10 @@ fn main() {
     };
 
     match booking.validate() {
-        Ok(_) => println!("   ✓ Booking is valid\n"),
+        Ok(_) => println!("   [ok] Booking is valid\n"),
         Err(e) => {
             let envelope = e.into_envelope_error();
-            println!("   ✗ Error envelope:");
+            println!("   [error] Error envelope:");
             println!("     Status: {}", envelope.status);
             println!("     Message: {}", envelope.message);
 
@@ -167,10 +167,10 @@ fn main() {
     };
 
     match booking.validate() {
-        Ok(_) => println!("   ✓ Booking is valid\n"),
+        Ok(_) => println!("   [ok] Booking is valid\n"),
         Err(e) => {
             let envelope = e.into_envelope_error();
-            println!("   ✗ Error envelope:");
+            println!("   [error] Error envelope:");
             println!("     Status: {}", envelope.status);
             println!("     Message: {}", envelope.message);
 

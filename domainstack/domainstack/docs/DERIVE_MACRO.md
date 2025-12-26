@@ -32,7 +32,7 @@ struct User {
 
 // Validate automatically
 let user = User { name: "Alice".to_string(), age: 25 };
-user.validate()?;  // ✓ Valid
+user.validate()?;  // [ok] Valid
 ```
 
 ## Basic Attributes
@@ -179,6 +179,8 @@ struct Profile {
 
 ## Collection Validation
 
+> **Comprehensive guide:** See [COLLECTION_VALIDATION.md](COLLECTION_VALIDATION.md) for complete collection validation patterns, including manual validation, error paths, and complex examples.
+
 ### Nested Collections
 
 Validate each item in a collection with `each(nested)`:
@@ -282,6 +284,8 @@ struct Article {
 
 ## Cross-Field Validation
 
+> **Comprehensive guide:** See [CROSS_FIELD_VALIDATION.md](CROSS_FIELD_VALIDATION.md) for complete cross-field validation patterns, including date ranges, password confirmation, conditional validation, and complex business rules.
+
 Validate relationships between fields using struct-level `#[validate(...)]` attributes.
 
 ### Basic Cross-Field Rules
@@ -311,13 +315,13 @@ let range = DateRange {
     start_date: Utc::now() + Duration::days(1),
     end_date: Utc::now() + Duration::days(30),
 };
-range.validate()?;  // ✓ Valid
+range.validate()?;  // [ok] Valid
 
 let invalid = DateRange {
     start_date: Utc::now() + Duration::days(30),
     end_date: Utc::now() + Duration::days(1),  // Before start!
 };
-invalid.validate()?;  // ✗ Error: invalid_date_range
+invalid.validate()?;  // [error] Error: invalid_date_range
 ```
 
 ### Multiple Cross-Field Rules
@@ -368,14 +372,14 @@ let order = FlexibleOrder {
     minimum_order: 100.0,
     requires_minimum: false,  // Validation skipped!
 };
-order.validate()?;  // ✓ Valid - condition is false
+order.validate()?;  // [ok] Valid - condition is false
 
 let required = FlexibleOrder {
     total: 50.0,
     minimum_order: 100.0,
     requires_minimum: true,  // Validation runs!
 };
-required.validate()?;  // ✗ Error: below_minimum
+required.validate()?;  // [error] Error: below_minimum
 ```
 
 ### Password Confirmation Example
@@ -569,7 +573,17 @@ struct Tags {
 
 ## See Also
 
+**Specialized Guides:**
+- [Cross-Field Validation](CROSS_FIELD_VALIDATION.md) - Date ranges, password confirmation, conditional validation
+- [Collection Validation](COLLECTION_VALIDATION.md) - Arrays, vectors, `each()` patterns
+- [Conditional Validation](CONDITIONAL_VALIDATION.md) - Runtime-determined validation rules
+
+**Integration:**
 - [Serde Integration](SERDE_INTEGRATION.md) - Validate on deserialize with `ValidateOnDeserialize`
 - [OpenAPI Schema Generation](OPENAPI_SCHEMA.md) - Auto-generate schemas from validation rules
 - [HTTP Integration](HTTP_INTEGRATION.md) - Framework adapters for Axum, Actix-web, Rocket
-- Main guide: [API Guide](api-guide.md)
+
+**Reference:**
+- [Rules Reference](RULES.md) - Complete list of 37 built-in validation rules
+- [Manual Validation](MANUAL_VALIDATION.md) - Implementing `Validate` trait manually
+- [API Guide](api-guide.md) - Complete API documentation

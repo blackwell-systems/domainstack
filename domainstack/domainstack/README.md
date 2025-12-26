@@ -10,30 +10,60 @@
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Sponsor](https://img.shields.io/badge/Sponsor-Buy%20Me%20a%20Coffee-yellow?logo=buy-me-a-coffee&logoColor=white)](https://buymeacoffee.com/blackwellsystems)
 
-**Turn untrusted input into valid domain objects—with structured, field-level errors**
+**Full-stack validation ecosystem for Rust web services**
+
+Define validation once. Get runtime checks, OpenAPI schemas, TypeScript types, and framework integration—from one source of truth.
+
+```
+Rust Domain                        Frontend
+     |                                 |
+#[derive(Validate, ToSchema)]    domainstack zod
+     |                                 |
+     v                                 v
+.validate()?                    Zod schemas
+     |                                 |
+     v                                 v
+Axum / Actix / Rocket  <------>  Same rules,
+     |                            both sides
+     v
+Structured errors (field-level, indexed paths)
+```
+
+## Progressive Adoption
+
+Use only what you need:
+
+| Need | Add |
+|------|-----|
+| Core validation | `domainstack` |
+| Derive macros | `features = ["derive"]` |
+| OpenAPI schemas | `domainstack-schema` |
+| Axum integration | `domainstack-axum` |
+| Actix-web integration | `domainstack-actix` |
+| Rocket integration | `domainstack-rocket` |
+| TypeScript/Zod codegen | `domainstack-cli` |
 
 ## What is domainstack?
 
-domainstack helps you turn untrusted input into valid domain objects—then report failures back to clients with structured, field-level errors.
+domainstack is a **domain-driven validation ecosystem** for Rust web services. It helps you:
 
-It's built around a service-oriented reality:
+1. **Define domain models** with validation rules
+2. **Generate OpenAPI schemas** automatically from those rules
+3. **Sync frontend validation** via TypeScript/Zod code generation
+4. **Integrate with web frameworks** using one-line extractors
 
-**Outside world (HTTP/JSON/etc.) → DTOs → Domain (valid-by-construction) → Business logic**
+### The Philosophy
 
-### The core idea
+Most validation crates answer: **"Is this DTO valid?"**
+domainstack answers: **"How do I build a full-stack validation story with a single source of truth?"**
 
-Most validation crates answer: **"Is this DTO valid?"**  
-domainstack answers: **"How do I *safely construct domain models* from untrusted input, and return a stable error contract?"**
-
-That means:
-- **Domain-first modeling** - Invalid states are unrepresentable
-- **Composable rules** - Rules are reusable values, not just attributes
+**Core capabilities:**
+- **37 validation rules** - String, numeric, collection, date/time
+- **Composable rule algebra** - `.and()`, `.or()`, `.when()` combinators
 - **Structured error paths** - `rooms[0].adults`, `guest.email.value`
-- **Clean boundary mapping** - Optional error-envelope integration for APIs
-- **Async validation** - Database uniqueness checks with context passing
-- **Type-state tracking** - Compile-time guarantees with phantom types
-- **Auto-derived OpenAPI schemas** - Write validation rules once, get OpenAPI 3.0 schemas automatically (zero duplication)
-- **Serde integration** - Validate automatically during JSON/YAML deserialization with `#[derive(ValidateOnDeserialize)]`
+- **Async validation** - Database uniqueness checks with context
+- **Type-state validation** - Compile-time guarantees with phantom types
+- **Zero-dependency core** - Only `smallvec`, everything else is opt-in
 
 ## Quick Start
 
@@ -93,9 +123,9 @@ fn main() {
     };
 
     match team.validate() {
-        Ok(_) => println!("✓ Team is valid"),
+        Ok(_) => println!("[ok] Team is valid"),
         Err(e) => {
-            println!("✗ Validation failed with {} errors:", e.violations.len());
+            println!("[error] Validation failed with {} errors:", e.violations.len());
             for v in &e.violations {
                 println!("  [{}] {} - {}", v.path, v.code, v.message);
             }
@@ -530,7 +560,7 @@ serde = { version = "1", features = ["derive"] }
 
 ### Advanced Features
 
-#### Serde Integration - Validate on Deserialize ⚡
+#### Serde Integration - Validate on Deserialize 
 
 **NEW!** Automatically validate during JSON/YAML deserialization with a single derive:
 
@@ -553,10 +583,10 @@ let user: User = serde_json::from_str(json)?;
 ```
 
 **Benefits:**
-- ✅ **Single step** - No separate `.validate()` call needed
-- ✅ **Better errors** - "age must be between 18 and 120" vs "expected u8"
-- ✅ **Type safety** - If you have `User`, it's guaranteed valid
-- ✅ **Serde compatible** - Works with `#[serde(rename)]`, `#[serde(default)]`, etc.
+- **Single step** - No separate `.validate()` call needed
+- **Better errors** - "age must be between 18 and 120" vs "expected u8"
+- **Type safety** - If you have `User`, it's guaranteed valid
+- **Serde compatible** - Works with `#[serde(rename)]`, `#[serde(default)]`, etc.
 
 **Use cases:** API request parsing, configuration file loading, message queue consumers, CLI argument validation.
 
@@ -804,7 +834,7 @@ struct User {
 
 // Validate all fields at once
 let user = User { username, email, age };
-user.validate()?;  // ✓ Validates all constraints
+user.validate()?;  // [ok] Validates all constraints
 ```
 
 ### Nested Validation
@@ -997,15 +1027,39 @@ This project has **multiple README files** for different audiences:
 2. **[domainstack/README.md](./domainstack/README.md)** - Cargo/crates.io users
 3. **Individual crate READMEs** - Library implementers
 
-### Additional Documentation
+### Getting Started
+
+- **[Core Concepts](./domainstack/domainstack/docs/CORE_CONCEPTS.md)** - Valid-by-construction philosophy and fundamentals
+- **[Derive Macro Guide](./domainstack/domainstack/docs/DERIVE_MACRO.md)** - Complete `#[derive(Validate)]` reference
+- **[Rules Reference](./domainstack/domainstack/docs/RULES.md)** - All 37 built-in validation rules
+- **[Examples](./domainstack/domainstack-examples/)** - 9 runnable examples
+
+### User Guides
+
+- **[Collection Validation](./domainstack/domainstack/docs/COLLECTION_VALIDATION.md)** - Arrays, vectors, `each()` patterns, uniqueness
+- **[Cross-Field Validation](./domainstack/domainstack/docs/CROSS_FIELD_VALIDATION.md)** - Date ranges, password confirmation, field relationships
+- **[Manual Validation](./domainstack/domainstack/docs/MANUAL_VALIDATION.md)** - Implementing `Validate` trait manually
+- **[Error Handling](./domainstack/domainstack/docs/ERROR_HANDLING.md)** - Working with `ValidationError` and error paths
+
+### Advanced Guides
+
+- **[Advanced Patterns](./domainstack/domainstack/docs/ADVANCED_PATTERNS.md)** - Overview of advanced validation techniques
+- **[Async Validation](./domainstack/domainstack/docs/ASYNC_VALIDATION.md)** - Database checks, external APIs, rate limiting
+- **[Type-State Validation](./domainstack/domainstack/docs/TYPE_STATE.md)** - Compile-time guarantees with phantom types
+- **[Conditional Validation](./domainstack/domainstack/docs/CONDITIONAL_VALIDATION.md)** - Runtime-determined rules, `.when()` combinator
+
+### Integrations
+
+- **[HTTP Integration](./domainstack/domainstack/docs/HTTP_INTEGRATION.md)** - Axum, Actix-web, Rocket framework adapters
+- **[Serde Integration](./domainstack/domainstack/docs/SERDE_INTEGRATION.md)** - `ValidateOnDeserialize` for automatic validation
+- **[OpenAPI Schema](./domainstack/domainstack/docs/OPENAPI_SCHEMA.md)** - Auto-generate schemas from validation rules
+- **[OpenAPI Capabilities](./domainstack/domainstack-schema/OPENAPI_CAPABILITIES.md)** - Complete OpenAPI 3.0 schema generation
+
+### Reference
 
 - **[API Guide](./domainstack/domainstack/docs/api-guide.md)** - Complete API documentation
-- **[Rules Reference](./domainstack/domainstack/docs/RULES.md)** - All validation rules
 - **[Architecture](./domainstack/domainstack/docs/architecture.md)** - System design and data flow
-- **[OpenAPI Schema Derivation](./domainstack/domainstack/docs/SCHEMA_DERIVATION.md)** - OpenAPI 3.0 schema generation guide
-- **[Examples](./domainstack/domainstack-examples/)** - 9 runnable examples
-- **[API Documentation](https://docs.rs/domainstack)** - Generated API reference
-- **[Publishing Guide](./PUBLISHING.md)** - How to publish to crates.io
+- **[API Documentation](https://docs.rs/domainstack)** - Generated API reference (docs.rs)
 - **[Coverage Guide](./COVERAGE.md)** - Running coverage locally
 
 ## License

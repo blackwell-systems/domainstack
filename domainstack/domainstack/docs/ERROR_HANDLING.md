@@ -326,10 +326,10 @@ for (field, violations) in map {
 ```
 
 **Why use this:**
-- ✅ Preserves error codes (needed for client-side handling)
-- ✅ Preserves meta fields (needed for context)
-- ✅ Enables proper error classification
-- ✅ Supports internationalization
+- Preserves error codes (needed for client-side handling)
+- Preserves meta fields (needed for context)
+- Enables proper error classification
+- Supports internationalization
 
 ### field_errors_map() - Deprecated
 
@@ -586,10 +586,10 @@ fn to_api_error(err: ValidationError) -> ApiError {
 Error codes enable proper client-side handling:
 
 ```rust
-// ✅ GOOD: Include error codes
+// GOOD: Include error codes
 err.push("email", "invalid_email", "Invalid email format");
 
-// ❌ BAD: Generic or missing codes
+// [x] BAD: Generic or missing codes
 err.push("email", "error", "Something went wrong");
 ```
 
@@ -598,12 +598,12 @@ err.push("email", "error", "Something went wrong");
 Choose the right method for error merging:
 
 ```rust
-// ✅ Use extend() for same-level validation
+// Use extend() for same-level validation
 if let Err(e) = validate("name", &self.name, &name_rule) {
     err.extend(e);  // Path stays "name"
 }
 
-// ✅ Use merge_prefixed() for nested types
+// Use merge_prefixed() for nested types
 if let Err(e) = self.email.validate() {
     err.merge_prefixed("email", e);  // Adds "email." prefix
 }
@@ -614,7 +614,7 @@ if let Err(e) = self.email.validate() {
 Use `field_violations_map()` instead of deprecated `field_errors_map()`:
 
 ```rust
-// ✅ GOOD: Preserves codes and meta
+// GOOD: Preserves codes and meta
 let map = err.field_violations_map();
 for (field, violations) in map {
     for v in violations {
@@ -622,7 +622,7 @@ for (field, violations) in map {
     }
 }
 
-// ❌ BAD: Loses codes and meta
+// [x] BAD: Loses codes and meta
 #[allow(deprecated)]
 let map = err.field_errors_map();  // Only messages!
 ```
@@ -632,7 +632,7 @@ let map = err.field_errors_map();  // Only messages!
 Type-safe path building prevents typos:
 
 ```rust
-// ✅ GOOD: Type-safe path building
+// GOOD: Type-safe path building
 let path = Path::root()
     .field("booking")
     .field("rooms")
@@ -641,7 +641,7 @@ let path = Path::root()
     .field("email");
 err.push(path, "invalid_email", "Invalid email");
 
-// ❌ BAD: String concatenation (error-prone)
+// [x] BAD: String concatenation (error-prone)
 err.push("booking.rooms[0].guest.email", "invalid_email", "Invalid email");
 ```
 
@@ -650,7 +650,7 @@ err.push("booking.rooms[0].guest.email", "invalid_email", "Invalid email");
 Help clients display better error messages:
 
 ```rust
-// ✅ GOOD: Include useful context
+// GOOD: Include useful context
 let mut err = ValidationError::new();
 let mut violation = Violation {
     path: "age".into(),
@@ -663,7 +663,7 @@ violation.meta.insert("max", "120");
 violation.meta.insert("actual", &self.age.to_string());
 err.violations.push(violation);
 
-// ❌ BAD: No context
+// [x] BAD: No context
 err.push("age", "out_of_range", "Invalid age");
 ```
 
@@ -689,7 +689,7 @@ fn test_nested_validation_paths() {
 Collect **all** errors before returning:
 
 ```rust
-// ✅ GOOD: Fail-slow - collect all errors
+// GOOD: Fail-slow - collect all errors
 impl Validate for User {
     fn validate(&self) -> Result<(), ValidationError> {
         let mut err = ValidationError::new();
@@ -710,7 +710,7 @@ impl Validate for User {
     }
 }
 
-// ❌ BAD: Fail-fast - only first error
+// [x] BAD: Fail-fast - only first error
 impl Validate for User {
     fn validate(&self) -> Result<(), ValidationError> {
         validate("name", &self.name, &name_rule)?;  // Stops here on error!

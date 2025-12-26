@@ -53,10 +53,10 @@
 //!
 //! // Example usage
 //! let email = Email::new("user@example.com".to_string());
-//! // send_email(email); // ❌ Compile error: expected Email<Validated>, found Email<Unvalidated>
+//! // send_email(email); // [x] Compile error: expected Email<Validated>, found Email<Unvalidated>
 //!
 //! let validated = email.validate().unwrap();
-//! send_email(validated); // ✅ Compiles!
+//! send_email(validated); // Compiles!
 //! ```
 //!
 //! # Benefits
@@ -372,7 +372,7 @@ mod tests {
         let email = Email::new("user@example.com".to_string());
 
         // Cannot send unvalidated email (would not compile):
-        // send_email(&email);  // ❌ Type error
+        // send_email(&email);  // [x] Type error
 
         // Validate to transition state
         let validated = email.validate().expect("Should be valid");

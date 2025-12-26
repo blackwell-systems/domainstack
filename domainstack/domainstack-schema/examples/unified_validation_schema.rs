@@ -134,8 +134,8 @@ fn main() {
     };
 
     match valid_user.validate() {
-        Ok(_) => println!("   ✓ Valid user passed validation"),
-        Err(e) => println!("   ✗ Validation failed: {:?}", e),
+        Ok(_) => println!("   [ok] Valid user passed validation"),
+        Err(e) => println!("   [error] Validation failed: {:?}", e),
     }
 
     let invalid_user = UserRegistration {
@@ -146,10 +146,10 @@ fn main() {
     };
 
     match invalid_user.validate() {
-        Ok(_) => println!("   ✗ Invalid user should have failed!"),
+        Ok(_) => println!("   [error] Invalid user should have failed!"),
         Err(e) => {
             println!(
-                "   ✓ Invalid user rejected with {} errors:",
+                "   [ok] Invalid user rejected with {} errors:",
                 e.violations.len()
             );
             for v in &e.violations {
@@ -185,7 +185,7 @@ fn main() {
                 }
             }
         }
-        Err(e) => println!("   ✗ Schema generation failed: {}", e),
+        Err(e) => println!("   [error] Schema generation failed: {}", e),
     }
 
     // ============================================
@@ -222,13 +222,13 @@ fn main() {
     // ============================================
 
     println!("\n4. Benefits of Unified Approach:\n");
-    println!("   ✓ Write validation rules ONCE");
-    println!("   ✓ Get runtime validation automatically");
-    println!("   ✓ Get OpenAPI schemas automatically");
-    println!("   ✓ No duplication between code and docs");
-    println!("   ✓ Single source of truth");
-    println!("   ✓ Changes propagate automatically");
-    println!("   ✓ Same rich syntax for both macros");
+    println!("   [ok] Write validation rules ONCE");
+    println!("   [ok] Get runtime validation automatically");
+    println!("   [ok] Get OpenAPI schemas automatically");
+    println!("   [ok] No duplication between code and docs");
+    println!("   [ok] Single source of truth");
+    println!("   [ok] Changes propagate automatically");
+    println!("   [ok] Same rich syntax for both macros");
 
     println!("\n==============================================");
     println!(

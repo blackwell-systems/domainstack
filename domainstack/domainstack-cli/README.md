@@ -229,7 +229,7 @@ Generates:
 
 ```typescript
 export const ProfileSchema = z.object({
-  website: z.string().url().optional(),  // ✅ Correct order
+  website: z.string().url().optional(),  // Correct order
   bio: z.string().min(10).max(500).optional(),
 });
 ```
@@ -264,7 +264,7 @@ export const PostSchema = z.object({
 
 ```
 domainstack
-├── zod        ✅ Generate Zod schemas (v0.1.0)
+├── zod        Generate Zod schemas (v0.1.0)
 ├── yup        📋 Generate Yup schemas (planned)
 ├── graphql    📋 Generate GraphQL schemas (planned)
 └── prisma     📋 Generate Prisma schemas (planned)

@@ -256,14 +256,14 @@ fn main() {
     println!("{}", spec.to_json().expect("Failed to serialize"));
 
     println!("\n=== v0.8 Features Demonstrated ===");
-    println!("✓ anyOf: PaymentMethod (union of card | cash)");
-    println!("✓ allOf: AdminUser (extends User)");
-    println!("✓ default: UserSettings.theme = 'auto'");
-    println!("✓ example: UserSettings.theme example = 'dark'");
-    println!("✓ examples: UserSettings.language examples = ['en', 'es', 'fr']");
-    println!("✓ readOnly: UserAccount.id, createdAt (response only)");
-    println!("✓ writeOnly: UserAccount.password (request only)");
-    println!("✓ deprecated: UserAccount.oldUsername");
-    println!("✓ vendor extensions: DateRange, OrderForm (x-domainstack-validations)");
+    println!("[ok] anyOf: PaymentMethod (union of card | cash)");
+    println!("[ok] allOf: AdminUser (extends User)");
+    println!("[ok] default: UserSettings.theme = 'auto'");
+    println!("[ok] example: UserSettings.theme example = 'dark'");
+    println!("[ok] examples: UserSettings.language examples = ['en', 'es', 'fr']");
+    println!("[ok] readOnly: UserAccount.id, createdAt (response only)");
+    println!("[ok] writeOnly: UserAccount.password (request only)");
+    println!("[ok] deprecated: UserAccount.oldUsername");
+    println!("[ok] vendor extensions: DateRange, OrderForm (x-domainstack-validations)");
     println!("\nAll v0.8 features working correctly!");
 }

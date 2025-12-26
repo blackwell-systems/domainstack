@@ -8,7 +8,7 @@ echo "🔍 Running tests with coverage instrumentation..."
 cargo llvm-cov --all-features --workspace --html
 
 echo ""
-echo "✅ Coverage report generated!"
+echo "Coverage report generated!"
 echo "📊 Opening report in browser..."
 echo ""
 echo "   Report location: target/llvm-cov/html/index.html"

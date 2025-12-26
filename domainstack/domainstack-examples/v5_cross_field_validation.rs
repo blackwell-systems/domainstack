@@ -127,8 +127,8 @@ fn main() {
         password_confirmation: "secure_password_123".to_string(),
     };
     match form.validate() {
-        Ok(_) => println!("   ✓ Registration form is valid\n"),
-        Err(e) => println!("   ✗ Validation failed:\n{}\n", e),
+        Ok(_) => println!("   [ok] Registration form is valid\n"),
+        Err(e) => println!("   [error] Validation failed:\n{}\n", e),
     }
 
     // Example 2: Password confirmation - MISMATCH
@@ -140,8 +140,8 @@ fn main() {
         password_confirmation: "different_password".to_string(),
     };
     match form.validate() {
-        Ok(_) => println!("   ✓ Registration form is valid\n"),
-        Err(e) => println!("   ✗ Validation failed:\n{}\n", e),
+        Ok(_) => println!("   [ok] Registration form is valid\n"),
+        Err(e) => println!("   [error] Validation failed:\n{}\n", e),
     }
 
     // Example 3: Date range validation - VALID
@@ -153,8 +153,8 @@ fn main() {
         guests: 2,
     };
     match reservation.validate() {
-        Ok(_) => println!("   ✓ Reservation is valid\n"),
-        Err(e) => println!("   ✗ Validation failed:\n{}\n", e),
+        Ok(_) => println!("   [ok] Reservation is valid\n"),
+        Err(e) => println!("   [error] Validation failed:\n{}\n", e),
     }
 
     // Example 4: Date range validation - INVALID
@@ -166,8 +166,8 @@ fn main() {
         guests: 3,
     };
     match reservation.validate() {
-        Ok(_) => println!("   ✓ Reservation is valid\n"),
-        Err(e) => println!("   ✗ Validation failed:\n{}\n", e),
+        Ok(_) => println!("   [ok] Reservation is valid\n"),
+        Err(e) => println!("   [error] Validation failed:\n{}\n", e),
     }
 
     // Example 5: Discount validation - VALID (code only)
@@ -180,8 +180,8 @@ fn main() {
         minimum_order_amount: 0.0,
     };
     match order.validate() {
-        Ok(_) => println!("   ✓ Order is valid\n"),
-        Err(e) => println!("   ✗ Validation failed:\n{}\n", e),
+        Ok(_) => println!("   [ok] Order is valid\n"),
+        Err(e) => println!("   [error] Validation failed:\n{}\n", e),
     }
 
     // Example 6: Discount validation - INVALID (both code and percentage)
@@ -194,8 +194,8 @@ fn main() {
         minimum_order_amount: 0.0,
     };
     match order.validate() {
-        Ok(_) => println!("   ✓ Order is valid\n"),
-        Err(e) => println!("   ✗ Validation failed:\n{}\n", e),
+        Ok(_) => println!("   [ok] Order is valid\n"),
+        Err(e) => println!("   [error] Validation failed:\n{}\n", e),
     }
 
     // Example 7: Conditional validation - APPLIES (below minimum when required)
@@ -208,8 +208,8 @@ fn main() {
         minimum_order_amount: 50.0,
     };
     match order.validate() {
-        Ok(_) => println!("   ✓ Order is valid\n"),
-        Err(e) => println!("   ✗ Validation failed:\n{}\n", e),
+        Ok(_) => println!("   [ok] Order is valid\n"),
+        Err(e) => println!("   [error] Validation failed:\n{}\n", e),
     }
 
     // Example 8: Conditional validation - SKIPPED (minimum not required)
@@ -222,8 +222,8 @@ fn main() {
         minimum_order_amount: 50.0,
     };
     match order.validate() {
-        Ok(_) => println!("   ✓ Order is valid (minimum check skipped)\n"),
-        Err(e) => println!("   ✗ Validation failed:\n{}\n", e),
+        Ok(_) => println!("   [ok] Order is valid (minimum check skipped)\n"),
+        Err(e) => println!("   [error] Validation failed:\n{}\n", e),
     }
 
     // Example 9: Optional password update - NO PASSWORD (valid)
@@ -234,8 +234,8 @@ fn main() {
         confirm_password: String::new(),
     };
     match update.validate() {
-        Ok(_) => println!("   ✓ Update is valid (password check skipped)\n"),
-        Err(e) => println!("   ✗ Validation failed:\n{}\n", e),
+        Ok(_) => println!("   [ok] Update is valid (password check skipped)\n"),
+        Err(e) => println!("   [error] Validation failed:\n{}\n", e),
     }
 
     // Example 10: Optional password update - MISMATCH
@@ -246,8 +246,8 @@ fn main() {
         confirm_password: "different_password".to_string(),
     };
     match update.validate() {
-        Ok(_) => println!("   ✓ Update is valid\n"),
-        Err(e) => println!("   ✗ Validation failed:\n{}\n", e),
+        Ok(_) => println!("   [ok] Update is valid\n"),
+        Err(e) => println!("   [error] Validation failed:\n{}\n", e),
     }
 
     println!("=== Key Takeaways ===");

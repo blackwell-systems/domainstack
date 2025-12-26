@@ -8,10 +8,10 @@ fn main() {
     let rule = rules::min_len(5).message("Email too short");
     let err = rule.apply("hi");
     if err.is_empty() {
-        println!("  ✓ Valid");
+        println!("  [ok] Valid");
     } else {
         for v in &err.violations {
-            println!("  ✗ {}: {}", v.path, v.message);
+            println!("  [error] {}: {}", v.path, v.message);
         }
     }
 
@@ -20,10 +20,10 @@ fn main() {
     let rule = rules::min_len(5).code("email_too_short");
     let err = rule.apply("hi");
     if err.is_empty() {
-        println!("  ✓ Valid");
+        println!("  [ok] Valid");
     } else {
         for v in &err.violations {
-            println!("  ✗ Code: {}, Message: {}", v.code, v.message);
+            println!("  [error] Code: {}, Message: {}", v.code, v.message);
         }
     }
 
@@ -34,10 +34,10 @@ fn main() {
         .meta("field_type", "email");
     let err = rule.apply("hi");
     if err.is_empty() {
-        println!("  ✓ Valid");
+        println!("  [ok] Valid");
     } else {
         for v in &err.violations {
-            println!("  ✗ {}", v.message);
+            println!("  [error] {}", v.message);
             println!("     Hint: {}", v.meta.get("hint").map_or("N/A", |s| s));
             println!(
                 "     Field Type: {}",
@@ -56,10 +56,10 @@ fn main() {
 
     let err = rule.apply("not-an-email");
     if err.is_empty() {
-        println!("  ✓ Valid");
+        println!("  [ok] Valid");
     } else {
         for v in &err.violations {
-            println!("  ✗ Code: {}", v.code);
+            println!("  [error] Code: {}", v.code);
             println!("     Message: {}", v.message);
             println!("     Hint: {}", v.meta.get("hint").map_or("N/A", |s| s));
             println!(
@@ -78,9 +78,9 @@ fn main() {
 
     let err = rule.apply("hi");
     if err.is_empty() {
-        println!("  ✓ Valid");
+        println!("  [ok] Valid");
     } else {
-        println!("  ✗ {} errors:", err.violations.len());
+        println!("  [error] {} errors:", err.violations.len());
         for v in &err.violations {
             println!("     - {}", v.message);
         }
@@ -138,7 +138,7 @@ fn main() {
 
     if !errors.is_empty() {
         println!(
-            "  ✗ Validation failed with {} errors:",
+            "  [error] Validation failed with {} errors:",
             errors.violations.len()
         );
         for v in &errors.violations {
@@ -152,7 +152,7 @@ fn main() {
             }
         }
     } else {
-        println!("  ✓ All valid");
+        println!("  [ok] All valid");
     }
 
     println!("\n=== Demo Complete ===");

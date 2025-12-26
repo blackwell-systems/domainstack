@@ -90,9 +90,9 @@ fn main() {
     };
 
     match team.validate() {
-        Ok(_) => println!("✓ Team is valid"),
+        Ok(_) => println!("[ok] Team is valid"),
         Err(e) => {
-            println!("✗ Validation failed with {} errors:", e.violations.len());
+            println!("[error] Validation failed with {} errors:", e.violations.len());
             for v in &e.violations {
                 println!("  [{}] {} - {}", v.path, v.code, v.message);
             }

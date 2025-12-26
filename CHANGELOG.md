@@ -23,7 +23,7 @@ cargo install domainstack-cli
 domainstack zod --input src --output frontend/schemas.ts
 ```
 
-**Phase 1: Zod Schema Generation (v0.1.0) ✅**
+**Phase 1: Zod Schema Generation (v0.1.0) **
 
 Transform Rust types with domainstack validation rules into TypeScript Zod schemas:
 
@@ -70,7 +70,7 @@ Designed for future expansion with single binary, multiple generators:
 
 ```
 domainstack
-├── zod        ✅ TypeScript/Zod schemas (v0.1.0)
+├── zod        TypeScript/Zod schemas (v0.1.0)
 ├── yup        📋 TypeScript/Yup schemas (planned)
 ├── graphql    📋 GraphQL SDL (planned)
 ├── prisma     📋 Prisma schemas (planned)
@@ -232,11 +232,11 @@ This is the first stable release of domainstack, marking production readiness wi
   // ↑ Returns ValidationError if invalid, not serde::Error
   ```
   - **Benefits**:
-    - ✅ Eliminates `dto.validate()` boilerplate
-    - ✅ Better error messages: "age must be between 18 and 120" vs "expected u8"
-    - ✅ Type safety: if you have `User`, it's guaranteed valid
-    - ✅ Works with all serde attributes: `#[serde(rename)]`, `#[serde(default)]`, etc.
-    - ✅ ~5% overhead vs two-step approach
+    - Eliminates `dto.validate()` boilerplate
+    - Better error messages: "age must be between 18 and 120" vs "expected u8"
+    - Type safety: if you have `User`, it's guaranteed valid
+    - Works with all serde attributes: `#[serde(rename)]`, `#[serde(default)]`, etc.
+    - ~5% overhead vs two-step approach
   - **Feature flag**: `serde` (also enables `derive` automatically)
   - **Implementation**: Two-phase deserialization (intermediate struct → validate → final type)
   - **Example**: See `examples/serde_validation.rs`
@@ -317,8 +317,8 @@ use domainstack_derive::{Validate, ToSchema};
 #[derive(Validate, ToSchema)]
 #[schema(description = "User registration")]
 struct User {
-    #[validate(email)]          // ✓ Works in both Validate and ToSchema
-    #[validate(max_len = 255)]   // ✓ Unified syntax
+    #[validate(email)]          // [ok] Works in both Validate and ToSchema
+    #[validate(max_len = 255)]   // [ok] Unified syntax
     #[schema(example = "user@example.com")]
     email: String,
 
@@ -331,7 +331,7 @@ struct User {
 }
 
 // Runtime validation works:
-user.validate()?;  // ✓ Validates email format, length, age range
+user.validate()?;  // [ok] Validates email format, length, age range
 
 // Schema generation works:
 // - email: { type: "string", format: "email", maxLength: 255, ... }
@@ -714,10 +714,10 @@ fn send_email(email: Email<Validated>) {
 
 // Usage
 let email = Email::new("user@example.com".to_string());
-// send_email(email); // ❌ Compile error: expected Email<Validated>
+// send_email(email); // [x] Compile error: expected Email<Validated>
 
 let validated = email.validate()?;
-send_email(validated); // ✅ Compiles!
+send_email(validated); // Compiles!
 ```
 
 **Key Features:**

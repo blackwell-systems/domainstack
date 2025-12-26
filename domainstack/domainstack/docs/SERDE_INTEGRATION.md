@@ -32,11 +32,11 @@ let user: User = serde_json::from_str(json)?;
 
 ## Benefits
 
-- ✅ Eliminates `dto.validate()` boilerplate
-- ✅ Better error messages: "age must be between 18 and 120" vs "expected u8"
-- ✅ Type safety: if you have `User`, it's guaranteed valid
-- ✅ Works with all serde attributes: `#[serde(rename)]`, `#[serde(default)]`, etc.
-- ✅ ~5% overhead vs two-step approach
+- Eliminates `dto.validate()` boilerplate
+- Better error messages: "age must be between 18 and 120" vs "expected u8"
+- Type safety: if you have `User`, it's guaranteed valid
+- Works with all serde attributes: `#[serde(rename)]`, `#[serde(default)]`, etc.
+- ~5% overhead vs two-step approach
 
 ## How it Works
 

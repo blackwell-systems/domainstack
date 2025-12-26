@@ -46,7 +46,7 @@ use domainstack_derive::{Validate, ToSchema};
 
 #[derive(Validate, ToSchema)]
 struct User {
-    #[validate(email)]          // ✓ Works for both validation and schema
+    #[validate(email)]          // [ok] Works for both validation and schema
     #[validate(max_len = 255)]
     #[schema(description = "User's email", example = "alice@example.com")]
     email: String,

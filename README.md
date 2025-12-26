@@ -10,13 +10,44 @@
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Sponsor](https://img.shields.io/badge/Sponsor-Buy%20Me%20a%20Coffee-yellow?logo=buy-me-a-coffee&logoColor=white)](https://buymeacoffee.com/blackwellsystems)
 
-**domainstack turns untrusted input into valid-by-construction domain objects, and returns stable, field-level errors your APIs and UIs can depend on.**
+**Full-stack validation ecosystem for Rust web services**
 
-It's built for the boundary you actually live at:
+Define validation once. Get runtime checks, OpenAPI schemas, TypeScript types, and framework integration—from one source of truth.
 
-**HTTP/JSON/etc. → DTOs → Domain (validated) → Business logic**
+```
+Rust Domain                        Frontend
+     |                                 |
+#[derive(Validate, ToSchema)]    domainstack zod
+     |                                 |
+     v                                 v
+.validate()?                      Zod schemas
+     |                                 |
+     v                                 v
+Axum / Actix / Rocket  <------>  Same rules,
+     |                            both sides
+     v
+Structured errors (field-level, indexed paths)
+```
 
-Most validation crates validate DTOs; **domainstack validates domain construction.**
+**Progressive adoption** — use what you need:
+
+| Need | Start With |
+|------|------------|
+| Just validation | `domainstack` core |
+| + derive macros | + `domainstack-derive` |
+| + OpenAPI schemas | + `domainstack-schema` |
+| + Axum/Actix/Rocket | + framework adapter |
+| + TypeScript/Zod | + `domainstack-cli` |
+
+## Why domainstack?
+
+domainstack turns untrusted input into **valid-by-construction domain objects** with stable, field-level errors your APIs and UIs can depend on.
+
+**Built for the boundary you actually live at:**
+
+```
+HTTP/JSON → DTOs → Domain (validated) → Business logic
+```
 
 ### Two validation gates
 
@@ -26,15 +57,17 @@ Most validation crates validate DTOs; **domainstack validates domain constructio
 
 After domain validation succeeds, you can optionally run **async/context validation** (DB/API checks like uniqueness, rate limits, authorization) as a post-validation phase.
 
-## Why domainstack over validator/garde/etc.?
+### vs. validator/garde
 
 **validator and garde** focus on: *"Is this struct valid?"*
 
-**domainstack** focuses on:
+**domainstack** focuses on the full ecosystem:
 - DTO → Domain conversion with field-level error paths
 - Rules as composable values (`.and()`, `.or()`, `.when()`)
 - Async validation with context (DB checks, API calls)
 - Framework adapters that map errors to structured HTTP responses
+- OpenAPI schemas generated from the same validation rules
+- TypeScript/Zod codegen for frontend parity
 
 **If you want valid-by-construction domain types with errors that map cleanly to forms and clients, domainstack is purpose-built for that.**
 
@@ -251,7 +284,7 @@ struct User {
 
 // Validate all fields at once
 let user = User { username, email, age };
-user.validate()?;  // ✓ Validates all constraints
+user.validate()?;  // [ok] Validates all constraints
 ```
 
 See `examples/` folder for more:

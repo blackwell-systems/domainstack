@@ -293,7 +293,7 @@ This is a deliberate design choice, not a compromise. It avoids:
 **Problem:** Rust's orphan rules prevent implementing foreign traits on foreign types:
 
 ```rust
-impl IntoResponse for error_envelope::Error { ... }  // ❌ Not allowed
+impl IntoResponse for error_envelope::Error { ... }  // [x] Not allowed
 //   ^^^^^^^^^^^^     ^^^^^^^^^^^^^^^^^^^^
 //   foreign trait    foreign type
 ```
@@ -303,7 +303,7 @@ impl IntoResponse for error_envelope::Error { ... }  // ❌ Not allowed
 ```rust
 pub struct ErrorResponse(pub error_envelope::Error);
 
-impl IntoResponse for ErrorResponse { ... }  // ✅ Allowed
+impl IntoResponse for ErrorResponse { ... }  // Allowed
 impl From<error_envelope::Error> for ErrorResponse { ... }
 impl From<ValidationError> for ErrorResponse { ... }
 ```

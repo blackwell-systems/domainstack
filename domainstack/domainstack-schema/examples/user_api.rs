@@ -148,10 +148,10 @@ fn main() {
     println!("  - Address (with street, zip code, city)");
     println!("  - Team (with name and members array)");
     println!("\nValidation constraints mapped to OpenAPI:");
-    println!("  ✓ email → format: email");
-    println!("  ✓ range(min, max) → minimum, maximum");
-    println!("  ✓ length(min, max) → minLength, maxLength");
-    println!("  ✓ one_of → enum");
-    println!("  ✓ min_items, max_items → minItems, maxItems");
-    println!("  ✓ numeric_string → pattern: ^[0-9]+$");
+    println!("  [ok] email → format: email");
+    println!("  [ok] range(min, max) → minimum, maximum");
+    println!("  [ok] length(min, max) → minLength, maxLength");
+    println!("  [ok] one_of → enum");
+    println!("  [ok] min_items, max_items → minItems, maxItems");
+    println!("  [ok] numeric_string → pattern: ^[0-9]+$");
 }

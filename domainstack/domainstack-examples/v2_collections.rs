@@ -46,8 +46,8 @@ fn main() {
         ],
     };
     match booking.validate() {
-        Ok(_) => println!("   ✓ Booking is valid: {:?}\n", booking),
-        Err(e) => println!("   ✗ Validation errors:\n{}\n", e),
+        Ok(_) => println!("   [ok] Booking is valid: {:?}\n", booking),
+        Err(e) => println!("   [error] Validation errors:\n{}\n", e),
     }
 
     println!("2. Invalid: rooms with out-of-range values:");
@@ -69,9 +69,9 @@ fn main() {
         ],
     };
     match booking.validate() {
-        Ok(_) => println!("   ✓ Booking is valid\n"),
+        Ok(_) => println!("   [ok] Booking is valid\n"),
         Err(e) => {
-            println!("   ✗ Validation errors:\n{}", e);
+            println!("   [error] Validation errors:\n{}", e);
             println!("   Note: Errors include array indices in paths:");
             println!("     - rooms[1].adults (5 exceeds max of 4)");
             println!("     - rooms[2].children (4 exceeds max of 3)\n");
@@ -87,8 +87,8 @@ fn main() {
         ],
     };
     match tags.validate() {
-        Ok(_) => println!("   ✓ Tags are valid: {:?}\n", tags),
-        Err(e) => println!("   ✗ Validation errors:\n{}\n", e),
+        Ok(_) => println!("   [ok] Tags are valid: {:?}\n", tags),
+        Err(e) => println!("   [error] Validation errors:\n{}\n", e),
     }
 
     println!("4. Invalid: tags with length violations:");
@@ -100,9 +100,9 @@ fn main() {
         ],
     };
     match tags.validate() {
-        Ok(_) => println!("   ✓ Tags are valid\n"),
+        Ok(_) => println!("   [ok] Tags are valid\n"),
         Err(e) => {
-            println!("   ✗ Validation errors:\n{}", e);
+            println!("   [error] Validation errors:\n{}", e);
             println!("   Note: each() works with primitive rules too:");
             println!("     - tags[1] (too short: 1 char < 3 min)");
             println!("     - tags[2] (too long: 13 chars > 10 max)");

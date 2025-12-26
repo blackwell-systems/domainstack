@@ -128,8 +128,8 @@ async fn main() {
     };
 
     match user1.validate_async(&ctx).await {
-        Ok(()) => println!("✓ User registration validated successfully\n"),
-        Err(e) => println!("✗ Validation failed:\n{}\n", e),
+        Ok(()) => println!("[ok] User registration validated successfully\n"),
+        Err(e) => println!("[error] Validation failed:\n{}\n", e),
     }
 
     // Example 2: Email already taken
@@ -141,8 +141,8 @@ async fn main() {
     };
 
     match user2.validate_async(&ctx).await {
-        Ok(()) => println!("✓ User registration validated successfully\n"),
-        Err(e) => println!("✗ Validation failed:\n{}\n", e),
+        Ok(()) => println!("[ok] User registration validated successfully\n"),
+        Err(e) => println!("[error] Validation failed:\n{}\n", e),
     }
 
     // Example 3: Username taken
@@ -154,8 +154,8 @@ async fn main() {
     };
 
     match user3.validate_async(&ctx).await {
-        Ok(()) => println!("✓ User registration validated successfully\n"),
-        Err(e) => println!("✗ Validation failed:\n{}\n", e),
+        Ok(()) => println!("[ok] User registration validated successfully\n"),
+        Err(e) => println!("[error] Validation failed:\n{}\n", e),
     }
 
     // Example 4: Multiple errors
@@ -167,8 +167,8 @@ async fn main() {
     };
 
     match user4.validate_async(&ctx).await {
-        Ok(()) => println!("✓ User registration validated successfully\n"),
-        Err(e) => println!("✗ Validation failed:\n{}\n", e),
+        Ok(()) => println!("[ok] User registration validated successfully\n"),
+        Err(e) => println!("[error] Validation failed:\n{}\n", e),
     }
 
     // Example 5: Using AsyncRule directly
@@ -178,16 +178,16 @@ async fn main() {
 
     let result = rule.apply("admin@example.com", &rule_ctx, &ctx).await;
     if result.is_empty() {
-        println!("✓ Email is available\n");
+        println!("[ok] Email is available\n");
     } else {
-        println!("✗ Email validation failed:\n{}\n", result);
+        println!("[error] Email validation failed:\n{}\n", result);
     }
 
     let result = rule.apply("available@example.com", &rule_ctx, &ctx).await;
     if result.is_empty() {
-        println!("✓ Email is available\n");
+        println!("[ok] Email is available\n");
     } else {
-        println!("✗ Email validation failed:\n{}\n", result);
+        println!("[error] Email validation failed:\n{}\n", result);
     }
 
     println!("=== All examples completed ===");

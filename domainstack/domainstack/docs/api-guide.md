@@ -77,7 +77,7 @@ impl Email {
     pub fn new(raw: String) -> Result<Self, ValidationError> {
         let rule = rules::email().and(rules::max_len(255));
         validate("email", raw.as_str(), &rule)?;
-        Ok(Self(raw))  // ✓ If this succeeds, email is GUARANTEED valid
+        Ok(Self(raw))  // [ok] If this succeeds, email is GUARANTEED valid
     }
 }
 ```

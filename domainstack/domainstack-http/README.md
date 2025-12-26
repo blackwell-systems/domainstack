@@ -1,6 +1,10 @@
 # domainstack-http
 
-Framework-agnostic HTTP error handling for [domainstack](https://crates.io/crates/domainstack) validation.
+[![Crates.io](https://img.shields.io/crates/v/domainstack-http.svg)](https://crates.io/crates/domainstack-http)
+[![Documentation](https://docs.rs/domainstack-http/badge.svg)](https://docs.rs/domainstack-http)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/blackwell-systems/domainstack/blob/main/LICENSE)
+
+Framework-agnostic HTTP error handling for the [domainstack](https://crates.io/crates/domainstack) full-stack validation ecosystem.
 
 ## Overview
 

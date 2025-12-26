@@ -1,6 +1,9 @@
 # domainstack-cli
 
-Unified code generation CLI for domainstack validation rules. Generate TypeScript validators, GraphQL schemas, and more from your Rust `#[validate(...)]` attributes.
+[![Crates.io](https://img.shields.io/crates/v/domainstack-cli.svg)](https://crates.io/crates/domainstack-cli)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/blackwell-systems/domainstack/blob/main/LICENSE)
+
+Code generation CLI for the [domainstack](https://crates.io/crates/domainstack) full-stack validation ecosystem. Generate TypeScript/Zod validators from your Rust `#[validate(...)]` attributes.
 
 ## Overview
 

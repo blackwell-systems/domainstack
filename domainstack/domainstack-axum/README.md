@@ -1,6 +1,6 @@
 # domainstack-axum
 
-**Axum extractors for the domainstack validation framework**
+**Axum extractors for the [domainstack](https://crates.io/crates/domainstack) full-stack validation ecosystem**
 
 [![Crates.io](https://img.shields.io/crates/v/domainstack-axum.svg)](https://crates.io/crates/domainstack-axum)
 [![Documentation](https://docs.rs/domainstack-axum/badge.svg)](https://docs.rs/domainstack-axum)

@@ -1,6 +1,6 @@
 # domainstack-actix
 
-**Actix-web extractors for the domainstack validation framework**
+**Actix-web extractors for the [domainstack](https://crates.io/crates/domainstack) full-stack validation ecosystem**
 
 [![Crates.io](https://img.shields.io/crates/v/domainstack-actix.svg)](https://crates.io/crates/domainstack-actix)
 [![Documentation](https://docs.rs/domainstack-actix/badge.svg)](https://docs.rs/domainstack-actix)

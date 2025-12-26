@@ -55,7 +55,6 @@ Server and browser return **identical error structures** (paths, codes, metadata
 
 **Documentation:**
 - [WASM Validation Guide](./domainstack/domainstack/docs/WASM_VALIDATION.md)
-- [Publishing Guide](./domainstack/domainstack/docs/PUBLISHING.md)
 
 #### Bug Fixes from Pre-Release Review
 

@@ -319,5 +319,4 @@ Output in `pkg/`:
 
 ## See Also
 
-- [Publishing Guide](./PUBLISHING.md) — Dual crates.io + npm workflow
 - [domainstack-wasm README](../../domainstack-wasm/README.md) — Crate documentation

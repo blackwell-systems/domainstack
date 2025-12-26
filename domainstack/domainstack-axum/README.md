@@ -7,34 +7,112 @@
 
 **Axum extractors for the [domainstack](https://crates.io/crates/domainstack) full-stack validation ecosystem**
 
-Turn Axum handlers into one-line DTO→Domain conversions with automatic error responses.
+One-line DTO→Domain extraction with automatic structured error responses. Define validation once, get type-safe handlers and UI-friendly errors.
 
-## Quick Example
+## Hero Example
 
 ```rust
+use axum::{routing::post, Json, Router};
 use domainstack::prelude::*;
 use domainstack_axum::{DomainJson, ErrorResponse};
-use axum::{routing::post, Router, Json};
+use domainstack_derive::Validate;
+use serde::{Deserialize, Serialize};
 
-// Define your type alias for clean handlers
-type UserJson = DomainJson<User, UserDto>;
-
-async fn create_user(
-    UserJson { domain: user, .. }: UserJson
-) -> Result<Json<User>, ErrorResponse> {
-    // user is GUARANTEED valid here - no need to check!
-    Ok(Json(save_user(user).await?))
+// DTO: What the client sends
+#[derive(Deserialize)]
+struct CreateBookingDto {
+    guest_email: String,
+    rooms: u8,
+    nights: u8,
+    promo_code: Option<String>,
 }
 
-let app = Router::new().route("/users", post(create_user));
+// Domain: Valid-by-construction with derive macro
+#[derive(Debug, Serialize, Validate)]
+#[validate(check = "self.rooms > 0 || self.nights > 0", message = "Booking must have rooms or nights")]
+struct Booking {
+    #[validate(email)]
+    #[validate(max_len = 255)]
+    guest_email: String,
+
+    #[validate(range(min = 1, max = 10))]
+    rooms: u8,
+
+    #[validate(range(min = 1, max = 30))]
+    nights: u8,
+
+    #[validate(alphanumeric)]
+    #[validate(length(min = 4, max = 20))]
+    promo_code: Option<String>,
+}
+
+impl TryFrom<CreateBookingDto> for Booking {
+    type Error = ValidationError;
+    fn try_from(dto: CreateBookingDto) -> Result<Self, Self::Error> {
+        let booking = Self {
+            guest_email: dto.guest_email,
+            rooms: dto.rooms,
+            nights: dto.nights,
+            promo_code: dto.promo_code,
+        };
+        booking.validate()?;
+        Ok(booking)
+    }
+}
+
+// Handler: ONE LINE - extraction, validation, conversion all handled
+type BookingJson = DomainJson<Booking, CreateBookingDto>;
+
+async fn create_booking(
+    BookingJson { domain: booking, .. }: BookingJson,
+) -> Result<Json<Booking>, ErrorResponse> {
+    // booking is GUARANTEED valid - use with confidence!
+    Ok(Json(booking))
+}
+
+#[tokio::main]
+async fn main() {
+    let app = Router::new().route("/bookings", post(create_booking));
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+    axum::serve(listener, app).await.unwrap();
+}
 ```
+
+**Send invalid data:**
+```bash
+curl -X POST http://localhost:3000/bookings \
+  -H "Content-Type: application/json" \
+  -d '{"guest_email": "bad", "rooms": 0, "nights": 50}'
+```
+
+**Get structured, UI-friendly errors:**
+```json
+{
+  "code": "VALIDATION",
+  "status": 400,
+  "message": "Validation failed with 3 errors",
+  "details": {
+    "fields": {
+      "guest_email": [{"code": "invalid_email", "message": "Invalid email format"}],
+      "rooms": [{"code": "out_of_range", "message": "Must be between 1 and 10"}],
+      "nights": [{"code": "out_of_range", "message": "Must be between 1 and 30"}]
+    }
+  }
+}
+```
+
+**Your frontend can map these directly to form fields. No parsing. No guessing.**
 
 ## Installation
 
 ```toml
 [dependencies]
 domainstack-axum = "1.0"
-domainstack = { version = "1.0", features = ["derive"] }
+domainstack = { version = "1.0", features = ["derive", "regex"] }
+domainstack-derive = "1.0"
+serde = { version = "1", features = ["derive"] }
+axum = "0.7"
+tokio = { version = "1", features = ["full"] }
 ```
 
 ## What You Get

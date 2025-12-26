@@ -286,7 +286,7 @@ impl Schema {
     ///
     /// # Panics
     /// Panics if any value cannot be serialized to JSON.
-    /// Use [`try_enum_values`] for a non-panicking alternative.
+    /// Use [`Self::try_enum_values`] for a non-panicking alternative.
     pub fn enum_values<T: Serialize>(mut self, values: &[T]) -> Self {
         self.r#enum = Some(
             values
@@ -304,8 +304,7 @@ impl Schema {
         mut self,
         values: &[T],
     ) -> Result<Self, serde_json::Error> {
-        let serialized: Result<Vec<_>, _> =
-            values.iter().map(|v| serde_json::to_value(v)).collect();
+        let serialized: Result<Vec<_>, _> = values.iter().map(serde_json::to_value).collect();
         self.r#enum = Some(serialized?);
         Ok(self)
     }
@@ -378,7 +377,7 @@ impl Schema {
     ///
     /// # Panics
     /// Panics if the value cannot be serialized to JSON.
-    /// Use [`try_default`] for a non-panicking alternative.
+    /// Use [`Self::try_default`] for a non-panicking alternative.
     pub fn default<T: Serialize>(mut self, value: T) -> Self {
         self.default =
             Some(serde_json::to_value(value).expect("Failed to serialize default value"));
@@ -405,7 +404,7 @@ impl Schema {
     ///
     /// # Panics
     /// Panics if the value cannot be serialized to JSON.
-    /// Use [`try_example`] for a non-panicking alternative.
+    /// Use [`Self::try_example`] for a non-panicking alternative.
     pub fn example<T: Serialize>(mut self, value: T) -> Self {
         self.example =
             Some(serde_json::to_value(value).expect("Failed to serialize example value"));
@@ -435,7 +434,7 @@ impl Schema {
     ///
     /// # Panics
     /// Panics if any value cannot be serialized to JSON.
-    /// Use [`try_examples`] for a non-panicking alternative.
+    /// Use [`Self::try_examples`] for a non-panicking alternative.
     pub fn examples<T: Serialize>(mut self, values: Vec<T>) -> Self {
         self.examples = Some(
             values
@@ -519,7 +518,7 @@ impl Schema {
     ///
     /// # Panics
     /// Panics if the value cannot be serialized to JSON.
-    /// Use [`try_extension`] for a non-panicking alternative.
+    /// Use [`Self::try_extension`] for a non-panicking alternative.
     pub fn extension<T: Serialize>(mut self, key: impl Into<String>, value: T) -> Self {
         self.extensions.get_or_insert_with(HashMap::new).insert(
             key.into(),

@@ -5,6 +5,85 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+#### New Crate: `domainstack-wasm`
+
+**HEADLINE FEATURE: Browser Validation via WebAssembly**
+
+Run the exact same Rust validation rules in the browser. Zero translation drift, instant client-side feedback.
+
+```typescript
+import init, { createValidator } from '@domainstack/wasm';
+
+await init();
+const validator = createValidator();
+
+const result = validator.validate('Booking', JSON.stringify(formData));
+if (!result.ok) {
+  result.errors.forEach(e => setFieldError(e.path, e.message));
+}
+```
+
+**Key Features:**
+- **Zero drift** — Same Rust code compiled to WASM, not codegen
+- **Instant feedback** — Validate on keystroke without server round-trip
+- **Consistent errors** — Identical `ValidationError` structure on both sides
+- **Small bundle** — ~60KB uncompressed WASM
+- **Type-safe bindings** — TypeScript definitions generated from Rust
+
+**API:**
+- `createValidator()` — Create validator instance
+- `validator.validate(typeName, json)` — Validate JSON string
+- `validator.validateObject(typeName, obj)` — Validate JS object
+- `validator.hasType(typeName)` — Check if type is registered
+- `validator.getTypes()` — List registered types
+- `register_type::<T>(name)` — Register Rust type for WASM
+
+**Runtime Contract:**
+```typescript
+interface ValidationResult {
+  ok: boolean;
+  errors?: Violation[];      // Validation failures
+  error?: SystemError;       // System error (unknown type, parse failure)
+}
+```
+
+Server and browser return **identical error structures** (paths, codes, metadata)—UI rendering logic works unchanged.
+
+**Documentation:**
+- [WASM Validation Guide](./domainstack/domainstack/docs/WASM_VALIDATION.md)
+- [Publishing Guide](./domainstack/domainstack/docs/PUBLISHING.md)
+
+#### Bug Fixes from Pre-Release Review
+
+**HIGH Priority:**
+- **Integer overflow in age calculation** — `calculate_age()` now returns `Option<u32>` to handle future birth dates safely
+
+**MEDIUM Priority:**
+- **Non-panicking alternatives** — Added `try_*` variants for methods that can fail:
+  - `try_matches_regex()` — Returns `Result` instead of panicking on invalid regex
+  - `try_enum_values()` — Returns `Result` instead of panicking on serialization failure
+  - `try_default()` — Returns `Result` for default value serialization
+  - `try_example()` / `try_examples()` — Returns `Result` for example serialization
+  - `try_extension()` — Returns `Result` for extension serialization
+
+**LOW Priority:**
+- **NaN-safe float validation** — Added functions that combine `finite()` check with range:
+  - `float_range(min, max)` — Range check that rejects NaN/Infinity
+  - `float_min(min)` — Minimum check that rejects NaN/Infinity
+  - `float_max(max)` — Maximum check that rejects NaN/Infinity
+- **Zero divisor protection** — `try_multiple_of()` validates divisor at construction time
+
+### Changed
+
+- **Documentation restructured** — WASM guide converted from implementation plan to user-facing API documentation
+- **Crate count updated** — Now 9 publishable crates (added domainstack-wasm)
+
+---
+
 ## [Unreleased] - domainstack-cli v0.1.0
 
 ### Added

@@ -945,8 +945,7 @@ mod tests {
     fn test_try_extension_valid() {
         use serde_json::json;
 
-        let schema =
-            Schema::object().try_extension("x-custom", json!({"rule": "end > start"}));
+        let schema = Schema::object().try_extension("x-custom", json!({"rule": "end > start"}));
 
         assert!(schema.is_ok());
         let schema = schema.unwrap();

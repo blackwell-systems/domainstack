@@ -580,9 +580,7 @@ mod tests {
         let rule: Rule<[i32]> = unique();
         let result = rule.apply(&[1, 1, 2, 2]);
 
-        assert!(result.violations[0]
-            .message
-            .contains("found 2 duplicates"));
+        assert!(result.violations[0].message.contains("found 2 duplicates"));
     }
 
     #[test]
@@ -591,9 +589,7 @@ mod tests {
         let tags = vec!["".to_string(), "".to_string()];
         let result = rule.apply(&tags);
 
-        assert!(result.violations[0]
-            .message
-            .contains("found 2 empty items"));
+        assert!(result.violations[0].message.contains("found 2 empty items"));
     }
 
     // Whitespace strings are NOT empty (intentional behavior)

@@ -113,7 +113,12 @@ impl From<&domainstack::Violation> for WasmViolation {
         let meta = if v.meta.is_empty() {
             None
         } else {
-            Some(v.meta.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect())
+            Some(
+                v.meta
+                    .iter()
+                    .map(|(k, v)| (k.to_string(), v.to_string()))
+                    .collect(),
+            )
         };
 
         Self {
@@ -212,7 +217,8 @@ fn validate_json<T>(json: &str) -> Result<(), DispatchError>
 where
     T: Validate + DeserializeOwned,
 {
-    let value: T = serde_json::from_str(json).map_err(|e| DispatchError::ParseError(e.to_string()))?;
+    let value: T =
+        serde_json::from_str(json).map_err(|e| DispatchError::ParseError(e.to_string()))?;
     value.validate().map_err(DispatchError::Validation)
 }
 
@@ -286,9 +292,7 @@ pub fn validate(type_name: &str, json: &str) -> JsValue {
         Err(DispatchError::UnknownType) => {
             ValidationResult::system_error("unknown_type", format!("Unknown type: {}", type_name))
         }
-        Err(DispatchError::ParseError(msg)) => {
-            ValidationResult::system_error("parse_error", msg)
-        }
+        Err(DispatchError::ParseError(msg)) => ValidationResult::system_error("parse_error", msg),
         Err(DispatchError::Validation(err)) => {
             let violations = err.violations.iter().map(WasmViolation::from).collect();
             ValidationResult::validation_failed(violations)
@@ -435,7 +439,8 @@ mod tests {
 
     #[test]
     fn test_validation_result_system_error() {
-        let result = ValidationResult::system_error("unknown_type", "Unknown type: Foo".to_string());
+        let result =
+            ValidationResult::system_error("unknown_type", "Unknown type: Foo".to_string());
         assert!(!result.ok);
         assert!(result.errors.is_none());
         assert!(result.error.is_some());

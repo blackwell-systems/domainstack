@@ -260,31 +260,6 @@ impl TryFrom<BookingDto> for BookingRequest {
 
 **Key insight:** Domain types have private fields and can only be created through validated constructors. Invalid states become difficult (or impossible) to represent.
 
-## How domainstack is Different
-
-### What domainstack is NOT
-
-- **Not "yet another derive macro for DTO validation"** - It's a domain modeling foundation
-- **Not a web framework** - It's framework-agnostic validation primitives
-- **Not a replacement for thiserror/anyhow** - It complements them for domain boundaries
-
-### What domainstack IS
-
-- **Valid-by-construction foundation** - Domain types created through smart constructors
-- **Rules as values** - Build reusable, testable rule libraries
-- **Error paths as first-class** - Designed for APIs and UIs from the ground up
-- **Boundary adapters** - Optional crates map domain validation to HTTP errors
-
-### When to use domainstack
-
-**Use domainstack if you want:**
-- Clean DTO → Domain conversion
-- Domain objects that can't exist in invalid states
-- Reusable validation rules shared across services
-- Consistent field-level errors that map to forms/clients
-- Async validation with database/API context
-- Compile-time guarantees that data was validated (phantom types)
-
 ## Valid-by-Construction Pattern
 
 The recommended approach enforces validation at domain boundaries:
@@ -494,44 +469,20 @@ See [domainstack-axum](./domainstack/domainstack-axum/) and [domainstack-actix](
 
 ```toml
 [dependencies]
-# Core validation + derive macro (recommended)
-domainstack = { version = "1.0", features = ["derive"] }
-```
-
-### Feature Flags
-
-| Feature | Adds | Use When |
-|---------|------|----------|
-| `derive` | `#[derive(Validate)]` macro | Declarative validation (recommended) |
-| `regex` | Email, URL, pattern matching | Web APIs, user input |
-| `async` | Database/API validation | Uniqueness checks, external validation |
-| `chrono` | Date/time rules | Temporal constraints, age verification |
-| `serde` | `ValidateOnDeserialize` | Validate during JSON/YAML parsing |
-
-### Common Combinations
-
-```toml
-# Web API (most common)
 domainstack = { version = "1.0", features = ["derive", "regex"] }
+domainstack-axum = "1.0"  # or domainstack-actix, domainstack-rocket
 
-# API + async validation
-domainstack = { version = "1.0", features = ["derive", "regex", "async"] }
-
-# Full-stack with OpenAPI + framework adapter
-domainstack = { version = "1.0", features = ["derive", "regex", "async"] }
-domainstack-schema = "1.0"      # OpenAPI generation
-domainstack-axum = "1.0"        # Axum integration
+# Optional
+domainstack-schema = "1.0"  # OpenAPI generation
 ```
 
-### Optional Companion Crates
+**Common features:**
+- `derive` - `#[derive(Validate)]` macro (recommended)
+- `regex` - Email, URL, pattern matching
+- `async` - Database/API validation
+- `chrono` - Date/time rules
 
-```toml
-domainstack-schema = "1.0"    # OpenAPI 3.0 schema generation
-domainstack-envelope = "1.0"  # HTTP error envelopes (RFC 9457)
-domainstack-axum = "1.0"      # Axum adapter (0.7+)
-domainstack-actix = "1.0"     # Actix-web adapter (4.x)
-domainstack-rocket = "1.0"    # Rocket adapter (0.5+)
-```
+**For complete installation guide, feature flags, and companion crates, see [INSTALLATION.md](./domainstack/domainstack/docs/INSTALLATION.md)**
 
 ## Key Features
 

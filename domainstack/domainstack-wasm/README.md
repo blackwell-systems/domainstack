@@ -1,5 +1,10 @@
 # domainstack-wasm
 
+[![Blackwell Systems™](https://raw.githubusercontent.com/blackwell-systems/blackwell-docs-theme/main/badge-trademark.svg)](https://github.com/blackwell-systems)
+[![Crates.io](https://img.shields.io/crates/v/domainstack-wasm.svg)](https://crates.io/crates/domainstack-wasm)
+[![Documentation](https://docs.rs/domainstack-wasm/badge.svg)](https://docs.rs/domainstack-wasm)
+[![npm](https://img.shields.io/npm/v/@domainstack/wasm.svg)](https://www.npmjs.com/package/@domainstack/wasm)
+
 WASM browser validation for domainstack. Run the same validation logic in both browser and server.
 
 ## Quick Start

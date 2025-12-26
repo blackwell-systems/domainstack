@@ -94,7 +94,7 @@ impl ValidationResult {
 /// A validation violation, serializable for WASM.
 #[derive(Debug, Clone, Serialize)]
 pub struct WasmViolation {
-    /// Field path (e.g., "guest_email", "rooms[0].adults")
+    /// Field path (e.g., "guest_email", "rooms\[0\].adults")
     pub path: String,
 
     /// Error code (e.g., "invalid_email", "out_of_range")
@@ -152,8 +152,8 @@ pub enum DispatchError {
     /// JSON parsing failed
     ParseError(String),
 
-    /// Validation failed
-    Validation(ValidationError),
+    /// Validation failed (boxed to reduce enum size)
+    Validation(Box<ValidationError>),
 }
 
 // ============================================================================
@@ -219,7 +219,9 @@ where
 {
     let value: T =
         serde_json::from_str(json).map_err(|e| DispatchError::ParseError(e.to_string()))?;
-    value.validate().map_err(DispatchError::Validation)
+    value
+        .validate()
+        .map_err(|e| DispatchError::Validation(Box::new(e)))
 }
 
 // ============================================================================
@@ -540,6 +542,175 @@ mod tests {
             let meta = wasm_violation.meta.unwrap();
             assert_eq!(meta.get("min"), Some(&"1".to_string()));
             assert_eq!(meta.get("max"), Some(&"10".to_string()));
+        }
+
+        #[test]
+        fn test_multiple_violations() {
+            let mut registry = TypeRegistry::new();
+            registry.register::<TestBooking>("TestBooking");
+
+            // Both fields invalid
+            let json = r#"{"guest_name": "", "rooms": 15}"#;
+            let result = registry.validate("TestBooking", json);
+
+            assert!(matches!(result, Err(DispatchError::Validation(_))));
+            if let Err(DispatchError::Validation(err)) = result {
+                assert_eq!(err.violations.len(), 2);
+            }
+        }
+
+        #[test]
+        fn test_empty_json_object() {
+            let mut registry = TypeRegistry::new();
+            registry.register::<TestBooking>("TestBooking");
+
+            // Missing required fields - should fail parse
+            let json = r#"{}"#;
+            let result = registry.validate("TestBooking", json);
+            assert!(matches!(result, Err(DispatchError::ParseError(_))));
+        }
+
+        #[test]
+        fn test_invalid_json_syntax() {
+            let mut registry = TypeRegistry::new();
+            registry.register::<TestBooking>("TestBooking");
+
+            let json = r#"{ invalid json }"#;
+            let result = registry.validate("TestBooking", json);
+            assert!(matches!(result, Err(DispatchError::ParseError(_))));
+        }
+
+        #[test]
+        fn test_registry_has_type() {
+            let mut registry = TypeRegistry::new();
+            assert!(!registry.has_type("TestBooking"));
+
+            registry.register::<TestBooking>("TestBooking");
+            assert!(registry.has_type("TestBooking"));
+            assert!(!registry.has_type("NonExistent"));
+        }
+
+        #[test]
+        fn test_registry_type_names() {
+            let mut registry = TypeRegistry::new();
+            assert!(registry.type_names().is_empty());
+
+            registry.register::<TestBooking>("TestBooking");
+            let names = registry.type_names();
+            assert_eq!(names.len(), 1);
+            assert!(names.contains(&"TestBooking"));
+        }
+
+        // Test nested validation
+        #[derive(Debug, Validate, Deserialize)]
+        struct TestAddress {
+            #[validate(length(min = 1, max = 100))]
+            street: String,
+
+            #[validate(length(min = 1, max = 50))]
+            city: String,
+        }
+
+        #[derive(Debug, Validate, Deserialize)]
+        struct TestPerson {
+            #[validate(length(min = 1, max = 50))]
+            name: String,
+
+            #[validate(nested)]
+            address: TestAddress,
+        }
+
+        #[test]
+        fn test_nested_validation_with_path() {
+            let mut registry = TypeRegistry::new();
+            registry.register::<TestPerson>("TestPerson");
+
+            // Invalid city in nested address
+            let json = r#"{"name": "John", "address": {"street": "123 Main", "city": ""}}"#;
+            let result = registry.validate("TestPerson", json);
+
+            assert!(matches!(result, Err(DispatchError::Validation(_))));
+            if let Err(DispatchError::Validation(err)) = result {
+                assert!(!err.violations.is_empty());
+                // Path should include nested field
+                let path = err.violations[0].path.to_string();
+                assert!(path.contains("address") || path.contains("city"));
+            }
+        }
+    }
+
+    // Tests for global registry functions
+    mod global_registry {
+        use super::*;
+        use serde::Deserialize;
+
+        #[derive(Debug, Validate, Deserialize)]
+        struct GlobalTestType {
+            #[validate(length(min = 1))]
+            name: String,
+        }
+
+        #[test]
+        fn test_global_register_and_check() {
+            // Register type globally
+            register_type::<GlobalTestType>("GlobalTestType");
+
+            // Check it's registered
+            assert!(is_type_registered("GlobalTestType"));
+            assert!(!is_type_registered("NotRegistered"));
+
+            // Check it appears in list
+            let types = registered_types();
+            assert!(types.contains(&"GlobalTestType"));
+        }
+    }
+
+    // Tests for ValidationResult constructors
+    mod validation_result {
+        use super::*;
+
+        #[test]
+        fn test_success_serialization() {
+            let result = ValidationResult::success();
+            let json = serde_json::to_string(&result).unwrap();
+            assert!(json.contains("\"ok\":true"));
+            assert!(!json.contains("errors"));
+            assert!(!json.contains("error"));
+        }
+
+        #[test]
+        fn test_validation_failed_serialization() {
+            let violations = vec![
+                WasmViolation {
+                    path: "field1".to_string(),
+                    code: "error1".to_string(),
+                    message: "Error 1".to_string(),
+                    meta: None,
+                },
+                WasmViolation {
+                    path: "field2".to_string(),
+                    code: "error2".to_string(),
+                    message: "Error 2".to_string(),
+                    meta: None,
+                },
+            ];
+            let result = ValidationResult::validation_failed(violations);
+            let json = serde_json::to_string(&result).unwrap();
+            assert!(json.contains("\"ok\":false"));
+            assert!(json.contains("\"errors\""));
+            assert!(json.contains("field1"));
+            assert!(json.contains("field2"));
+        }
+
+        #[test]
+        fn test_system_error_serialization() {
+            let result =
+                ValidationResult::system_error("parse_error", "Invalid JSON".to_string());
+            let json = serde_json::to_string(&result).unwrap();
+            assert!(json.contains("\"ok\":false"));
+            assert!(json.contains("\"error\""));
+            assert!(json.contains("parse_error"));
+            assert!(json.contains("Invalid JSON"));
         }
     }
 }

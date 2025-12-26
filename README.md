@@ -15,13 +15,18 @@
 Define validation once. Get runtime checks, OpenAPI schemas, TypeScript types, and framework integration—from one source of truth.
 
 ```
-            Rust Domain Types          Output Artifacts
-        ┌────────────────────┐    ┌──────────────────────────┐
-        │  #[derive(         │    │  [ok] Runtime validation │
-        │    Validate,       │───▶│  [ok] OpenAPI schemas    │
-        │    ToSchema        │    │  [ok] TypeScript/Zod     │
-        │  )]                │    │  [ok] HTTP extractors    │
-        └────────────────────┘    └──────────────────────────┘
+Rust Domain                        Frontend
+     |                                 |
+#[derive(Validate, ToSchema)]    domainstack zod
+     |                                 |
+     v                                 v
+.validate()?                      Zod schemas
+     |                                 |
+     v                                 v
+Axum / Actix / Rocket  <------>  Same rules,
+     |                            both sides
+     v
+Structured errors (field-level, indexed paths)
 ```
 
 **Progressive adoption** — use what you need:

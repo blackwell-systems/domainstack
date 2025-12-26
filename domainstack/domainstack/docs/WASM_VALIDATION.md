@@ -29,6 +29,8 @@ Run the exact same Rust validation rules in the browser via WebAssembly. Zero tr
    └─────────────┘          └─────────────────┘
 ```
 
+The same `Validate` impl runs in both targets.
+
 ## Goals
 
 1. **Zero drift** — Not codegen, actual same Rust code compiled to WASM
@@ -71,20 +73,34 @@ trait DynValidator: Send + Sync {
     fn schema(&self) -> Schema;
 }
 
-// 3. WASM Entry Point
+// 3. WASM Entry Point — returns structured result, never panics
 #[wasm_bindgen]
 pub fn validate(type_name: &str, json: &str) -> JsValue {
     REGISTRY.with(|r| {
         match r.get(type_name) {
             Some(validator) => {
                 match validator.validate_json(json) {
-                    Ok(()) => JsValue::NULL,
-                    Err(e) => serde_wasm_bindgen::to_value(&e).unwrap(),
+                    Ok(()) => to_js(&ValidationResult::ok()),
+                    Err(e) => to_js(&ValidationResult::err(e)),
                 }
             }
-            None => panic!("Unknown type: {}", type_name),
+            None => to_js(&ValidationResult::unknown_type(type_name)),
         }
     })
+}
+
+// Structured result — no panics in browser
+#[derive(Serialize)]
+struct ValidationResult {
+    ok: bool,
+    errors: Option<Vec<Violation>>,
+    error: Option<SystemError>,
+}
+
+#[derive(Serialize)]
+struct SystemError {
+    code: &'static str,
+    message: String,
 }
 ```
 
@@ -123,24 +139,31 @@ import { createValidator } from '@domainstack/wasm';
 const validator = await createValidator();
 
 // Validate any registered type
+// Object is serialized to JSON internally via structured clone
 const result = validator.validate('Booking', {
   guest_email: 'invalid',
   rooms: 15
 });
 
 if (!result.ok) {
-  // Same structure as server response!
-  result.errors.forEach(violation => {
-    console.log(violation.path);    // "guest_email"
-    console.log(violation.code);    // "invalid_email"
-    console.log(violation.message); // "Invalid email format"
-  });
+  if (result.error) {
+    // System error (e.g., unknown type)
+    console.error(result.error.code, result.error.message);
+  } else {
+    // Validation errors — same structure as server response!
+    result.errors.forEach(violation => {
+      console.log(violation.path);    // "guest_email"
+      console.log(violation.code);    // "invalid_email"
+      console.log(violation.message); // "Invalid email format"
+    });
+  }
 }
 
 // TypeScript types generated from Rust
 interface ValidationResult {
   ok: boolean;
-  errors?: Violation[];
+  errors?: Violation[];      // Validation failures
+  error?: SystemError;       // System error (unknown type, parse failure)
 }
 
 interface Violation {
@@ -148,6 +171,11 @@ interface Violation {
   code: string;
   message: string;
   meta?: Record<string, string>;
+}
+
+interface SystemError {
+  code: 'unknown_type' | 'parse_error';
+  message: string;
 }
 ```
 
@@ -349,7 +377,7 @@ const result = validate('Booking', data);
 ## Open Questions
 
 1. **Registry initialization** — Explicit `init()` or auto-init on first validate?
-2. **Streaming validation** — Validate partial objects as user types?
+2. **Draft validation mode** — Validate partial/incomplete objects as user types? This implies optional fields + relaxed "draft state" rules, which is a larger design topic.
 3. **Schema export** — Also expose OpenAPI schemas from WASM for client-side form generation?
 4. **Offline support** — Service worker caching strategy for WASM module?
 

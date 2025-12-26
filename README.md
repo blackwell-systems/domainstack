@@ -261,6 +261,12 @@ See `examples/` folder for more:
 - OpenAPI schema generation
 - Framework integration examples
 
+## Framework Adapters
+
+Automatic DTO→Domain conversion with one-line extractors for **Axum**, **Actix-web**, and **Rocket**. Validation errors are automatically converted to structured JSON responses.
+
+**📖 [HTTP Integration Guide](./domainstack/domainstack/docs/HTTP_INTEGRATION.md)**
+
 ## Running Examples
 
 See **[examples/README.md](./examples/README.md)** for instructions on running all examples.
@@ -272,7 +278,7 @@ See **[examples/README.md](./examples/README.md)** for instructions on running a
 | Category | Crates |
 |----------|--------|
 | **Core** | `domainstack`, `domainstack-derive`, `domainstack-schema`, `domainstack-envelope` |
-| **Web Frameworks** | `domainstack-axum`, `domainstack-actix`, `domainstack-rocket`, `domainstack-http` |
+| **Web Framework Integrations** | `domainstack-axum`, `domainstack-actix`, `domainstack-rocket`, `domainstack-http` |
 
 **4 example crates** (repository only): `domainstack-examples`, `examples-axum`, `examples-actix`, `examples-rocket`
 

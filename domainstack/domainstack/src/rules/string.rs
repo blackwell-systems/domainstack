@@ -410,6 +410,7 @@ pub fn ends_with(suffix: &'static str) -> Rule<str> {
 ///
 /// # Panics
 /// Panics if the regex pattern is invalid at rule creation time.
+/// Use [`try_matches_regex`] for a non-panicking alternative.
 ///
 /// # Performance
 /// The regex is compiled once at rule creation and reused for all validations,
@@ -434,6 +435,59 @@ pub fn matches_regex(pattern: &'static str) -> Rule<str> {
             err
         }
     })
+}
+
+/// Validates that a string matches the specified regex pattern (non-panicking version).
+///
+/// Unlike [`matches_regex`], this function returns a `Result` instead of panicking
+/// on invalid regex patterns. This is useful when the pattern comes from user input
+/// or configuration.
+///
+/// Requires the `regex` feature to be enabled.
+///
+/// # Examples
+///
+/// ```
+/// #[cfg(feature = "regex")]
+/// {
+///     use domainstack::prelude::*;
+///
+///     // Valid pattern
+///     let rule = rules::try_matches_regex(r"^\d{3}-\d{4}$").unwrap();
+///     assert!(rule.apply("123-4567").is_empty());
+///
+///     // Invalid pattern returns error
+///     let result = rules::try_matches_regex(r"[invalid");
+///     assert!(result.is_err());
+/// }
+/// ```
+///
+/// # Error Code
+/// - Code: `pattern_mismatch`
+/// - Message: `"Does not match required pattern"`
+/// - Meta: `{"pattern": "regex"}`
+///
+/// # Errors
+/// Returns a `regex::Error` if the pattern is invalid.
+#[cfg(feature = "regex")]
+pub fn try_matches_regex(pattern: &'static str) -> Result<Rule<str>, regex::Error> {
+    let re = regex::Regex::new(pattern)?;
+
+    Ok(Rule::new(move |value: &str, ctx: &RuleContext| {
+        if re.is_match(value) {
+            ValidationError::default()
+        } else {
+            let mut err = ValidationError::single(
+                ctx.full_path(),
+                "pattern_mismatch",
+                "Does not match required pattern",
+            );
+            err.violations[0]
+                .meta
+                .insert("pattern", pattern.to_string());
+            err
+        }
+    }))
 }
 
 /// Validates that a string is not blank (not empty after trimming whitespace).
@@ -839,6 +893,22 @@ mod tests {
         let result = rule.apply("1234567");
         assert!(!result.is_empty());
         assert_eq!(result.violations[0].code, "pattern_mismatch");
+    }
+
+    #[cfg(feature = "regex")]
+    #[test]
+    fn test_try_matches_regex_valid_pattern() {
+        let rule = try_matches_regex(r"^\d{3}-\d{4}$").unwrap();
+        assert!(rule.apply("123-4567").is_empty());
+        assert!(!rule.apply("1234567").is_empty());
+    }
+
+    #[cfg(feature = "regex")]
+    #[test]
+    fn test_try_matches_regex_invalid_pattern() {
+        // Invalid regex pattern (unclosed bracket)
+        let result = try_matches_regex(r"[invalid");
+        assert!(result.is_err());
     }
 
     #[test]

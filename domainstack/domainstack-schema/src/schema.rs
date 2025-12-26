@@ -283,14 +283,31 @@ impl Schema {
     }
 
     /// Set enum values.
+    ///
+    /// # Panics
+    /// Panics if any value cannot be serialized to JSON.
+    /// Use [`try_enum_values`] for a non-panicking alternative.
     pub fn enum_values<T: Serialize>(mut self, values: &[T]) -> Self {
         self.r#enum = Some(
             values
                 .iter()
-                .map(|v| serde_json::to_value(v).unwrap())
+                .map(|v| serde_json::to_value(v).expect("Failed to serialize enum value"))
                 .collect(),
         );
         self
+    }
+
+    /// Set enum values (non-panicking version).
+    ///
+    /// Returns an error if any value cannot be serialized to JSON.
+    pub fn try_enum_values<T: Serialize>(
+        mut self,
+        values: &[T],
+    ) -> Result<Self, serde_json::Error> {
+        let serialized: Result<Vec<_>, _> =
+            values.iter().map(|v| serde_json::to_value(v)).collect();
+        self.r#enum = Some(serialized?);
+        Ok(self)
     }
 
     // === v0.8 features ===
@@ -358,9 +375,22 @@ impl Schema {
     ///
     /// let schema = Schema::string().default(json!("guest"));
     /// ```
+    ///
+    /// # Panics
+    /// Panics if the value cannot be serialized to JSON.
+    /// Use [`try_default`] for a non-panicking alternative.
     pub fn default<T: Serialize>(mut self, value: T) -> Self {
-        self.default = Some(serde_json::to_value(value).unwrap());
+        self.default =
+            Some(serde_json::to_value(value).expect("Failed to serialize default value"));
         self
+    }
+
+    /// Set a default value for this schema (non-panicking version).
+    ///
+    /// Returns an error if the value cannot be serialized to JSON.
+    pub fn try_default<T: Serialize>(mut self, value: T) -> Result<Self, serde_json::Error> {
+        self.default = Some(serde_json::to_value(value)?);
+        Ok(self)
     }
 
     /// Set an example value for this schema.
@@ -372,9 +402,22 @@ impl Schema {
     ///
     /// let schema = Schema::string().example(json!("john_doe"));
     /// ```
+    ///
+    /// # Panics
+    /// Panics if the value cannot be serialized to JSON.
+    /// Use [`try_example`] for a non-panicking alternative.
     pub fn example<T: Serialize>(mut self, value: T) -> Self {
-        self.example = Some(serde_json::to_value(value).unwrap());
+        self.example =
+            Some(serde_json::to_value(value).expect("Failed to serialize example value"));
         self
+    }
+
+    /// Set an example value for this schema (non-panicking version).
+    ///
+    /// Returns an error if the value cannot be serialized to JSON.
+    pub fn try_example<T: Serialize>(mut self, value: T) -> Result<Self, serde_json::Error> {
+        self.example = Some(serde_json::to_value(value)?);
+        Ok(self)
     }
 
     /// Set multiple example values for this schema.
@@ -389,14 +432,30 @@ impl Schema {
     ///     json!("bob"),
     /// ]);
     /// ```
+    ///
+    /// # Panics
+    /// Panics if any value cannot be serialized to JSON.
+    /// Use [`try_examples`] for a non-panicking alternative.
     pub fn examples<T: Serialize>(mut self, values: Vec<T>) -> Self {
         self.examples = Some(
             values
                 .into_iter()
-                .map(|v| serde_json::to_value(v).unwrap())
+                .map(|v| serde_json::to_value(v).expect("Failed to serialize example value"))
                 .collect(),
         );
         self
+    }
+
+    /// Set multiple example values for this schema (non-panicking version).
+    ///
+    /// Returns an error if any value cannot be serialized to JSON.
+    pub fn try_examples<T: Serialize>(mut self, values: Vec<T>) -> Result<Self, serde_json::Error> {
+        let serialized: Result<Vec<_>, _> = values
+            .into_iter()
+            .map(|v| serde_json::to_value(v))
+            .collect();
+        self.examples = Some(serialized?);
+        Ok(self)
     }
 
     /// Mark this field as read-only (returned in responses, not accepted in requests).
@@ -457,11 +516,31 @@ impl Schema {
     ///         "cross_field": ["end_date > start_date"]
     ///     }));
     /// ```
+    ///
+    /// # Panics
+    /// Panics if the value cannot be serialized to JSON.
+    /// Use [`try_extension`] for a non-panicking alternative.
     pub fn extension<T: Serialize>(mut self, key: impl Into<String>, value: T) -> Self {
+        self.extensions.get_or_insert_with(HashMap::new).insert(
+            key.into(),
+            serde_json::to_value(value).expect("Failed to serialize extension value"),
+        );
+        self
+    }
+
+    /// Add a vendor extension (non-panicking version).
+    ///
+    /// Extension keys should start with "x-".
+    /// Returns an error if the value cannot be serialized to JSON.
+    pub fn try_extension<T: Serialize>(
+        mut self,
+        key: impl Into<String>,
+        value: T,
+    ) -> Result<Self, serde_json::Error> {
         self.extensions
             .get_or_insert_with(HashMap::new)
-            .insert(key.into(), serde_json::to_value(value).unwrap());
-        self
+            .insert(key.into(), serde_json::to_value(value)?);
+        Ok(self)
     }
 }
 

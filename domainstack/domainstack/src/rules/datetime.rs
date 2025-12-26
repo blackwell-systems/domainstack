@@ -219,26 +219,44 @@ pub fn after(limit: DateTime<Utc>) -> Rule<DateTime<Utc>> {
 pub fn age_range(min: u32, max: u32) -> Rule<NaiveDate> {
     Rule::new(move |birth_date: &NaiveDate, ctx: &RuleContext| {
         let today = Utc::now().date_naive();
-        let age = calculate_age(*birth_date, today);
 
-        if age >= min && age <= max {
-            ValidationError::default()
-        } else {
-            let mut err = ValidationError::single(
-                ctx.full_path(),
-                "age_out_of_range",
-                format!("Age must be between {} and {} years", min, max),
-            );
-            err.violations[0].meta.insert("min", min.to_string());
-            err.violations[0].meta.insert("max", max.to_string());
-            err.violations[0].meta.insert("age", age.to_string());
-            err
+        match calculate_age(*birth_date, today) {
+            None => {
+                // Birth date is in the future - invalid
+                let mut err = ValidationError::single(
+                    ctx.full_path(),
+                    "invalid_birth_date",
+                    "Birth date cannot be in the future",
+                );
+                err.violations[0]
+                    .meta
+                    .insert("birth_date", birth_date.to_string());
+                err
+            }
+            Some(age) if age >= min && age <= max => ValidationError::default(),
+            Some(age) => {
+                let mut err = ValidationError::single(
+                    ctx.full_path(),
+                    "age_out_of_range",
+                    format!("Age must be between {} and {} years", min, max),
+                );
+                err.violations[0].meta.insert("min", min.to_string());
+                err.violations[0].meta.insert("max", max.to_string());
+                err.violations[0].meta.insert("age", age.to_string());
+                err
+            }
         }
     })
 }
 
-/// Helper function to calculate age from birth date to a given date
-fn calculate_age(birth_date: NaiveDate, current_date: NaiveDate) -> u32 {
+/// Helper function to calculate age from birth date to a given date.
+/// Returns None if birth_date is in the future (invalid age).
+fn calculate_age(birth_date: NaiveDate, current_date: NaiveDate) -> Option<u32> {
+    // Handle future birth dates gracefully
+    if birth_date > current_date {
+        return None;
+    }
+
     let mut age = current_date.year() - birth_date.year();
 
     // Adjust if birthday hasn't occurred yet this year
@@ -248,7 +266,8 @@ fn calculate_age(birth_date: NaiveDate, current_date: NaiveDate) -> u32 {
         age -= 1;
     }
 
-    age as u32
+    // age is guaranteed non-negative here since birth_date <= current_date
+    Some(age as u32)
 }
 
 #[cfg(test)]
@@ -386,20 +405,37 @@ mod tests {
     }
 
     #[test]
+    fn test_age_range_future_birth_date() {
+        let rule = age_range(18, 120);
+
+        // Birth date in the future (would have caused integer overflow before fix)
+        let birth_date = NaiveDate::from_ymd_opt(Utc::now().year() + 5, 6, 15).unwrap();
+        let result = rule.apply(&birth_date);
+        assert!(!result.is_empty());
+        assert_eq!(result.violations[0].code, "invalid_birth_date");
+        assert!(result.violations[0].meta.get("birth_date").is_some());
+    }
+
+    #[test]
     fn test_calculate_age() {
         let birth_date = NaiveDate::from_ymd_opt(2000, 6, 15).unwrap();
 
         // Before birthday
         let current = NaiveDate::from_ymd_opt(2025, 3, 10).unwrap();
-        assert_eq!(calculate_age(birth_date, current), 24);
+        assert_eq!(calculate_age(birth_date, current), Some(24));
 
         // After birthday
         let current = NaiveDate::from_ymd_opt(2025, 8, 20).unwrap();
-        assert_eq!(calculate_age(birth_date, current), 25);
+        assert_eq!(calculate_age(birth_date, current), Some(25));
 
         // On birthday
         let current = NaiveDate::from_ymd_opt(2025, 6, 15).unwrap();
-        assert_eq!(calculate_age(birth_date, current), 25);
+        assert_eq!(calculate_age(birth_date, current), Some(25));
+
+        // Future birth date returns None (prevents overflow)
+        let future_birth = NaiveDate::from_ymd_opt(2030, 1, 1).unwrap();
+        let current = NaiveDate::from_ymd_opt(2025, 1, 1).unwrap();
+        assert_eq!(calculate_age(future_birth, current), None);
     }
 
     #[test]

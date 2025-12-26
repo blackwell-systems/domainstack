@@ -154,19 +154,39 @@ impl ValidationError {
         map
     }
 
+    /// Returns a new ValidationError with all paths prefixed.
+    ///
+    /// # Performance
+    /// This method is optimized to collect prefix segments once and reuse them,
+    /// avoiding repeated cloning of the prefix path.
     pub fn prefixed(self, prefix: impl Into<Path>) -> Self {
         let prefix = prefix.into();
+
+        // Collect prefix segments once to avoid repeated cloning
+        let prefix_segments: Vec<_> = prefix.segments().to_vec();
+
         let violations = self
             .violations
             .into_iter()
             .map(|mut v| {
-                let mut new_path = prefix.clone();
+                let mut new_path = Path::root();
+
+                // Add prefix segments
+                for seg in &prefix_segments {
+                    match seg {
+                        crate::PathSegment::Field(name) => new_path.push_field(name.clone()),
+                        crate::PathSegment::Index(idx) => new_path.push_index(*idx),
+                    }
+                }
+
+                // Add violation's original path segments
                 for seg in v.path.segments() {
                     match seg {
                         crate::PathSegment::Field(name) => new_path.push_field(name.clone()),
                         crate::PathSegment::Index(idx) => new_path.push_index(*idx),
                     }
                 }
+
                 v.path = new_path;
                 v
             })

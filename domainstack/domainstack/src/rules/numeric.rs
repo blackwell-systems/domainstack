@@ -309,6 +309,85 @@ impl FiniteCheck for f64 {
     }
 }
 
+/// Validates that a floating-point value is within the specified range (inclusive).
+///
+/// Unlike [`range()`], this function also checks that the value is finite (not NaN or infinity).
+/// This prevents NaN values from bypassing range validation due to NaN's special comparison semantics.
+///
+/// # Examples
+///
+/// ```
+/// use domainstack::prelude::*;
+///
+/// let rule = rules::float_range(0.0f64, 1.0);
+/// assert!(rule.apply(&0.5).is_empty());
+/// assert!(!rule.apply(&1.5).is_empty());      // out of range
+/// assert!(!rule.apply(&f64::NAN).is_empty()); // NaN rejected
+/// assert!(!rule.apply(&f64::INFINITY).is_empty()); // infinity rejected
+/// ```
+///
+/// # Error Codes
+/// - Code: `not_finite` if NaN or infinity
+/// - Code: `out_of_range` if not within bounds
+pub fn float_range<T>(min: T, max: T) -> Rule<T>
+where
+    T: PartialOrd + Copy + std::fmt::Display + Send + Sync + 'static + FiniteCheck,
+{
+    finite().and(range(min, max))
+}
+
+/// Validates that a floating-point value is at least the minimum.
+///
+/// Unlike [`min()`], this function also checks that the value is finite (not NaN or infinity).
+///
+/// # Examples
+///
+/// ```
+/// use domainstack::prelude::*;
+///
+/// let rule = rules::float_min(0.0f64);
+/// assert!(rule.apply(&0.0).is_empty());
+/// assert!(rule.apply(&100.0).is_empty());
+/// assert!(!rule.apply(&-1.0).is_empty());
+/// assert!(!rule.apply(&f64::NAN).is_empty());
+/// ```
+///
+/// # Error Codes
+/// - Code: `not_finite` if NaN or infinity
+/// - Code: `below_minimum` if less than minimum
+pub fn float_min<T>(minimum: T) -> Rule<T>
+where
+    T: PartialOrd + Copy + std::fmt::Display + Send + Sync + 'static + FiniteCheck,
+{
+    finite().and(min(minimum))
+}
+
+/// Validates that a floating-point value does not exceed the maximum.
+///
+/// Unlike [`max()`], this function also checks that the value is finite (not NaN or infinity).
+///
+/// # Examples
+///
+/// ```
+/// use domainstack::prelude::*;
+///
+/// let rule = rules::float_max(100.0f64);
+/// assert!(rule.apply(&50.0).is_empty());
+/// assert!(rule.apply(&100.0).is_empty());
+/// assert!(!rule.apply(&101.0).is_empty());
+/// assert!(!rule.apply(&f64::NAN).is_empty());
+/// ```
+///
+/// # Error Codes
+/// - Code: `not_finite` if NaN or infinity
+/// - Code: `above_maximum` if greater than maximum
+pub fn float_max<T>(maximum: T) -> Rule<T>
+where
+    T: PartialOrd + Copy + std::fmt::Display + Send + Sync + 'static + FiniteCheck,
+{
+    finite().and(max(maximum))
+}
+
 /// Validates that a numeric value is a multiple of the specified number.
 ///
 /// # Examples
@@ -327,6 +406,10 @@ impl FiniteCheck for f64 {
 /// - Code: `not_multiple`
 /// - Message: `"Must be a multiple of {divisor}"`
 /// - Meta: `{"divisor": "5"}`
+///
+/// # Panics
+/// Panics at validation time if divisor is zero. Use [`try_multiple_of`] for a
+/// version that validates the divisor at construction time.
 pub fn multiple_of<T>(divisor: T) -> Rule<T>
 where
     T: std::ops::Rem<Output = T>
@@ -338,6 +421,12 @@ where
         + Sync
         + 'static,
 {
+    // Check for zero divisor at construction time
+    assert!(
+        divisor != T::default(),
+        "multiple_of: divisor cannot be zero"
+    );
+
     Rule::new(move |value: &T, ctx: &RuleContext| {
         if *value % divisor == T::default() {
             ValidationError::default()
@@ -353,6 +442,59 @@ where
             err
         }
     })
+}
+
+/// Validates that a numeric value is a multiple of the specified number (non-panicking version).
+///
+/// Unlike [`multiple_of`], this function returns `None` if the divisor is zero instead of panicking.
+///
+/// # Examples
+///
+/// ```
+/// use domainstack::prelude::*;
+///
+/// // Valid divisor
+/// let rule = rules::try_multiple_of(5).unwrap();
+/// assert!(rule.apply(&10).is_empty());
+///
+/// // Zero divisor returns None
+/// let result = rules::try_multiple_of(0);
+/// assert!(result.is_none());
+/// ```
+///
+/// # Returns
+/// - `Some(Rule)` if divisor is non-zero
+/// - `None` if divisor is zero
+pub fn try_multiple_of<T>(divisor: T) -> Option<Rule<T>>
+where
+    T: std::ops::Rem<Output = T>
+        + PartialEq
+        + Default
+        + Copy
+        + std::fmt::Display
+        + Send
+        + Sync
+        + 'static,
+{
+    if divisor == T::default() {
+        return None;
+    }
+
+    Some(Rule::new(move |value: &T, ctx: &RuleContext| {
+        if *value % divisor == T::default() {
+            ValidationError::default()
+        } else {
+            let mut err = ValidationError::single(
+                ctx.full_path(),
+                "not_multiple",
+                format!("Must be a multiple of {}", divisor),
+            );
+            err.violations[0]
+                .meta
+                .insert("divisor", divisor.to_string());
+            err
+        }
+    }))
 }
 
 #[cfg(test)]
@@ -616,5 +758,67 @@ mod tests {
         let result = rule.apply(&1.5);
         assert_eq!(result.violations.len(), 1);
         assert_eq!(result.violations[0].code, "out_of_range");
+    }
+
+    #[test]
+    fn test_float_range() {
+        let rule = float_range(0.0f64, 1.0);
+
+        // Valid values
+        assert!(rule.apply(&0.5).is_empty());
+        assert!(rule.apply(&0.0).is_empty());
+        assert!(rule.apply(&1.0).is_empty());
+
+        // Out of range
+        assert!(!rule.apply(&1.5).is_empty());
+        assert!(!rule.apply(&-0.1).is_empty());
+
+        // NaN and infinity rejected
+        assert!(!rule.apply(&f64::NAN).is_empty());
+        assert!(!rule.apply(&f64::INFINITY).is_empty());
+        assert!(!rule.apply(&f64::NEG_INFINITY).is_empty());
+    }
+
+    #[test]
+    fn test_float_min() {
+        let rule = float_min(0.0f64);
+
+        assert!(rule.apply(&0.0).is_empty());
+        assert!(rule.apply(&100.0).is_empty());
+        assert!(!rule.apply(&-1.0).is_empty());
+        assert!(!rule.apply(&f64::NAN).is_empty());
+        assert!(!rule.apply(&f64::NEG_INFINITY).is_empty());
+    }
+
+    #[test]
+    fn test_float_max() {
+        let rule = float_max(100.0f64);
+
+        assert!(rule.apply(&50.0).is_empty());
+        assert!(rule.apply(&100.0).is_empty());
+        assert!(!rule.apply(&101.0).is_empty());
+        assert!(!rule.apply(&f64::NAN).is_empty());
+        assert!(!rule.apply(&f64::INFINITY).is_empty());
+    }
+
+    #[test]
+    fn test_try_multiple_of_valid() {
+        let rule = try_multiple_of(5).unwrap();
+        assert!(rule.apply(&10).is_empty());
+        assert!(rule.apply(&15).is_empty());
+        assert!(!rule.apply(&7).is_empty());
+    }
+
+    #[test]
+    fn test_try_multiple_of_zero_divisor() {
+        // Zero divisor returns None
+        let result = try_multiple_of(0);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    #[should_panic(expected = "multiple_of: divisor cannot be zero")]
+    fn test_multiple_of_zero_divisor_panics() {
+        let _rule = multiple_of(0);
     }
 }

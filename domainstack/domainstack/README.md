@@ -10,30 +10,60 @@
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Sponsor](https://img.shields.io/badge/Sponsor-Buy%20Me%20a%20Coffee-yellow?logo=buy-me-a-coffee&logoColor=white)](https://buymeacoffee.com/blackwellsystems)
 
-**Turn untrusted input into valid domain objects—with structured, field-level errors**
+**Full-stack validation ecosystem for Rust web services**
+
+Define validation once. Get runtime checks, OpenAPI schemas, TypeScript types, and framework integration—from one source of truth.
+
+```
+Rust Domain                        Frontend
+     |                                 |
+#[derive(Validate, ToSchema)]    domainstack zod
+     |                                 |
+     v                                 v
+.validate()?                    Zod schemas
+     |                                 |
+     v                                 v
+Axum / Actix / Rocket  <------>  Same rules,
+     |                            both sides
+     v
+Structured errors (field-level, indexed paths)
+```
+
+## Progressive Adoption
+
+Use only what you need:
+
+| Need | Add |
+|------|-----|
+| Core validation | `domainstack` |
+| Derive macros | `features = ["derive"]` |
+| OpenAPI schemas | `domainstack-schema` |
+| Axum integration | `domainstack-axum` |
+| Actix-web integration | `domainstack-actix` |
+| Rocket integration | `domainstack-rocket` |
+| TypeScript/Zod codegen | `domainstack-cli` |
 
 ## What is domainstack?
 
-domainstack helps you turn untrusted input into valid domain objects—then report failures back to clients with structured, field-level errors.
+domainstack is a **domain-driven validation ecosystem** for Rust web services. It helps you:
 
-It's built around a service-oriented reality:
+1. **Define domain models** with validation rules
+2. **Generate OpenAPI schemas** automatically from those rules
+3. **Sync frontend validation** via TypeScript/Zod code generation
+4. **Integrate with web frameworks** using one-line extractors
 
-**Outside world (HTTP/JSON/etc.) → DTOs → Domain (valid-by-construction) → Business logic**
+### The Philosophy
 
-### The core idea
+Most validation crates answer: **"Is this DTO valid?"**
+domainstack answers: **"How do I build a full-stack validation story with a single source of truth?"**
 
-Most validation crates answer: **"Is this DTO valid?"**  
-domainstack answers: **"How do I *safely construct domain models* from untrusted input, and return a stable error contract?"**
-
-That means:
-- **Domain-first modeling** - Invalid states are unrepresentable
-- **Composable rules** - Rules are reusable values, not just attributes
+**Core capabilities:**
+- **37 validation rules** - String, numeric, collection, date/time
+- **Composable rule algebra** - `.and()`, `.or()`, `.when()` combinators
 - **Structured error paths** - `rooms[0].adults`, `guest.email.value`
-- **Clean boundary mapping** - Optional error-envelope integration for APIs
-- **Async validation** - Database uniqueness checks with context passing
-- **Type-state tracking** - Compile-time guarantees with phantom types
-- **Auto-derived OpenAPI schemas** - Write validation rules once, get OpenAPI 3.0 schemas automatically (zero duplication)
-- **Serde integration** - Validate automatically during JSON/YAML deserialization with `#[derive(ValidateOnDeserialize)]`
+- **Async validation** - Database uniqueness checks with context
+- **Type-state validation** - Compile-time guarantees with phantom types
+- **Zero-dependency core** - Only `smallvec`, everything else is opt-in
 
 ## Quick Start
 

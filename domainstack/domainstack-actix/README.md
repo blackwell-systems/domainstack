@@ -1,9 +1,11 @@
 # domainstack-actix
 
-**Actix-web extractors for the domainstack validation framework**
-
+[![Blackwell Systems™](https://raw.githubusercontent.com/blackwell-systems/blackwell-docs-theme/main/badge-trademark.svg)](https://github.com/blackwell-systems)
 [![Crates.io](https://img.shields.io/crates/v/domainstack-actix.svg)](https://crates.io/crates/domainstack-actix)
 [![Documentation](https://docs.rs/domainstack-actix/badge.svg)](https://docs.rs/domainstack-actix)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/blackwell-systems/domainstack/blob/main/LICENSE)
+
+**Actix-web extractors for the [domainstack](https://crates.io/crates/domainstack) full-stack validation ecosystem**
 
 Turn Actix-web handlers into one-line DTO→Domain conversions with automatic error responses.
 

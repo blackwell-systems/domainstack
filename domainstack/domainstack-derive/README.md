@@ -1,6 +1,11 @@
 # domainstack-derive
 
-Derive macros for the [domainstack](https://crates.io/crates/domainstack) validation framework.
+[![Blackwell Systems™](https://raw.githubusercontent.com/blackwell-systems/blackwell-docs-theme/main/badge-trademark.svg)](https://github.com/blackwell-systems)
+[![Crates.io](https://img.shields.io/crates/v/domainstack-derive.svg)](https://crates.io/crates/domainstack-derive)
+[![Documentation](https://docs.rs/domainstack-derive/badge.svg)](https://docs.rs/domainstack-derive)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/blackwell-systems/domainstack/blob/main/LICENSE)
+
+Derive macros for the [domainstack](https://crates.io/crates/domainstack) full-stack validation ecosystem.
 
 Provides two derive macros that share the same unified rich syntax:
 - `#[derive(Validate)]` - Runtime validation
@@ -12,9 +17,9 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-domainstack = { version = "1.0", features = ["derive"] }
-domainstack-derive = "1.0"  # For ToSchema
-domainstack-schema = "1.0"   # For schema generation
+domainstack = { version = "1.0", features = ["derive"] }  # Includes Validate
+domainstack-derive = "1.0"   # Adds ToSchema derive
+domainstack-schema = "1.0"   # Schema builder utilities
 ```
 
 ### Validation Only

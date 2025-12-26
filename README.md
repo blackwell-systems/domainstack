@@ -16,8 +16,7 @@ It's built for the boundary you actually live at:
 
 **HTTP/JSON/etc. → DTOs → Domain (validated) → Business logic**
 
-Most validation crates ask: **"Is this DTO valid?"**
-domainstack asks: **"How do I safely construct domain models from untrusted input—and report failures with a consistent error contract?"**
+Most validation crates validate DTOs; **domainstack validates domain construction.**
 
 ### Two validation gates
 

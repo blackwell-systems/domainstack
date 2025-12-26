@@ -1,5 +1,6 @@
 # domainstack-schema
 
+[![Blackwell Systems™](https://raw.githubusercontent.com/blackwell-systems/blackwell-docs-theme/main/badge-trademark.svg)](https://github.com/blackwell-systems)
 [![Crates.io](https://img.shields.io/crates/v/domainstack-schema.svg)](https://crates.io/crates/domainstack-schema)
 [![Documentation](https://docs.rs/domainstack-schema/badge.svg)](https://docs.rs/domainstack-schema)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/blackwell-systems/domainstack/blob/main/LICENSE)

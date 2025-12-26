@@ -15,8 +15,9 @@ The core library is production-ready with:
 - Type-state validation
 - Nested validation with path tracking
 - Serde integration (validate on deserialize)
-- Code generation CLI (`domainstack-cli`) with Zod support
+- Code generation CLI (`domainstack-cli`) with Zod and JSON Schema support
 - **CLI watch mode** - `--watch` flag for automatic regeneration on file changes
+- **JSON Schema generation** - `domainstack json-schema` command for Draft 2020-12 schemas
 - WASM browser validation (`domainstack-wasm`)
 
 ---
@@ -27,13 +28,18 @@ The core library is production-ready with:
 
 #### 1. CLI Additional Generators
 
-**Status**: Planned (Architecture ready)
+**Status**: Partially Complete (JSON Schema done, others planned)
 **Impact**: 🔥🔥🔥 Very High
 **Effort**: Medium per generator
 
-The CLI architecture supports multiple generators. Planned additions:
+The CLI architecture supports multiple generators. Current status:
 
 ```bash
+# ✅ Available now
+domainstack zod --input src --output frontend/schemas.ts
+domainstack json-schema --input src --output schemas/schema.json
+
+# Planned additions:
 # Yup schemas (popular React form library)
 domainstack yup --input src --output frontend/schemas.ts
 
@@ -42,15 +48,12 @@ domainstack graphql --input src --output schema.graphql
 
 # Prisma schema generation
 domainstack prisma --input src --output prisma/schema.prisma
-
-# JSON Schema (Draft 2020-12)
-domainstack json-schema --input src --output schemas/
 ```
 
 **Benefits:**
 - Single source of truth across all platforms
 - Support for major frontend validation libraries
-- API gateway integration (JSON Schema)
+- API gateway integration (JSON Schema ✅)
 - Database schema generation (Prisma)
 
 ---

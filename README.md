@@ -315,12 +315,13 @@ See **[examples/README.md](./examples/README.md)** for instructions on running a
 
 ## 📦 Crates
 
-**8 publishable crates** for modular adoption:
+**9 publishable crates** for modular adoption:
 
 | Category | Crates |
 |----------|--------|
 | **Core** | `domainstack`, `domainstack-derive`, `domainstack-schema`, `domainstack-envelope` |
 | **Web Framework Integrations** | `domainstack-axum`, `domainstack-actix`, `domainstack-rocket`, `domainstack-http` |
+| **Browser** | `domainstack-wasm` — Same validation in browser via WebAssembly |
 
 **4 example crates** (repository only): `domainstack-examples`, `examples-axum`, `examples-actix`, `examples-rocket`
 

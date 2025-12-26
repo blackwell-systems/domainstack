@@ -373,6 +373,45 @@ async fn create_user(
 
 **See:** [HTTP_INTEGRATION.md](HTTP_INTEGRATION.md) for complete documentation
 
+### domainstack-wasm - Browser Validation
+
+Run the same validation logic in the browser via WebAssembly:
+
+```toml
+[dependencies]
+domainstack = { version = "1.0", features = ["derive"] }
+domainstack-wasm = "1.0"
+```
+
+**Build:**
+
+```bash
+rustup target add wasm32-unknown-unknown
+wasm-pack build --target web --release
+```
+
+**Usage (JavaScript):**
+
+```typescript
+import init, { createValidator } from '@domainstack/wasm';
+
+await init();
+const validator = createValidator();
+
+const result = validator.validate('User', JSON.stringify({ email: 'bad', age: 15 }));
+if (!result.ok) {
+  result.errors.forEach(e => console.log(`${e.path}: ${e.message}`));
+}
+```
+
+**Features:**
+- Same validation code runs in browser and server
+- Zero drift between client/server validation
+- ~60KB WASM bundle
+- TypeScript types auto-generated
+
+**See:** [WASM_VALIDATION.md](WASM_VALIDATION.md) for complete documentation
+
 ## Common Configurations
 
 ### Basic Web API
@@ -476,6 +515,7 @@ domainstack = "1.0"
 |-------|---------------------|
 | domainstack-schema | 1.0+ |
 | domainstack-envelope | 1.0+ |
+| domainstack-wasm | 1.0+ |
 
 ## See Also
 
@@ -484,3 +524,4 @@ domainstack = "1.0"
 - **[Derive Macro](DERIVE_MACRO.md)** - Using `#[derive(Validate)]`
 - **[HTTP Integration](HTTP_INTEGRATION.md)** - Framework adapters guide
 - **[OpenAPI Schema](OPENAPI_SCHEMA.md)** - Schema generation guide
+- **[WASM Validation](WASM_VALIDATION.md)** - Browser validation guide

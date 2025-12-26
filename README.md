@@ -295,32 +295,33 @@ See **[examples/README.md](./examples/README.md)** for instructions on running a
 
 ## 📚 Documentation
 
-### Guides
-
-**Foundation:**
-- **[Core Concepts](./domainstack/domainstack/docs/CORE_CONCEPTS.md)** - Valid-by-construction types, structured error paths, composable rules
+**Start here:**
+- **[Core Concepts](./domainstack/domainstack/docs/CORE_CONCEPTS.md)** - Valid-by-construction types, error paths, rule composition
 - **[Domain Modeling Patterns](./domainstack/domainstack/docs/PATTERNS.md)** - DTO→Domain conversion, smart constructors, private fields
-- **[Manual Validation](./domainstack/domainstack/docs/MANUAL_VALIDATION.md)** - When and how to implement `Validate` trait manually
-- **[Error Handling](./domainstack/domainstack/docs/ERROR_HANDLING.md)** - Working with `ValidationError`, violations, i18n
 
-**Features:**
+**How-to guides:**
 - **[Derive Macro](./domainstack/domainstack/docs/DERIVE_MACRO.md)** - Complete `#[derive(Validate)]` guide
-- **[Validation Rules](./domainstack/domainstack/docs/RULES.md)** - All 37 built-in validation rules
+- **[Manual Validation](./domainstack/domainstack/docs/MANUAL_VALIDATION.md)** - Implementing `Validate` manually
+- **[Error Handling](./domainstack/domainstack/docs/ERROR_HANDLING.md)** - `ValidationError`, violations, i18n
+
+**Feature deep dives:**
+- **[Validation Rules](./domainstack/domainstack/docs/RULES.md)** - All built-in rules (reference)
 - **[Advanced Patterns](./domainstack/domainstack/docs/ADVANCED_PATTERNS.md)** - Async validation, type-state, context-dependent validation
-
-**Integration:**
-- **[Installation Guide](./domainstack/domainstack/docs/INSTALLATION.md)** - Feature flags, companion crates, version compatibility
 - **[Serde Integration](./domainstack/domainstack/docs/SERDE_INTEGRATION.md)** - Validate on deserialize
-- **[HTTP Integration](./domainstack/domainstack/docs/HTTP_INTEGRATION.md)** - Axum, Actix-web, Rocket adapters
-- **[OpenAPI Schema Generation](./domainstack/domainstack/docs/OPENAPI_SCHEMA.md)** - Auto-generate schemas from rules
-- **[CLI Guide](./domainstack/domainstack/docs/CLI_GUIDE.md)** - Generate TypeScript/Zod schemas
+- **[OpenAPI Schema](./domainstack/domainstack/docs/OPENAPI_SCHEMA.md)** - Generate schemas from rules
+- **[CLI Guide](./domainstack/domainstack/docs/CLI_GUIDE.md)** - Generate TypeScript/Zod
 
-### Additional Documentation
+**Integrations:**
+- **[HTTP Integration](./domainstack/domainstack/docs/HTTP_INTEGRATION.md)** - Axum / Actix-web / Rocket adapters
+- **[Installation Guide](./domainstack/domainstack/docs/INSTALLATION.md)** - Feature flags, companion crates, version compatibility
 
+**Reference:**
 - **[API Guide](./domainstack/domainstack/docs/api-guide.md)** - Complete API documentation
 - **[Architecture](./domainstack/domainstack/docs/architecture.md)** - System design and data flow
 - **[API Documentation](https://docs.rs/domainstack)** - Generated API reference
-- **[Examples](./domainstack/domainstack-examples/)** - 9 runnable examples
+
+**Project tooling:**
+- **[Examples](./domainstack/domainstack-examples/)** - Runnable examples
 - **[Coverage Guide](./COVERAGE.md)** - Running coverage locally
 
 ## License

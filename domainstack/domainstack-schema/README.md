@@ -15,7 +15,7 @@ OpenAPI schema generation for the [domainstack](https://crates.io/crates/domains
 
 ```toml
 [dependencies]
-domainstack-schema = "0.7.0"
+domainstack-schema = "1.0.0"
 ```
 
 ## Quick Start
@@ -264,6 +264,22 @@ Schema::object()
 ```
 
 This maintains a single source of truth while acknowledging OpenAPI's expressiveness limits.
+
+## Related Crates
+
+| Crate | Purpose |
+|-------|---------|
+| [`domainstack`](https://crates.io/crates/domainstack) | Core validation library |
+| [`domainstack-derive`](https://crates.io/crates/domainstack-derive) | `#[derive(Validate, ToSchema)]` macros |
+| [`domainstack-cli`](https://crates.io/crates/domainstack-cli) | CLI for Zod/JSON Schema generation |
+
+**Note:** For generating **JSON Schema** (Draft 2020-12) for frontend validation or API gateways, use the `domainstack-cli` tool:
+
+```bash
+domainstack json-schema --input src --output schemas/types.json
+```
+
+This crate (`domainstack-schema`) generates **OpenAPI 3.0 schemas** for API documentation.
 
 ## Documentation
 

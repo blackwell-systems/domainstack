@@ -263,7 +263,13 @@ See `examples/` folder for more:
 
 ## Framework Adapters
 
-Automatic DTO→Domain conversion with one-line extractors for **Axum**, **Actix-web**, and **Rocket**. Validation errors are automatically converted to structured JSON responses.
+One-line DTO→Domain extractors with automatic validation and structured error responses:
+
+| Framework | Crate | Extractor |
+|-----------|-------|-----------|
+| **Axum** | `domainstack-axum` | `DomainJson<T, Dto>` |
+| **Actix-web** | `domainstack-actix` | `DomainJson<T, Dto>` |
+| **Rocket** | `domainstack-rocket` | `DomainJson<T, Dto>` |
 
 **📖 [HTTP Integration Guide](./domainstack/domainstack/docs/HTTP_INTEGRATION.md)**
 

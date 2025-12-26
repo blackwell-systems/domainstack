@@ -6,6 +6,8 @@ This roadmap outlines future features for domainstack, ranked by impact and alig
 
 The core library is production-ready with:
 - Derive macro for validation (`Validate`, `ToSchema`, `ValidateOnDeserialize`)
+- **Tuple struct (newtype) support** - `#[derive(Validate)]` for `struct Email(String)`
+- **Enum validation support** - `#[derive(Validate)]` for enums with all variant types
 - 37+ built-in validation rules
 - OpenAPI 3.0 schema generation
 - Framework adapters (Axum, Actix, Rocket)
@@ -22,53 +24,7 @@ The core library is production-ready with:
 
 ### 🔥 Tier 1: High Impact, Core Extensions
 
-#### 1. Enum and Tuple Struct Support for Derive Macros
-
-**Status**: Planned
-**Impact**: 🔥🔥🔥 Very High
-**Effort**: Medium
-
-Currently `#[derive(Validate)]` only supports structs with named fields. Adding support for:
-
-**Enum Validation:**
-```rust
-#[derive(Validate)]
-enum PaymentMethod {
-    Card {
-        #[validate(length(min = 16, max = 19))]
-        number: String,
-        #[validate(matches_regex = r"^\d{3,4}$")]
-        cvv: String,
-    },
-    BankTransfer {
-        #[validate(alphanumeric)]
-        account_number: String,
-    },
-    Cash,
-}
-```
-
-**Tuple Struct / Newtype Validation:**
-```rust
-#[derive(Validate)]
-struct Email(#[validate(email)] String);
-
-#[derive(Validate)]
-struct Age(#[validate(range(min = 0, max = 150))] u8);
-
-// Enables the newtype pattern with derive
-let email = Email("user@example.com".to_string());
-email.validate()?;
-```
-
-**Benefits:**
-- Enables type-safe newtype patterns with derive
-- Supports sum types (enums) in domain modeling
-- More idiomatic Rust validation
-
----
-
-#### 2. CLI Additional Generators
+#### 1. CLI Additional Generators
 
 **Status**: Planned (Architecture ready)
 **Impact**: 🔥🔥🔥 Very High
@@ -98,7 +54,7 @@ domainstack json-schema --input src --output schemas/
 
 ---
 
-#### 3. CLI Watch Mode
+#### 2. CLI Watch Mode
 
 **Status**: Planned (flag exists, not implemented)
 **Impact**: 🔥🔥 High
@@ -123,7 +79,7 @@ domainstack zod --input src --output schemas.ts --watch --pattern "**/*.rs"
 
 ### 🚀 Tier 2: Documentation & Examples
 
-#### 4. WASM Integration Example Project
+#### 3. WASM Integration Example Project
 
 **Status**: Planned
 **Impact**: 🔥🔥 High
@@ -151,7 +107,7 @@ examples/
 
 ---
 
-#### 5. CLI Step-by-Step Tutorial
+#### 4. CLI Step-by-Step Tutorial
 
 **Status**: Planned
 **Impact**: 🔥🔥 High
@@ -186,7 +142,7 @@ cargo install domainstack-cli
 
 ### 📊 Tier 3: Framework Improvements
 
-#### 6. Actix Adapter Async Improvement
+#### 5. Actix Adapter Async Improvement
 
 **Status**: Research
 **Impact**: 🔥 Medium
@@ -219,7 +175,7 @@ async fn create_user(
 
 ---
 
-#### 7. Property-Based Test Data Generation
+#### 6. Property-Based Test Data Generation
 
 **Status**: Research
 **Impact**: 🔥🔥 High
@@ -250,7 +206,7 @@ struct User {
 
 ---
 
-#### 8. Database Constraint Generation (SQL DDL)
+#### 7. Database Constraint Generation (SQL DDL)
 
 **Status**: Planned
 **Impact**: 🔥🔥 High
@@ -289,7 +245,7 @@ CREATE TABLE users (
 
 ### 🧪 Tier 4: Advanced Features
 
-#### 9. Localization/i18n Support
+#### 8. Localization/i18n Support
 
 **Status**: Research
 **Impact**: 🔥 Medium
@@ -311,7 +267,7 @@ let error = user.validate_with_locale("es")?;
 
 ---
 
-#### 10. Validation Metrics/Observability
+#### 9. Validation Metrics/Observability
 
 **Status**: Planned
 **Impact**: Medium
@@ -336,7 +292,7 @@ validation_duration_seconds{type="User"} 0.001
 
 ---
 
-#### 11. Validation Coverage Tracking
+#### 10. Validation Coverage Tracking
 
 **Status**: Research
 **Impact**: Medium

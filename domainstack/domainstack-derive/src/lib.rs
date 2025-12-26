@@ -12,6 +12,8 @@
 //!
 //! Generates a `Validate` trait implementation that validates all fields with `#[validate(...)]` attributes.
 //!
+//! ### Structs with Named Fields
+//!
 //! ```rust
 //! use domainstack::Validate;
 //!
@@ -26,6 +28,57 @@
 //!
 //! let user = User { name: "Alice".to_string(), age: 30 };
 //! assert!(user.validate().is_ok());
+//! ```
+//!
+//! ### Tuple Structs (Newtypes)
+//!
+//! Perfect for type-safe wrappers with validation:
+//!
+//! ```rust
+//! use domainstack::Validate;
+//!
+//! #[derive(Debug, Validate)]
+//! struct Email(#[validate(email)] String);
+//!
+//! #[derive(Debug, Validate)]
+//! struct Age(#[validate(range(min = 0, max = 150))] u8);
+//!
+//! let email = Email("user@example.com".to_string());
+//! assert!(email.validate().is_ok());
+//!
+//! let age = Age(25);
+//! assert!(age.validate().is_ok());
+//! ```
+//!
+//! ### Enums
+//!
+//! Supports unit, tuple, and struct variants:
+//!
+//! ```rust
+//! use domainstack::Validate;
+//!
+//! #[derive(Debug, Validate)]
+//! enum PaymentMethod {
+//!     // Unit variant - always valid
+//!     Cash,
+//!
+//!     // Tuple variant
+//!     Card(#[validate(length(min = 13, max = 19))] String),
+//!
+//!     // Struct variant
+//!     BankTransfer {
+//!         #[validate(alphanumeric)]
+//!         account: String,
+//!         #[validate(length(min = 6, max = 11))]
+//!         routing: String,
+//!     },
+//! }
+//!
+//! let cash = PaymentMethod::Cash;
+//! assert!(cash.validate().is_ok());
+//!
+//! let card = PaymentMethod::Card("4111111111111111".to_string());
+//! assert!(card.validate().is_ok());
 //! ```
 //!
 //! ## `#[derive(ToSchema)]`
@@ -313,25 +366,46 @@ fn generate_validate_impl(input: &DeriveInput) -> syn::Result<proc_macro2::Token
     let generics = &input.generics;
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
-    // Only support structs with named fields
-    let fields = match &input.data {
+    match &input.data {
         Data::Struct(data) => match &data.fields {
-            Fields::Named(fields) => &fields.named,
-            _ => {
-                return Err(syn::Error::new_spanned(
-                    input,
-                    "#[derive(Validate)] only supports structs with named fields",
-                ))
+            Fields::Named(fields) => {
+                generate_named_struct_validate(name, &impl_generics, &ty_generics, where_clause, &fields.named, input)
+            }
+            Fields::Unnamed(fields) => {
+                generate_tuple_struct_validate(name, &impl_generics, &ty_generics, where_clause, &fields.unnamed, input)
+            }
+            Fields::Unit => {
+                // Unit structs always pass validation
+                Ok(quote! {
+                    impl #impl_generics domainstack::Validate for #name #ty_generics #where_clause {
+                        fn validate(&self) -> Result<(), domainstack::ValidationError> {
+                            Ok(())
+                        }
+                    }
+                })
             }
         },
-        _ => {
-            return Err(syn::Error::new_spanned(
+        Data::Enum(data) => {
+            generate_enum_validate(name, &impl_generics, &ty_generics, where_clause, &data.variants, input)
+        }
+        Data::Union(_) => {
+            Err(syn::Error::new_spanned(
                 input,
-                "#[derive(Validate)] only supports structs",
+                "#[derive(Validate)] does not support unions",
             ))
         }
-    };
+    }
+}
 
+/// Generate Validate impl for structs with named fields
+fn generate_named_struct_validate(
+    name: &syn::Ident,
+    impl_generics: &syn::ImplGenerics,
+    ty_generics: &syn::TypeGenerics,
+    where_clause: Option<&syn::WhereClause>,
+    fields: &syn::punctuated::Punctuated<Field, syn::Token![,]>,
+    input: &DeriveInput,
+) -> syn::Result<proc_macro2::TokenStream> {
     // Parse struct-level validation checks
     let struct_validations = parse_struct_attributes(input)?;
 
@@ -367,6 +441,170 @@ fn generate_validate_impl(input: &DeriveInput) -> syn::Result<proc_macro2::Token
 
                 // Struct-level validations (cross-field checks)
                 #(#struct_validation_code)*
+
+                if err.is_empty() { Ok(()) } else { Err(err) }
+            }
+        }
+    };
+
+    Ok(expanded)
+}
+
+/// Validation info for tuple struct fields (indexed)
+#[derive(Debug)]
+#[allow(dead_code)]
+struct TupleFieldValidation {
+    field_index: usize,
+    field_type: syn::Type,
+    rules: Vec<ValidationRule>,
+}
+
+/// Generate Validate impl for tuple structs (newtypes)
+fn generate_tuple_struct_validate(
+    name: &syn::Ident,
+    impl_generics: &syn::ImplGenerics,
+    ty_generics: &syn::TypeGenerics,
+    where_clause: Option<&syn::WhereClause>,
+    fields: &syn::punctuated::Punctuated<Field, syn::Token![,]>,
+    input: &DeriveInput,
+) -> syn::Result<proc_macro2::TokenStream> {
+    // Parse struct-level validation checks
+    let struct_validations = parse_struct_attributes(input)?;
+
+    // Parse validation rules for each field by index
+    let mut field_validations = Vec::new();
+    for (index, field) in fields.iter().enumerate() {
+        let field_type = field.ty.clone();
+        let rules = parse_field_attributes(field)?;
+
+        if !rules.is_empty() {
+            field_validations.push(TupleFieldValidation {
+                field_index: index,
+                field_type,
+                rules,
+            });
+        }
+    }
+
+    // Generate validation code for each field
+    let field_validation_code = field_validations.iter().map(generate_tuple_field_validation);
+
+    // Generate validation code for struct-level checks
+    let struct_validation_code = struct_validations.iter().map(generate_struct_validation);
+
+    let expanded = quote! {
+        impl #impl_generics domainstack::Validate for #name #ty_generics #where_clause {
+            fn validate(&self) -> Result<(), domainstack::ValidationError> {
+                let mut err = domainstack::ValidationError::default();
+
+                // Field-level validations
+                #(#field_validation_code)*
+
+                // Struct-level validations (cross-field checks)
+                #(#struct_validation_code)*
+
+                if err.is_empty() { Ok(()) } else { Err(err) }
+            }
+        }
+    };
+
+    Ok(expanded)
+}
+
+/// Generate Validate impl for enums
+fn generate_enum_validate(
+    name: &syn::Ident,
+    impl_generics: &syn::ImplGenerics,
+    ty_generics: &syn::TypeGenerics,
+    where_clause: Option<&syn::WhereClause>,
+    variants: &syn::punctuated::Punctuated<syn::Variant, syn::Token![,]>,
+    _input: &DeriveInput,
+) -> syn::Result<proc_macro2::TokenStream> {
+    let mut variant_arms = Vec::new();
+
+    for variant in variants {
+        let variant_name = &variant.ident;
+
+        match &variant.fields {
+            Fields::Named(fields) => {
+                // Struct variant: EnumName::Variant { field1, field2, ... }
+                let field_names: Vec<_> = fields.named.iter()
+                    .map(|f| f.ident.as_ref().unwrap())
+                    .collect();
+
+                // Parse validation rules for each field
+                let mut validations = Vec::new();
+                for field in &fields.named {
+                    let field_name = field.ident.as_ref().unwrap();
+                    let field_name_str = field_name.to_string();
+                    let rules = parse_field_attributes(field)?;
+
+                    for rule in rules {
+                        let validation_code = generate_enum_field_validation(field_name, &field_name_str, &rule);
+                        validations.push(validation_code);
+                    }
+                }
+
+                if validations.is_empty() {
+                    variant_arms.push(quote! {
+                        #name::#variant_name { .. } => {}
+                    });
+                } else {
+                    variant_arms.push(quote! {
+                        #name::#variant_name { #(#field_names),* } => {
+                            #(#validations)*
+                        }
+                    });
+                }
+            }
+            Fields::Unnamed(fields) => {
+                // Tuple variant: EnumName::Variant(field0, field1, ...)
+                let field_bindings: Vec<_> = (0..fields.unnamed.len())
+                    .map(|i| syn::Ident::new(&format!("field_{}", i), proc_macro2::Span::call_site()))
+                    .collect();
+
+                // Parse validation rules for each field
+                let mut validations = Vec::new();
+                for (index, field) in fields.unnamed.iter().enumerate() {
+                    let binding = &field_bindings[index];
+                    let field_name_str = index.to_string();
+                    let rules = parse_field_attributes(field)?;
+
+                    for rule in rules {
+                        let validation_code = generate_enum_tuple_field_validation(binding, &field_name_str, &rule);
+                        validations.push(validation_code);
+                    }
+                }
+
+                if validations.is_empty() {
+                    variant_arms.push(quote! {
+                        #name::#variant_name(..) => {}
+                    });
+                } else {
+                    variant_arms.push(quote! {
+                        #name::#variant_name(#(#field_bindings),*) => {
+                            #(#validations)*
+                        }
+                    });
+                }
+            }
+            Fields::Unit => {
+                // Unit variant: EnumName::Variant
+                variant_arms.push(quote! {
+                    #name::#variant_name => {}
+                });
+            }
+        }
+    }
+
+    let expanded = quote! {
+        impl #impl_generics domainstack::Validate for #name #ty_generics #where_clause {
+            fn validate(&self) -> Result<(), domainstack::ValidationError> {
+                let mut err = domainstack::ValidationError::default();
+
+                match self {
+                    #(#variant_arms)*
+                }
 
                 if err.is_empty() { Ok(()) } else { Err(err) }
             }
@@ -972,6 +1210,322 @@ fn generate_field_validation(fv: &FieldValidation) -> proc_macro2::TokenStream {
     quote! {
         #(#validations)*
     }
+}
+
+/// Generate validation code for a single tuple struct field (accessed by index)
+fn generate_tuple_field_validation(fv: &TupleFieldValidation) -> proc_macro2::TokenStream {
+    let field_index = syn::Index::from(fv.field_index);
+    let field_name_str = fv.field_index.to_string();
+
+    let validations: Vec<_> = fv
+        .rules
+        .iter()
+        .map(|rule| generate_indexed_field_validation(&field_index, &field_name_str, rule))
+        .collect();
+
+    quote! {
+        #(#validations)*
+    }
+}
+
+/// Generate validation code for a single indexed field (used by tuple structs)
+fn generate_indexed_field_validation(
+    field_index: &syn::Index,
+    field_name_str: &str,
+    rule: &ValidationRule,
+) -> proc_macro2::TokenStream {
+    match rule {
+        ValidationRule::Length { min, max, .. } => {
+            let rule_expr = match (min, max) {
+                (Some(min), Some(max)) => {
+                    quote! { domainstack::rules::min_len(#min).and(domainstack::rules::max_len(#max)) }
+                }
+                (Some(min), None) => quote! { domainstack::rules::min_len(#min) },
+                (None, Some(max)) => quote! { domainstack::rules::max_len(#max) },
+                (None, None) => return quote! {},
+            };
+            quote! {
+                {
+                    let rule = #rule_expr;
+                    if let Err(e) = domainstack::validate(#field_name_str, self.#field_index.as_str(), &rule) {
+                        err.extend(e);
+                    }
+                }
+            }
+        }
+        ValidationRule::Range { min, max, .. } => match (min, max) {
+            (Some(min), Some(max)) => quote! {
+                {
+                    let rule = domainstack::rules::range(#min, #max);
+                    if let Err(e) = domainstack::validate(#field_name_str, &self.#field_index, &rule) {
+                        err.extend(e);
+                    }
+                }
+            },
+            _ => quote! {},
+        },
+        ValidationRule::Nested => quote! {
+            if let Err(e) = self.#field_index.validate() {
+                err.merge_prefixed(#field_name_str, e);
+            }
+        },
+        ValidationRule::Email => quote! {
+            {
+                let rule = domainstack::rules::email();
+                if let Err(e) = domainstack::validate(#field_name_str, self.#field_index.as_str(), &rule) {
+                    err.extend(e);
+                }
+            }
+        },
+        ValidationRule::Url => quote! {
+            {
+                let rule = domainstack::rules::url();
+                if let Err(e) = domainstack::validate(#field_name_str, self.#field_index.as_str(), &rule) {
+                    err.extend(e);
+                }
+            }
+        },
+        ValidationRule::MinLen(min) => quote! {
+            {
+                let rule = domainstack::rules::min_len(#min);
+                if let Err(e) = domainstack::validate(#field_name_str, self.#field_index.as_str(), &rule) {
+                    err.extend(e);
+                }
+            }
+        },
+        ValidationRule::MaxLen(max) => quote! {
+            {
+                let rule = domainstack::rules::max_len(#max);
+                if let Err(e) = domainstack::validate(#field_name_str, self.#field_index.as_str(), &rule) {
+                    err.extend(e);
+                }
+            }
+        },
+        ValidationRule::Alphanumeric => quote! {
+            {
+                let rule = domainstack::rules::alphanumeric();
+                if let Err(e) = domainstack::validate(#field_name_str, self.#field_index.as_str(), &rule) {
+                    err.extend(e);
+                }
+            }
+        },
+        ValidationRule::Ascii => quote! {
+            {
+                let rule = domainstack::rules::ascii();
+                if let Err(e) = domainstack::validate(#field_name_str, self.#field_index.as_str(), &rule) {
+                    err.extend(e);
+                }
+            }
+        },
+        ValidationRule::NonEmpty => quote! {
+            {
+                let rule = domainstack::rules::non_empty();
+                if let Err(e) = domainstack::validate(#field_name_str, self.#field_index.as_str(), &rule) {
+                    err.extend(e);
+                }
+            }
+        },
+        ValidationRule::NonBlank => quote! {
+            {
+                let rule = domainstack::rules::non_blank();
+                if let Err(e) = domainstack::validate(#field_name_str, self.#field_index.as_str(), &rule) {
+                    err.extend(e);
+                }
+            }
+        },
+        ValidationRule::MatchesRegex(pattern) => quote! {
+            {
+                let rule = domainstack::rules::matches_regex(#pattern);
+                if let Err(e) = domainstack::validate(#field_name_str, self.#field_index.as_str(), &rule) {
+                    err.extend(e);
+                }
+            }
+        },
+        ValidationRule::Min(min) => quote! {
+            {
+                let rule = domainstack::rules::min(#min);
+                if let Err(e) = domainstack::validate(#field_name_str, &self.#field_index, &rule) {
+                    err.extend(e);
+                }
+            }
+        },
+        ValidationRule::Max(max) => quote! {
+            {
+                let rule = domainstack::rules::max(#max);
+                if let Err(e) = domainstack::validate(#field_name_str, &self.#field_index, &rule) {
+                    err.extend(e);
+                }
+            }
+        },
+        ValidationRule::Positive => quote! {
+            {
+                let rule = domainstack::rules::positive();
+                if let Err(e) = domainstack::validate(#field_name_str, &self.#field_index, &rule) {
+                    err.extend(e);
+                }
+            }
+        },
+        ValidationRule::Negative => quote! {
+            {
+                let rule = domainstack::rules::negative();
+                if let Err(e) = domainstack::validate(#field_name_str, &self.#field_index, &rule) {
+                    err.extend(e);
+                }
+            }
+        },
+        ValidationRule::NonZero => quote! {
+            {
+                let rule = domainstack::rules::non_zero();
+                if let Err(e) = domainstack::validate(#field_name_str, &self.#field_index, &rule) {
+                    err.extend(e);
+                }
+            }
+        },
+        _ => quote! {},
+    }
+}
+
+/// Generate validation code for enum struct variant fields (accessed by name binding)
+fn generate_enum_field_validation(
+    field_name: &syn::Ident,
+    field_name_str: &str,
+    rule: &ValidationRule,
+) -> proc_macro2::TokenStream {
+    match rule {
+        ValidationRule::Length { min, max, .. } => {
+            let rule_expr = match (min, max) {
+                (Some(min), Some(max)) => {
+                    quote! { domainstack::rules::min_len(#min).and(domainstack::rules::max_len(#max)) }
+                }
+                (Some(min), None) => quote! { domainstack::rules::min_len(#min) },
+                (None, Some(max)) => quote! { domainstack::rules::max_len(#max) },
+                (None, None) => return quote! {},
+            };
+            quote! {
+                {
+                    let rule = #rule_expr;
+                    if let Err(e) = domainstack::validate(#field_name_str, #field_name.as_str(), &rule) {
+                        err.extend(e);
+                    }
+                }
+            }
+        }
+        ValidationRule::Range { min, max, .. } => match (min, max) {
+            (Some(min), Some(max)) => quote! {
+                {
+                    let rule = domainstack::rules::range(#min, #max);
+                    if let Err(e) = domainstack::validate(#field_name_str, #field_name, &rule) {
+                        err.extend(e);
+                    }
+                }
+            },
+            _ => quote! {},
+        },
+        ValidationRule::Nested => quote! {
+            if let Err(e) = #field_name.validate() {
+                err.merge_prefixed(#field_name_str, e);
+            }
+        },
+        ValidationRule::Email => quote! {
+            {
+                let rule = domainstack::rules::email();
+                if let Err(e) = domainstack::validate(#field_name_str, #field_name.as_str(), &rule) {
+                    err.extend(e);
+                }
+            }
+        },
+        ValidationRule::Url => quote! {
+            {
+                let rule = domainstack::rules::url();
+                if let Err(e) = domainstack::validate(#field_name_str, #field_name.as_str(), &rule) {
+                    err.extend(e);
+                }
+            }
+        },
+        ValidationRule::MinLen(min) => quote! {
+            {
+                let rule = domainstack::rules::min_len(#min);
+                if let Err(e) = domainstack::validate(#field_name_str, #field_name.as_str(), &rule) {
+                    err.extend(e);
+                }
+            }
+        },
+        ValidationRule::MaxLen(max) => quote! {
+            {
+                let rule = domainstack::rules::max_len(#max);
+                if let Err(e) = domainstack::validate(#field_name_str, #field_name.as_str(), &rule) {
+                    err.extend(e);
+                }
+            }
+        },
+        ValidationRule::Alphanumeric => quote! {
+            {
+                let rule = domainstack::rules::alphanumeric();
+                if let Err(e) = domainstack::validate(#field_name_str, #field_name.as_str(), &rule) {
+                    err.extend(e);
+                }
+            }
+        },
+        ValidationRule::MatchesRegex(pattern) => quote! {
+            {
+                let rule = domainstack::rules::matches_regex(#pattern);
+                if let Err(e) = domainstack::validate(#field_name_str, #field_name.as_str(), &rule) {
+                    err.extend(e);
+                }
+            }
+        },
+        ValidationRule::Min(min) => quote! {
+            {
+                let rule = domainstack::rules::min(#min);
+                if let Err(e) = domainstack::validate(#field_name_str, #field_name, &rule) {
+                    err.extend(e);
+                }
+            }
+        },
+        ValidationRule::Max(max) => quote! {
+            {
+                let rule = domainstack::rules::max(#max);
+                if let Err(e) = domainstack::validate(#field_name_str, #field_name, &rule) {
+                    err.extend(e);
+                }
+            }
+        },
+        ValidationRule::Positive => quote! {
+            {
+                let rule = domainstack::rules::positive();
+                if let Err(e) = domainstack::validate(#field_name_str, #field_name, &rule) {
+                    err.extend(e);
+                }
+            }
+        },
+        ValidationRule::Negative => quote! {
+            {
+                let rule = domainstack::rules::negative();
+                if let Err(e) = domainstack::validate(#field_name_str, #field_name, &rule) {
+                    err.extend(e);
+                }
+            }
+        },
+        ValidationRule::NonZero => quote! {
+            {
+                let rule = domainstack::rules::non_zero();
+                if let Err(e) = domainstack::validate(#field_name_str, #field_name, &rule) {
+                    err.extend(e);
+                }
+            }
+        },
+        _ => quote! {},
+    }
+}
+
+/// Generate validation code for enum tuple variant fields (accessed by binding name)
+fn generate_enum_tuple_field_validation(
+    binding: &syn::Ident,
+    field_name_str: &str,
+    rule: &ValidationRule,
+) -> proc_macro2::TokenStream {
+    // Reuse the same logic as enum struct variant fields
+    generate_enum_field_validation(binding, field_name_str, rule)
 }
 
 fn generate_length_validation(

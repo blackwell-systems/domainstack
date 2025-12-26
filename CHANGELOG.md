@@ -5,6 +5,56 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+#### Tuple Struct (Newtype) and Enum Validation Support
+
+**FEATURE: `#[derive(Validate)]` now supports tuple structs and enums**
+
+Type-safe newtype wrappers with automatic validation:
+
+```rust
+#[derive(Validate)]
+struct Email(#[validate(email)] String);
+
+#[derive(Validate)]
+struct Age(#[validate(range(min = 0, max = 150))] u8);
+
+let email = Email("user@example.com".to_string());
+email.validate()?;  // Validates the inner String
+```
+
+Enum validation with all variant types:
+
+```rust
+#[derive(Validate)]
+enum PaymentMethod {
+    Cash,  // Unit variant - always valid
+
+    Card(#[validate(length(min = 13, max = 19))] String),  // Tuple variant
+
+    BankTransfer {  // Struct variant
+        #[validate(alphanumeric)]
+        account: String,
+        #[validate(length(min = 6, max = 11))]
+        routing: String,
+    },
+}
+
+let payment = PaymentMethod::Card("4111111111111111".to_string());
+payment.validate()?;
+```
+
+**Benefits:**
+- Enables domain-driven newtype patterns with derive macros
+- Sum types (enums) for variant-specific validation
+- Field paths work correctly for both (`0` for tuple structs, field names for struct variants)
+- 42 new tests covering all combinations
+
+---
+
 ## [1.0.0] - 2025-01-XX
 
 ### Added

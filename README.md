@@ -321,7 +321,6 @@ See **[examples/README.md](./examples/README.md)** for instructions on running a
 - **[Architecture](./domainstack/domainstack/docs/architecture.md)** - System design and data flow
 - **[API Documentation](https://docs.rs/domainstack)** - Generated API reference
 - **[Examples](./domainstack/domainstack-examples/)** - 9 runnable examples
-- **[Publishing Guide](./PUBLISHING.md)** - How to publish to crates.io
 - **[Coverage Guide](./COVERAGE.md)** - Running coverage locally
 
 ## License

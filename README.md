@@ -328,34 +328,24 @@ See **[examples/README.md](./examples/README.md)** for instructions on running a
 
 ## 📚 Documentation
 
-**Start here:**
-- **[Core Concepts](./domainstack/domainstack/docs/CORE_CONCEPTS.md)** - Valid-by-construction types, error paths, rule composition
-- **[Domain Modeling Patterns](./domainstack/domainstack/docs/PATTERNS.md)** - DTO→Domain conversion, smart constructors, private fields
+| | |
+|---|---|
+| **Getting Started** | |
+| [Core Concepts](./domainstack/domainstack/docs/CORE_CONCEPTS.md) | Valid-by-construction types, error paths |
+| [Domain Modeling](./domainstack/domainstack/docs/PATTERNS.md) | DTO→Domain, smart constructors |
+| [Installation](./domainstack/domainstack/docs/INSTALLATION.md) | Feature flags, companion crates |
+| **Guides** | |
+| [Derive Macro](./domainstack/domainstack/docs/DERIVE_MACRO.md) | `#[derive(Validate)]` reference |
+| [Validation Rules](./domainstack/domainstack/docs/RULES.md) | All 37 built-in rules |
+| [Error Handling](./domainstack/domainstack/docs/ERROR_HANDLING.md) | Violations, paths, i18n |
+| [HTTP Integration](./domainstack/domainstack/docs/HTTP_INTEGRATION.md) | Axum / Actix / Rocket |
+| **Advanced** | |
+| [Async Validation](./domainstack/domainstack/docs/ADVANCED_PATTERNS.md) | DB/API checks, context |
+| [OpenAPI Schema](./domainstack/domainstack/docs/OPENAPI_SCHEMA.md) | Generate from rules |
+| [CLI / Zod](./domainstack/domainstack/docs/CLI_GUIDE.md) | TypeScript codegen |
+| [Serde Integration](./domainstack/domainstack/docs/SERDE_INTEGRATION.md) | Validate on deserialize |
 
-**How-to guides:**
-- **[Derive Macro](./domainstack/domainstack/docs/DERIVE_MACRO.md)** - Complete `#[derive(Validate)]` guide
-- **[Manual Validation](./domainstack/domainstack/docs/MANUAL_VALIDATION.md)** - Implementing `Validate` manually
-- **[Error Handling](./domainstack/domainstack/docs/ERROR_HANDLING.md)** - `ValidationError`, violations, i18n
-
-**Feature deep dives:**
-- **[Validation Rules](./domainstack/domainstack/docs/RULES.md)** - All built-in rules (reference)
-- **[Advanced Patterns](./domainstack/domainstack/docs/ADVANCED_PATTERNS.md)** - Async validation, type-state, context-dependent validation
-- **[Serde Integration](./domainstack/domainstack/docs/SERDE_INTEGRATION.md)** - Validate on deserialize
-- **[OpenAPI Schema](./domainstack/domainstack/docs/OPENAPI_SCHEMA.md)** - Generate schemas from rules
-- **[CLI Guide](./domainstack/domainstack/docs/CLI_GUIDE.md)** - Generate TypeScript/Zod
-
-**Integrations:**
-- **[HTTP Integration](./domainstack/domainstack/docs/HTTP_INTEGRATION.md)** - Axum / Actix-web / Rocket adapters
-- **[Installation Guide](./domainstack/domainstack/docs/INSTALLATION.md)** - Feature flags, companion crates, version compatibility
-
-**Reference:**
-- **[API Guide](./domainstack/domainstack/docs/api-guide.md)** - Complete API documentation
-- **[Architecture](./domainstack/domainstack/docs/architecture.md)** - System design and data flow
-- **[API Documentation](https://docs.rs/domainstack)** - Generated API reference
-
-**Project tooling:**
-- **[Examples](./domainstack/domainstack-examples/)** - Runnable examples
-- **[Coverage Guide](./COVERAGE.md)** - Running coverage locally
+**Reference:** [API Docs](https://docs.rs/domainstack) · [Architecture](./domainstack/domainstack/docs/architecture.md) · [Examples](./domainstack/domainstack-examples/)
 
 ## License
 

@@ -344,8 +344,9 @@ See **[examples/README.md](./examples/README.md)** for instructions on running a
 | [OpenAPI Schema](./domainstack/domainstack/docs/OPENAPI_SCHEMA.md) | Generate from rules |
 | [CLI / Zod](./domainstack/domainstack/docs/CLI_GUIDE.md) | TypeScript codegen |
 | [Serde Integration](./domainstack/domainstack/docs/SERDE_INTEGRATION.md) | Validate on deserialize |
+| [WASM Browser](./domainstack/domainstack/docs/WASM_VALIDATION.md) | Same validation in browser |
 
-**Reference:** [API Docs](https://docs.rs/domainstack) · [Architecture](./domainstack/domainstack/docs/architecture.md) · [Examples](./domainstack/domainstack-examples/)
+**Reference:** [API Docs](https://docs.rs/domainstack) · [Architecture](./domainstack/domainstack/docs/architecture.md) · [Examples](./domainstack/domainstack-examples/) · [Publishing](./domainstack/domainstack/docs/PUBLISHING.md)
 
 ## License
 

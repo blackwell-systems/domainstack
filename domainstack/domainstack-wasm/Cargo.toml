@@ -1,0 +1,38 @@
+[package]
+name = "domainstack-wasm"
+version = "1.0.0"
+edition = "2021"
+rust-version = "1.76"
+license = "Apache-2.0"
+authors = ["Dayna Blackwell <blackwellsystems@protonmail.com>"]
+description = "WASM browser validation for domainstack: run the same validation logic in browser and server"
+repository = "https://github.com/blackwell-systems/domainstack"
+documentation = "https://docs.rs/domainstack-wasm"
+keywords = ["validation", "wasm", "webassembly", "browser", "domainstack"]
+categories = ["wasm", "web-programming", "development-tools"]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+domainstack = { workspace = true, features = ["derive"] }
+domainstack-derive = { workspace = true }
+serde = { workspace = true }
+serde_json = "1"
+wasm-bindgen = "0.2"
+serde-wasm-bindgen = "0.6"
+js-sys = "0.3"
+
+# For better panic messages in browser console
+console_error_panic_hook = { version = "0.1", optional = true }
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3"
+
+[features]
+default = ["console_error_panic_hook"]
+
+[package.metadata.wasm-pack.profile.release]
+# wasm-opt requires network access to download; disable for CI/restricted environments
+# Re-enable with: wasm-opt = ["-Os", "--enable-mutable-globals"]
+wasm-opt = false

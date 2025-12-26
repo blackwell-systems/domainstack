@@ -1,5 +1,5 @@
 [workspace]
-members = ["domainstack", "domainstack-derive", "domainstack-envelope", "domainstack-http", "domainstack-axum", "domainstack-actix", "domainstack-rocket", "domainstack-examples", "examples-axum", "examples-actix", "examples-rocket", "domainstack-schema", "domainstack-cli"]
+members = ["domainstack", "domainstack-derive", "domainstack-envelope", "domainstack-http", "domainstack-axum", "domainstack-actix", "domainstack-rocket", "domainstack-examples", "examples-axum", "examples-actix", "examples-rocket", "domainstack-schema", "domainstack-cli", "domainstack-wasm"]
 resolver = "2"
 
 [workspace.dependencies]
@@ -11,6 +11,7 @@ domainstack-axum = { version = "1.0.0", path = "domainstack-axum" }
 domainstack-actix = { version = "1.0.0", path = "domainstack-actix" }
 domainstack-rocket = { version = "1.0.0", path = "domainstack-rocket" }
 domainstack-schema = { version = "1.0.0", path = "domainstack-schema" }
+domainstack-wasm = { version = "1.0.0", path = "domainstack-wasm" }
 error-envelope = "0.2.1"
 regex = "1.10"
 once_cell = "1.20"

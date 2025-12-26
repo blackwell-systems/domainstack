@@ -4,7 +4,7 @@
 [![Crates.io](https://img.shields.io/crates/v/domainstack-cli.svg)](https://crates.io/crates/domainstack-cli)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-blue.svg)](https://github.com/blackwell-systems/domainstack/blob/main/LICENSE-MIT)
 
-Code generation CLI for the [domainstack](https://crates.io/crates/domainstack) full-stack validation ecosystem. Generate TypeScript/Zod validators from your Rust `#[validate(...)]` attributes.
+Code generation CLI for the [domainstack](https://crates.io/crates/domainstack) full-stack validation ecosystem. Generate TypeScript/Zod schemas and JSON Schema from your Rust `#[validate(...)]` attributes.
 
 ## Overview
 
@@ -22,8 +22,11 @@ struct User {
     age: u8,
 }
 
-# Generate TypeScript/Zod schemas automatically
+# Generate TypeScript/Zod schemas
 domainstack zod --input src --output frontend/schemas.ts
+
+# Generate JSON Schema (Draft 2020-12)
+domainstack json-schema --input src --output schemas/types.json
 ```
 
 ## Installation
@@ -120,6 +123,7 @@ domainstack zod [OPTIONS]
 
 - `-i, --input <PATH>` - Input directory containing Rust source files (default: `src`)
 - `-o, --output <PATH>` - Output TypeScript file (required)
+- `-w, --watch` - Watch for changes and regenerate automatically
 - `-v, --verbose` - Enable verbose output
 - `-h, --help` - Print help information
 
@@ -134,6 +138,57 @@ domainstack zod --input backend/src --output frontend/schemas.ts
 
 # Verbose output
 domainstack zod -i src -o schemas.ts -v
+
+# Watch mode for development
+domainstack zod -i src -o schemas.ts --watch
+```
+
+### `domainstack json-schema`
+
+Generate JSON Schema (Draft 2020-12) from Rust types.
+
+```bash
+domainstack json-schema [OPTIONS]
+```
+
+**Options:**
+
+- `-i, --input <PATH>` - Input directory containing Rust source files (default: `src`)
+- `-o, --output <PATH>` - Output JSON file (required)
+- `-w, --watch` - Watch for changes and regenerate automatically
+- `-v, --verbose` - Enable verbose output
+- `-h, --help` - Print help information
+
+**Examples:**
+
+```bash
+# Basic usage
+domainstack json-schema --output schema.json
+
+# Specify input directory
+domainstack json-schema --input backend/src --output api/schemas.json
+
+# Verbose with watch mode
+domainstack json-schema -i src -o schema.json -v --watch
+```
+
+**Generated output:**
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "User": {
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email", "maxLength": 255 },
+        "age": { "type": "integer", "minimum": 18, "maximum": 120 }
+      },
+      "required": ["email", "age"],
+      "additionalProperties": false
+    }
+  }
+}
 ```
 
 ## Supported Validation Rules
@@ -268,10 +323,11 @@ export const PostSchema = z.object({
 
 ```
 domainstack
-├── zod        Generate Zod schemas (v0.1.0)
-├── yup        📋 Generate Yup schemas (planned)
-├── graphql    📋 Generate GraphQL schemas (planned)
-└── prisma     📋 Generate Prisma schemas (planned)
+├── zod          ✅ Generate Zod schemas
+├── json-schema  ✅ Generate JSON Schema (Draft 2020-12)
+├── yup          📋 Generate Yup schemas (planned)
+├── graphql      📋 Generate GraphQL schemas (planned)
+└── prisma       📋 Generate Prisma schemas (planned)
 ```
 
 **Benefits:**
@@ -287,20 +343,22 @@ domainstack-cli/
 ├── src/
 │   ├── main.rs              # CLI entry point with clap
 │   ├── commands/            # Subcommand implementations
-│   │   └── zod.rs
+│   │   ├── zod.rs
+│   │   └── json_schema.rs
 │   ├── parser/              # Shared parsing infrastructure
 │   │   ├── mod.rs           # Directory walking
 │   │   ├── ast.rs           # Rust AST parsing
 │   │   └── validation.rs    # Validation rule extraction
 │   └── generators/          # Language-specific generators
-│       └── zod.rs
+│       ├── zod.rs
+│       └── json_schema.rs
 ```
 
 The parser module (`parser/`) is shared across all generators, ensuring consistent interpretation of Rust validation rules. Each generator (`generators/`) contains language-specific transformation logic.
 
 ## Future Generators
 
-The roadmap includes support for:
+The roadmap includes support for additional generators:
 
 ### Yup (TypeScript validation)
 ```bash
@@ -315,11 +373,6 @@ domainstack graphql --input src --output schema.graphql
 ### Prisma Schema
 ```bash
 domainstack prisma --input src --output schema.prisma
-```
-
-### JSON Schema
-```bash
-domainstack json-schema --input src --output schema.json
 ```
 
 ## Contributing

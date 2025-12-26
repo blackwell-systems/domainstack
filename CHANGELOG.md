@@ -9,6 +9,71 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### JSON Schema Generator (Draft 2020-12)
+
+**FEATURE: `domainstack json-schema` command for generating JSON Schema**
+
+Generate JSON Schema (Draft 2020-12) from your Rust validation rules:
+
+```bash
+# Generate JSON Schema
+domainstack json-schema --input src --output schemas/types.json
+
+# With watch mode and verbose output
+domainstack json-schema --input src --output schema.json --watch --verbose
+```
+
+**From this Rust code:**
+
+```rust
+#[derive(Validate)]
+struct User {
+    #[validate(email)]
+    #[validate(max_len = 255)]
+    email: String,
+
+    #[validate(range(min = 18, max = 120))]
+    age: u8,
+}
+```
+
+**Generates this JSON Schema:**
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "User": {
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email", "maxLength": 255 },
+        "age": { "type": "integer", "minimum": 18, "maximum": 120 }
+      },
+      "required": ["email", "age"],
+      "additionalProperties": false
+    }
+  }
+}
+```
+
+**Features:**
+- Draft 2020-12 compliant output
+- Maps 20+ validation rules to JSON Schema properties:
+  - String: `email` → `format: "email"`, `url` → `format: "uri"`, `min_len/max_len` → `minLength/maxLength`
+  - Numeric: `range/min/max` → `minimum/maximum`, `positive/negative` → `exclusiveMinimum/Maximum`
+  - Patterns: `alphanumeric/matches_regex` → `pattern`
+- Handles `Option<T>` (not in required array), `Vec<T>` (array schema), custom types (`$ref`)
+- Watch mode support with 500ms debouncing
+- 19 unit tests covering all schema generation
+
+**Use Cases:**
+- API gateway validation (AWS API Gateway, Kong, etc.)
+- OpenAPI/Swagger schema definitions
+- Language-agnostic validation specs
+- Form validation libraries (Ajv, jsonschema, etc.)
+
+---
+
 #### CLI Watch Mode
 
 **FEATURE: `--watch` flag for automatic regeneration**
@@ -18,6 +83,7 @@ The CLI now supports watching for file changes and automatically regenerating ou
 ```bash
 # Watch mode - regenerates when .rs files change
 domainstack zod --input src --output schemas.ts --watch
+domainstack json-schema --input src --output schema.json --watch
 
 # With verbose output to see which files changed
 domainstack zod --input src --output schemas.ts --watch --verbose
@@ -221,11 +287,11 @@ Designed for future expansion with single binary, multiple generators:
 
 ```
 domainstack
-├── zod        TypeScript/Zod schemas (v0.1.0)
-├── yup        📋 TypeScript/Yup schemas (planned)
-├── graphql    📋 GraphQL SDL (planned)
-├── prisma     📋 Prisma schemas (planned)
-└── json-schema 📋 JSON Schema (planned)
+├── zod          ✅ TypeScript/Zod schemas
+├── json-schema  ✅ JSON Schema (Draft 2020-12)
+├── yup          📋 TypeScript/Yup schemas (planned)
+├── graphql      📋 GraphQL SDL (planned)
+└── prisma       📋 Prisma schemas (planned)
 ```
 
 **Benefits:**
@@ -322,7 +388,6 @@ domainstack zod -i src -o schemas.ts -v
 domainstack yup --input src --output schemas.ts      # Yup schemas
 domainstack graphql --input src --output schema.graphql  # GraphQL SDL
 domainstack prisma --input src --output schema.prisma    # Prisma schemas
-domainstack json-schema --input src --output schema.json # JSON Schema
 ```
 
 **Design Philosophy:**

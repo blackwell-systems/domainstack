@@ -1,6 +1,6 @@
 # CLI Guide
 
-**Generate TypeScript/Zod schemas from Rust validation rules**
+**Generate TypeScript/Zod schemas and JSON Schema from Rust validation rules**
 
 The `domainstack-cli` tool generates frontend validation schemas from your Rust code, creating a single source of truth for validation across your entire stack.
 
@@ -9,6 +9,8 @@ The `domainstack-cli` tool generates frontend validation schemas from your Rust 
 - [Quick Start](#quick-start)
 - [Installation](#installation)
 - [TypeScript/Zod Generation](#typescriptzod-generation)
+- [JSON Schema Generation](#json-schema-generation)
+- [Watch Mode](#watch-mode)
 - [CLI Usage](#cli-usage)
 - [Integration](#integration)
 - [Rule Mapping](#rule-mapping)
@@ -250,6 +252,141 @@ export const UserSchema = z.object({
 });
 ```
 
+## JSON Schema Generation
+
+Generate JSON Schema (Draft 2020-12) from your Rust validation rules. JSON Schema is widely supported by API gateways, OpenAPI tools, and validation libraries across all languages.
+
+### Quick Start
+
+```bash
+# Generate JSON Schema
+domainstack json-schema --input src --output schemas/types.json
+```
+
+**From this Rust code:**
+
+```rust
+#[derive(Validate)]
+struct User {
+    #[validate(email)]
+    #[validate(max_len = 255)]
+    email: String,
+
+    #[validate(range(min = 18, max = 120))]
+    age: u8,
+
+    #[validate(url)]
+    website: Option<String>,
+}
+```
+
+**Generates this JSON Schema:**
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/generated.json",
+  "title": "Generated Schemas",
+  "$defs": {
+    "User": {
+      "type": "object",
+      "title": "User",
+      "properties": {
+        "email": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 255
+        },
+        "age": {
+          "type": "integer",
+          "minimum": 18,
+          "maximum": 120
+        },
+        "website": {
+          "type": "string",
+          "format": "uri"
+        }
+      },
+      "required": ["email", "age"],
+      "additionalProperties": false
+    }
+  }
+}
+```
+
+### JSON Schema Command
+
+```bash
+domainstack json-schema [OPTIONS]
+
+Options:
+  -i, --input <PATH>     Input directory containing Rust source files
+                         [default: src]
+
+  -o, --output <PATH>    Output JSON file path
+                         [required]
+
+  -w, --watch            Watch for changes and regenerate automatically
+
+  -v, --verbose          Enable verbose output
+
+  -h, --help             Print help information
+```
+
+### JSON Schema Rule Mappings
+
+| Rust Rule | JSON Schema Property | Example |
+|-----------|---------------------|---------|
+| `email` | `"format": "email"` | Email format validation |
+| `url` | `"format": "uri"` | URI format validation |
+| `min_len(n)` | `"minLength": n` | Minimum string length |
+| `max_len(n)` | `"maxLength": n` | Maximum string length |
+| `matches_regex(p)` | `"pattern": "p"` | Regex pattern |
+| `alphanumeric` | `"pattern": "^[a-zA-Z0-9]*$"` | Alphanumeric pattern |
+| `range(min, max)` | `"minimum": m, "maximum": n` | Numeric range |
+| `min(n)` | `"minimum": n` | Minimum value |
+| `max(n)` | `"maximum": n` | Maximum value |
+| `positive` | `"exclusiveMinimum": 0` | Greater than zero |
+| `negative` | `"exclusiveMaximum": 0` | Less than zero |
+| `Option<T>` | Not in `required` array | Optional field |
+| `Vec<T>` | `"type": "array", "items": {...}` | Array type |
+| Custom type | `"$ref": "#/$defs/TypeName"` | Type reference |
+
+### Use Cases
+
+**API Gateway Validation:**
+```bash
+# Generate schema for AWS API Gateway, Kong, etc.
+domainstack json-schema --input src/api --output openapi/schemas.json
+```
+
+**Form Validation Libraries:**
+JSON Schema is supported by [Ajv](https://ajv.js.org/), [jsonschema](https://python-jsonschema.readthedocs.io/), and many other validators across languages.
+
+**Documentation:**
+Include generated schemas in your API documentation for language-agnostic validation specs.
+
+---
+
+## Watch Mode
+
+Both `zod` and `json-schema` commands support watch mode for automatic regeneration when files change.
+
+```bash
+# Watch mode with Zod
+domainstack zod --input src --output schemas.ts --watch
+
+# Watch mode with JSON Schema
+domainstack json-schema --input src --output schema.json --watch
+```
+
+Watch mode:
+- Monitors the input directory for `.rs` file changes
+- Debounces rapid changes (500ms) to avoid excessive regeneration
+- Shows real-time feedback on file changes and regeneration
+
+---
+
 ## CLI Usage
 
 ### Basic Command
@@ -270,6 +407,8 @@ Options:
   -o, --output <PATH>    Output TypeScript file path
                          [required]
 
+  -w, --watch            Watch for changes and regenerate automatically
+
   -v, --verbose          Enable verbose output showing processed files
 
   -h, --help             Print help information
@@ -286,6 +425,9 @@ domainstack zod --input backend/models --output schemas.ts
 
 # Verbose mode (shows processing details)
 domainstack zod -i src -o schemas.ts -v
+
+# Watch mode for development
+domainstack zod -i src -o schemas.ts --watch
 
 # Use in npm scripts
 npm run codegen  # calls: domainstack zod -o src/schemas.ts
@@ -622,12 +764,15 @@ domainstack zod --input backend/src --output schemas.ts
 - `Vec<T>` → `z.array(T)`
 - `Option<T>` → `T.optional()`
 
-## Future Generators (Planned)
+## Available Generators
 
-- `domainstack yup` - Yup schemas for React ecosystem
-- `domainstack graphql` - GraphQL SDL generation
-- `domainstack prisma` - Prisma schemas with validation
-- `domainstack json-schema` - JSON Schema generation
+| Generator | Status | Description |
+|-----------|--------|-------------|
+| `domainstack zod` | ✅ Available | TypeScript/Zod schemas |
+| `domainstack json-schema` | ✅ Available | JSON Schema (Draft 2020-12) |
+| `domainstack yup` | 📋 Planned | Yup schemas for React ecosystem |
+| `domainstack graphql` | 📋 Planned | GraphQL SDL generation |
+| `domainstack prisma` | 📋 Planned | Prisma schemas with validation |
 
 ## See Also
 

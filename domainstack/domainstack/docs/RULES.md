@@ -882,6 +882,6 @@ assert!(!rule.apply("Hello").is_empty());
 
 ## See Also
 
-- [API Guide](./api-guide.md) - Complete usage documentation
+- [Core Concepts](./CORE_CONCEPTS.md) - Complete usage documentation
 - [Architecture](./architecture.md) - System design
 - [Rule System Analysis](./RULE_SYSTEM_ANALYSIS.md) - Expansion strategy

@@ -586,4 +586,4 @@ struct Tags {
 **Reference:**
 - [Rules Reference](RULES.md) - Complete list of 37 built-in validation rules
 - [Manual Validation](MANUAL_VALIDATION.md) - Implementing `Validate` trait manually
-- [API Guide](api-guide.md) - Complete API documentation
+- [Core Concepts](CORE_CONCEPTS.md) - Foundation principles and patterns

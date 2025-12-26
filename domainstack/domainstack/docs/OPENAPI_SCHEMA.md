@@ -708,6 +708,6 @@ let yaml = spec.to_yaml()?;  // Requires "yaml" feature
 
 ## See Also
 
-- [API Guide](api-guide.md) - Core validation patterns
+- [Core Concepts](CORE_CONCEPTS.md) - Foundation principles and patterns
 - [HTTP Integration](HTTP_INTEGRATION.md) - Framework adapters
 - [RULES.md](RULES.md) - Complete validation rules reference

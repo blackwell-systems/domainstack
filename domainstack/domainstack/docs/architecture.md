@@ -10,46 +10,67 @@ graph TB
     subgraph User["User Code"]
         Domain["Domain Types<br/>(User, Email, Team)"]
         DTO["DTOs<br/>(UserDto, etc)"]
-        Handler["HTTP Handlers<br/>(Axum/Actix)"]
+        Handler["HTTP Handlers<br/>(Axum/Actix/Rocket)"]
     end
-    
+
     subgraph Adapters["Framework Adapters"]
         AxumExt["domainstack-axum<br/>DomainJson extractor"]
         ActixExt["domainstack-actix<br/>DomainJson extractor"]
+        RocketExt["domainstack-rocket<br/>DomainJson extractor"]
         HttpShared["domainstack-http<br/>(shared logic)"]
     end
-    
+
     subgraph Core["domainstack (Core)"]
         Validate["Validate Trait"]
         Rules["Built-in Rules<br/>(email, length, range)"]
         Error["ValidationError<br/>(structured paths)"]
     end
-    
+
     subgraph Derive["domainstack-derive"]
-        Macro["#[derive(Validate)]<br/>Proc Macro"]
+        Macro["#[derive(Validate, ToSchema)]<br/>Proc Macro"]
     end
-    
+
     subgraph Envelope["domainstack-envelope"]
         Convert["IntoEnvelopeError<br/>(HTTP errors)"]
     end
-    
+
+    subgraph Schema["domainstack-schema"]
+        OpenAPI["OpenAPI Schema<br/>Generation"]
+    end
+
+    subgraph WASM["domainstack-wasm"]
+        Browser["Browser Validation<br/>(WebAssembly)"]
+    end
+
+    subgraph CLI["domainstack-cli"]
+        Codegen["TypeScript/Zod<br/>Code Generation"]
+    end
+
     DTO -->|"TryFrom"| Domain
     Domain -->|"implements"| Validate
     Domain -->|"uses"| Rules
     Macro -->|"generates"| Validate
+    Macro -->|"generates"| OpenAPI
     Validate -->|"returns"| Error
     Handler -->|"extracts via"| AxumExt
     Handler -->|"extracts via"| ActixExt
+    Handler -->|"extracts via"| RocketExt
     AxumExt -->|"uses"| HttpShared
     ActixExt -->|"uses"| HttpShared
+    RocketExt -->|"uses"| HttpShared
     HttpShared -->|"converts"| Domain
     HttpShared -->|"maps errors"| Convert
     Error -->|"one line"| Convert
     Convert -->|"produces"| JSON["📄 Structured JSON<br/>{fields: {...}}"]
-    
+    Domain -->|"compiles to"| Browser
+    Codegen -->|"parses"| Domain
+
     style Core fill:#1a1a2e,stroke:#16213e,stroke-width:2px,color:#eee
     style Derive fill:#0f3460,stroke:#16213e,stroke-width:2px,color:#eee
     style Envelope fill:#16213e,stroke:#16213e,stroke-width:2px,color:#eee
+    style Schema fill:#1a4a5e,stroke:#16213e,stroke-width:2px,color:#eee
+    style WASM fill:#4a3a1e,stroke:#16213e,stroke-width:2px,color:#eee
+    style CLI fill:#3a2a4e,stroke:#16213e,stroke-width:2px,color:#eee
     style Adapters fill:#2d4a2e,stroke:#16213e,stroke-width:2px,color:#eee
     style User fill:#533483,stroke:#16213e,stroke-width:2px,color:#eee
     style JSON fill:#e94560,stroke:#16213e,stroke-width:2px,color:#eee
@@ -120,6 +141,53 @@ graph TB
 ```
 
 **Design Decision**: Trait instead of `From` to avoid orphan rule issues
+
+### Schema Generation (domainstack-schema)
+
+**Purpose**: Generate OpenAPI schemas from validation rules
+
+**Key Types**:
+- `Schema` - OpenAPI schema builder
+- `ToSchema` trait - Derive macro for schema generation
+- `OpenAPIBuilder` - Document assembly
+
+**Integration**: Schemas reflect validation constraints (min/max, patterns, enums)
+
+**Design Decision**: Same derive macro generates both validation AND schema
+
+### Browser Validation (domainstack-wasm)
+
+**Purpose**: Run identical validation in browser via WebAssembly
+
+**Key Features**:
+- Zero drift - same Rust code, compiled to WASM
+- Type registry for runtime type dispatch
+- JSON-based API for JavaScript interop
+- ~60KB bundle size
+
+**API**:
+```javascript
+const validator = createValidator();
+const result = validator.validate('User', jsonString);
+```
+
+**Design Decision**: Same validation errors in browser and server
+
+### Code Generation CLI (domainstack-cli)
+
+**Purpose**: Generate TypeScript/Zod schemas from Rust types
+
+**Capabilities**:
+- Parse Rust source files for `#[derive(Validate)]`
+- Generate Zod schemas with matching constraints
+- TypeScript type generation
+
+**Usage**:
+```bash
+domainstack-cli generate --input src/ --output schemas.ts
+```
+
+**Design Decision**: Source-level parsing, not runtime reflection
 
 ## Data Flow
 
@@ -394,18 +462,10 @@ quote! {
 - Rules are inlined where possible
 - Type checking at compile time
 
-## Future Architecture
-
-### v0.7: Schema Generation
-
-Will add schema generation capabilities:
-- OpenAPI schema from derive
-- JSON Schema generation
-- TypeScript type generation
-
 ## See Also
 
-- [API Guide](./api-guide.md) - Complete usage documentation
+- [Core Concepts](./CORE_CONCEPTS.md) - Foundation principles
 - [Rules Reference](./RULES.md) - All validation rules
-- [BREAKING_CHANGES_ANALYSIS.md](./BREAKING_CHANGES_ANALYSIS.md) - Roadmap and design strategy
+- [OpenAPI Schema](./OPENAPI_SCHEMA.md) - Schema generation guide
+- [WASM Validation](./WASM_VALIDATION.md) - Browser validation guide
 - [Source Code](../domainstack/) - Implementation

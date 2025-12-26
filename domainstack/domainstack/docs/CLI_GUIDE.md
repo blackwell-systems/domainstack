@@ -631,7 +631,7 @@ domainstack zod --input backend/src --output schemas.ts
 
 ## See Also
 
-- [API Guide](api-guide.md) - Core validation patterns
+- [Core Concepts](CORE_CONCEPTS.md) - Foundation principles and patterns
 - [RULES.md](RULES.md) - Complete validation rules reference
 - [DERIVE_MACRO.md](DERIVE_MACRO.md) - Derive macro usage
 - CLI Repository: `domainstack-cli/` - Source code and issue tracker

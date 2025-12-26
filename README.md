@@ -306,14 +306,6 @@ See **[examples/README.md](./examples/README.md)** for instructions on running a
 - **[OpenAPI Schema Generation](./domainstack/domainstack/docs/OPENAPI_SCHEMA.md)** - Auto-generate schemas from rules
 - **[CLI Guide](./domainstack/domainstack/docs/CLI_GUIDE.md)** - Generate TypeScript/Zod schemas
 
-### Multi-README Structure
-
-This project has **multiple README files** for different audiences:
-
-1. **[README.md](./README.md)** (this file) - GitHub visitors
-2. **[domainstack/README.md](./domainstack/README.md)** - Cargo/crates.io users
-3. **Individual crate READMEs** - Library implementers
-
 ### Additional Documentation
 
 - **[API Guide](./domainstack/domainstack/docs/api-guide.md)** - Complete API documentation

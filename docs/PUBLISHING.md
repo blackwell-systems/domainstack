@@ -1,12 +1,12 @@
-# Publishing to crates.io
+# Publishing Guide
 
-This document describes how to publish domainstack crates to crates.io.
+This document describes how to publish domainstack crates to crates.io and npm.
 
 ## Workspace Overview
 
-The workspace contains **12 members total**:
+The workspace contains **14 members total**:
 
-**8 Publishable Crates:**
+**10 Publishable Crates:**
 1. **domainstack-derive** - Procedural macros (no workspace dependencies)
 2. **domainstack** - Core validation framework
 3. **domainstack-http** - HTTP integration utilities
@@ -15,12 +15,14 @@ The workspace contains **12 members total**:
 6. **domainstack-axum** - Axum web framework integration
 7. **domainstack-actix** - Actix-web framework integration
 8. **domainstack-rocket** - Rocket web framework integration
+9. **domainstack-wasm** - WebAssembly browser validation (also published to npm)
+10. **domainstack-cli** - TypeScript/Zod code generation CLI
 
 **4 Example Crates (not published):**
-9. **domainstack-examples** - Core validation examples
-10. **examples-axum** - Axum framework examples
-11. **examples-actix** - Actix-web framework examples
-12. **examples-rocket** - Rocket framework examples
+11. **domainstack-examples** - Core validation examples
+12. **examples-axum** - Axum framework examples
+13. **examples-actix** - Actix-web framework examples
+14. **examples-rocket** - Rocket framework examples
 
 **Note on versions:**
 - All publishable crates are now at v1.0.0 for unified release management
@@ -68,6 +70,38 @@ cargo publish -p domainstack-actix --token $CARGO_TOKEN
 cargo publish -p domainstack-rocket --token $CARGO_TOKEN
 ```
 
+### Step 5: Publish WASM and CLI crates
+
+```bash
+# domainstack-wasm depends on domainstack
+cargo publish -p domainstack-wasm --token $CARGO_TOKEN
+
+# domainstack-cli depends on domainstack (for parsing)
+cargo publish -p domainstack-cli --token $CARGO_TOKEN
+```
+
+### Step 6: Publish WASM to npm
+
+After publishing to crates.io, build and publish the npm package:
+
+```bash
+cd domainstack-wasm
+
+# Build WASM package
+wasm-pack build --target web --release
+
+# Navigate to generated package
+cd pkg
+
+# Login to npm (first time only)
+npm login
+
+# Publish to npm
+npm publish --access public
+```
+
+The npm package will be published as `@domainstack/wasm` (or configure name in `Cargo.toml` under `[package.metadata.wasm-pack.profile.release]`).
+
 ## Subsequent Releases
 
 After the initial publish, the automated GitHub Actions workflow will handle releases:
@@ -92,10 +126,16 @@ Always publish in this order (respecting dependency chain):
 6. **domainstack-axum** - Depends on domainstack + domainstack-http
 7. **domainstack-actix** - Depends on domainstack + domainstack-http
 8. **domainstack-rocket** - Depends on domainstack + domainstack-http
+9. **domainstack-wasm** - Depends on domainstack (crates.io + npm)
+10. **domainstack-cli** - Depends on domainstack
 
 **Parallel publishing (Step 3):** Crates 3-5 can be published in parallel since they only depend on domainstack.
 
 **Parallel publishing (Step 4):** Crates 6-8 can be published in parallel since they have the same dependencies.
+
+**Parallel publishing (Step 5):** Crates 9-10 can be published in parallel.
+
+**npm publishing:** After crates.io publishing completes, publish WASM to npm.
 
 ## Version Synchronization
 
@@ -108,6 +148,8 @@ Always publish in this order (respecting dependency chain):
 - domainstack-axum
 - domainstack-actix
 - domainstack-rocket
+- domainstack-wasm
+- domainstack-cli
 
 Update all crates together:
 
@@ -122,11 +164,15 @@ domainstack-schema = { version = "1.0.0", path = "domainstack-schema" }
 domainstack-axum = { version = "1.0.0", path = "domainstack-axum" }
 domainstack-actix = { version = "1.0.0", path = "domainstack-actix" }
 domainstack-rocket = { version = "1.0.0", path = "domainstack-rocket" }
+domainstack-wasm = { version = "1.0.0", path = "domainstack-wasm" }
+domainstack-cli = { version = "1.0.0", path = "domainstack-cli" }
 
 # In each crate's Cargo.toml
 [package]
 version = "1.0.0"
 ```
+
+**npm version:** The npm package version should match the crate version. Update `package.json` in `domainstack-wasm/pkg/` after building.
 
 ## Pre-Publish Checklist
 
@@ -135,6 +181,7 @@ version = "1.0.0"
 - [ ] Clippy clean: `cargo clippy --all-targets --all-features -- -D warnings`
 - [ ] Docs build: `cargo doc --all --no-deps --all-features`
 - [ ] All doctests passing (especially schema generation examples)
+- [ ] WASM build succeeds: `cd domainstack-wasm && wasm-pack build --target web`
 
 ### Examples Verification
 - [ ] Core validation examples: `cargo run -p domainstack-examples --example v2_basic`
@@ -142,14 +189,16 @@ version = "1.0.0"
   - `cargo run -p domainstack-schema --example user_api`
   - `cargo run -p domainstack-schema --example v08_features`
 - [ ] HTTP integration examples work
-- [ ] Framework integration examples (Axum, Actix) compile and run
+- [ ] Framework integration examples (Axum, Actix, Rocket) compile and run
+- [ ] CLI code generation: `cargo run -p domainstack-cli -- generate --help`
 
 ### Metadata & Documentation
 - [ ] Version numbers match across all synchronized Cargo.toml files (all at 1.0.0)
 - [ ] CHANGELOG.md updated with release notes for all affected crates
 - [ ] README.md examples use current syntax and features
 - [ ] README.md badges show correct version
-- [ ] All 8 crates have complete metadata (keywords, categories, description, etc.)
+- [ ] All 10 crates have complete metadata (keywords, categories, description, etc.)
+- [ ] npm package.json version matches crate version (for WASM)
 
 ### Git & Release
 - [ ] Commit message follows format: "Release v1.X.Y"
@@ -200,3 +249,20 @@ If examples fail:
 2. Check examples use current API (not deprecated syntax)
 3. Ensure workspace dependencies are up to date
 4. Run with `--verbose` to see detailed error messages
+
+### WASM build failures
+
+If `wasm-pack build` fails:
+1. Ensure `wasm-pack` is installed: `cargo install wasm-pack`
+2. Check that `wasm32-unknown-unknown` target is installed: `rustup target add wasm32-unknown-unknown`
+3. Verify no incompatible dependencies (some crates don't support WASM)
+4. Check `Cargo.toml` has correct `[lib]` configuration with `crate-type = ["cdylib", "rlib"]`
+
+### npm publishing issues
+
+If npm publish fails:
+1. Verify you're logged in: `npm whoami`
+2. Check package name isn't taken: `npm view @domainstack/wasm`
+3. Ensure `package.json` has correct metadata (name, version, repository)
+4. For scoped packages, use `--access public` flag
+5. Verify the `pkg/` directory was generated by `wasm-pack build`

@@ -3,7 +3,7 @@
 [![Blackwell Systems™](https://raw.githubusercontent.com/blackwell-systems/blackwell-docs-theme/main/badge-trademark.svg)](https://github.com/blackwell-systems)
 [![Crates.io](https://img.shields.io/crates/v/domainstack-envelope.svg)](https://crates.io/crates/domainstack-envelope)
 [![Documentation](https://docs.rs/domainstack-envelope/badge.svg)](https://docs.rs/domainstack-envelope)
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/blackwell-systems/domainstack/blob/main/LICENSE)
+[![License: MIT OR Apache-2.0](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-blue.svg)](https://github.com/blackwell-systems/domainstack/blob/main/LICENSE-MIT)
 
 Convert [domainstack](https://crates.io/crates/domainstack) validation errors to [error-envelope](https://crates.io/crates/error-envelope) HTTP error format. Part of the domainstack full-stack validation ecosystem.
 

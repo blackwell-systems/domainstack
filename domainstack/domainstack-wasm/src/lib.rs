@@ -704,8 +704,7 @@ mod tests {
 
         #[test]
         fn test_system_error_serialization() {
-            let result =
-                ValidationResult::system_error("parse_error", "Invalid JSON".to_string());
+            let result = ValidationResult::system_error("parse_error", "Invalid JSON".to_string());
             let json = serde_json::to_string(&result).unwrap();
             assert!(json.contains("\"ok\":false"));
             assert!(json.contains("\"error\""));

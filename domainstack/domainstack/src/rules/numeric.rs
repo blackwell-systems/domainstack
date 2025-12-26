@@ -821,4 +821,158 @@ mod tests {
     fn test_multiple_of_zero_divisor_panics() {
         let _rule = multiple_of(0);
     }
+
+    // Additional float edge cases
+    #[test]
+    fn test_range_min_equals_max() {
+        // Single-value range (exact value required)
+        let rule = range(5i32, 5i32);
+
+        assert!(rule.apply(&5).is_empty());
+        assert!(!rule.apply(&4).is_empty());
+        assert!(!rule.apply(&6).is_empty());
+    }
+
+    #[test]
+    fn test_range_zero_crossing() {
+        let rule = range(-10i32, 10i32);
+
+        assert!(rule.apply(&0).is_empty());
+        assert!(rule.apply(&-10).is_empty());
+        assert!(rule.apply(&10).is_empty());
+        assert!(!rule.apply(&-11).is_empty());
+        assert!(!rule.apply(&11).is_empty());
+    }
+
+    #[test]
+    fn test_finite_min_positive() {
+        let rule: Rule<f64> = finite();
+
+        // Smallest positive normal number
+        assert!(rule.apply(&f64::MIN_POSITIVE).is_empty());
+    }
+
+    #[test]
+    fn test_float_range_very_small_decimals() {
+        let rule = float_range(0.0f64, 0.001f64);
+
+        assert!(rule.apply(&0.0005).is_empty());
+        assert!(rule.apply(&0.0).is_empty());
+        assert!(rule.apply(&0.001).is_empty());
+        assert!(!rule.apply(&0.002).is_empty());
+    }
+
+    #[test]
+    fn test_float_min_with_negative() {
+        let rule = float_min(-100.5f64);
+
+        assert!(rule.apply(&-100.5).is_empty());
+        assert!(rule.apply(&0.0).is_empty());
+        assert!(!rule.apply(&-100.6).is_empty());
+    }
+
+    #[test]
+    fn test_float_max_with_negative() {
+        let rule = float_max(-0.1f64);
+
+        assert!(rule.apply(&-0.1).is_empty());
+        assert!(rule.apply(&-100.0).is_empty());
+        assert!(!rule.apply(&0.0).is_empty());
+    }
+
+    #[test]
+    fn test_negative_infinity_specific() {
+        let rule: Rule<f64> = finite();
+
+        let result = rule.apply(&f64::NEG_INFINITY);
+        assert!(!result.is_empty());
+        assert_eq!(result.violations[0].code, "not_finite");
+    }
+
+    #[test]
+    fn test_multiple_of_negative_divisor() {
+        // Negative divisor should work
+        let rule = multiple_of(-5);
+
+        assert!(rule.apply(&10).is_empty());
+        assert!(rule.apply(&-10).is_empty());
+        assert!(rule.apply(&0).is_empty());
+        assert!(!rule.apply(&7).is_empty());
+    }
+
+    #[test]
+    fn test_multiple_of_one() {
+        // Every integer is multiple of 1
+        let rule = multiple_of(1);
+
+        assert!(rule.apply(&0).is_empty());
+        assert!(rule.apply(&1).is_empty());
+        assert!(rule.apply(&-1).is_empty());
+        assert!(rule.apply(&1000).is_empty());
+    }
+
+    #[test]
+    fn test_range_f64_precision() {
+        // Test with values that might have precision issues
+        let rule = range(0.0f64, 1.0f64);
+
+        // 0.1 + 0.2 ≈ 0.30000000000000004 (IEEE 754)
+        let sum = 0.1 + 0.2;
+        assert!(rule.apply(&sum).is_empty());
+    }
+
+    #[test]
+    fn test_min_max_message_format() {
+        let rule = min(10i32);
+        let result = rule.apply(&5);
+        assert!(result.violations[0].message.contains("10"));
+
+        let rule = max(10i32);
+        let result = rule.apply(&15);
+        assert!(result.violations[0].message.contains("10"));
+    }
+
+    #[test]
+    fn test_range_message_format() {
+        let rule = range(10i32, 20i32);
+        let result = rule.apply(&5);
+
+        assert!(result.violations[0].message.contains("10"));
+        assert!(result.violations[0].message.contains("20"));
+    }
+
+    #[test]
+    fn test_positive_negative_with_float() {
+        let rule_pos: Rule<f64> = positive();
+        let rule_neg: Rule<f64> = negative();
+
+        assert!(rule_pos.apply(&0.001).is_empty());
+        assert!(!rule_pos.apply(&-0.001).is_empty());
+        assert!(!rule_pos.apply(&0.0).is_empty());
+
+        assert!(rule_neg.apply(&-0.001).is_empty());
+        assert!(!rule_neg.apply(&0.001).is_empty());
+        assert!(!rule_neg.apply(&0.0).is_empty());
+    }
+
+    #[test]
+    fn test_non_zero_with_float() {
+        let rule: Rule<f64> = non_zero();
+
+        assert!(rule.apply(&0.001).is_empty());
+        assert!(rule.apply(&-0.001).is_empty());
+
+        let result = rule.apply(&0.0);
+        assert!(!result.is_empty());
+        assert_eq!(result.violations[0].code, "zero_value");
+    }
+
+    #[test]
+    fn test_float_range_f32() {
+        let rule: Rule<f32> = float_range(0.0f32, 1.0f32);
+
+        assert!(rule.apply(&0.5f32).is_empty());
+        assert!(!rule.apply(&f32::NAN).is_empty());
+        assert!(!rule.apply(&f32::INFINITY).is_empty());
+    }
 }

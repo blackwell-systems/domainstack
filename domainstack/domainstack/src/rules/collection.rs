@@ -413,4 +413,196 @@ mod tests {
         assert!(!result.is_empty());
         assert_eq!(result.violations[0].code, "empty_item");
     }
+
+    // Zero boundary tests
+    #[test]
+    fn test_min_items_zero() {
+        let rule: Rule<[i32]> = min_items(0);
+
+        // Any collection should pass min_items(0)
+        assert!(rule.apply(&[]).is_empty());
+        assert!(rule.apply(&[1]).is_empty());
+        assert!(rule.apply(&[1, 2, 3]).is_empty());
+    }
+
+    #[test]
+    fn test_max_items_zero() {
+        let rule: Rule<[i32]> = max_items(0);
+
+        // Only empty collections pass max_items(0)
+        assert!(rule.apply(&[]).is_empty());
+
+        let result = rule.apply(&[1]);
+        assert!(!result.is_empty());
+        assert_eq!(result.violations[0].code, "too_many_items");
+        assert_eq!(result.violations[0].meta.get("max"), Some("0"));
+    }
+
+    #[test]
+    fn test_min_equals_max() {
+        // Exact count required
+        let rule = min_items(3).and(max_items(3));
+
+        assert!(!rule.apply(&[1, 2]).is_empty());
+        assert!(rule.apply(&[1, 2, 3]).is_empty());
+        assert!(!rule.apply(&[1, 2, 3, 4]).is_empty());
+    }
+
+    // Large collection tests
+    #[test]
+    fn test_min_items_large() {
+        let rule: Rule<[i32]> = min_items(1000);
+
+        let large: Vec<i32> = (0..1000).collect();
+        assert!(rule.apply(&large).is_empty());
+
+        let large: Vec<i32> = (0..999).collect();
+        assert!(!rule.apply(&large).is_empty());
+    }
+
+    #[test]
+    fn test_max_items_large() {
+        let rule: Rule<[i32]> = max_items(1000);
+
+        let large: Vec<i32> = (0..1000).collect();
+        assert!(rule.apply(&large).is_empty());
+
+        let large: Vec<i32> = (0..1001).collect();
+        assert!(!rule.apply(&large).is_empty());
+    }
+
+    #[test]
+    fn test_unique_large_collection() {
+        let rule: Rule<[i32]> = unique();
+
+        // All unique
+        let large: Vec<i32> = (0..1000).collect();
+        assert!(rule.apply(&large).is_empty());
+
+        // One duplicate at the end
+        let mut with_dup: Vec<i32> = (0..1000).collect();
+        with_dup.push(0);
+        assert!(!rule.apply(&with_dup).is_empty());
+    }
+
+    // Duplicate counting tests
+    #[test]
+    fn test_unique_counts_duplicates_correctly() {
+        let rule: Rule<[i32]> = unique();
+
+        // [1, 1] - one duplicate (second 1)
+        let result = rule.apply(&[1, 1]);
+        assert_eq!(result.violations[0].meta.get("duplicates"), Some("1"));
+
+        // [1, 1, 1] - two duplicates (second and third 1)
+        let result = rule.apply(&[1, 1, 1]);
+        assert_eq!(result.violations[0].meta.get("duplicates"), Some("2"));
+
+        // [1, 2, 1, 2] - two duplicates (second 1 and second 2)
+        let result = rule.apply(&[1, 2, 1, 2]);
+        assert_eq!(result.violations[0].meta.get("duplicates"), Some("2"));
+    }
+
+    // Non-empty items edge cases
+    #[test]
+    fn test_non_empty_items_indices_format() {
+        let rule = non_empty_items();
+
+        let tags = vec![
+            "".to_string(),
+            "valid".to_string(),
+            "".to_string(),
+            "also_valid".to_string(),
+            "".to_string(),
+        ];
+        let result = rule.apply(&tags);
+
+        let indices = result.violations[0].meta.get("indices").unwrap();
+        assert!(indices.contains("0"));
+        assert!(indices.contains("2"));
+        assert!(indices.contains("4"));
+    }
+
+    #[test]
+    fn test_non_empty_items_single_empty() {
+        let rule = non_empty_items();
+
+        let tags = vec!["".to_string()];
+        let result = rule.apply(&tags);
+
+        assert_eq!(result.violations[0].meta.get("empty_count"), Some("1"));
+        assert!(result.violations[0]
+            .meta
+            .get("indices")
+            .unwrap()
+            .contains("0"));
+    }
+
+    // Type variations
+    #[test]
+    fn test_unique_with_strings() {
+        let rule: Rule<[String]> = unique();
+
+        let strings: Vec<String> = vec!["a".to_string(), "b".to_string(), "c".to_string()];
+        assert!(rule.apply(&strings).is_empty());
+
+        let with_dup: Vec<String> = vec!["a".to_string(), "b".to_string(), "a".to_string()];
+        assert!(!rule.apply(&with_dup).is_empty());
+    }
+
+    #[test]
+    fn test_unique_with_tuples() {
+        let rule: Rule<[(i32, i32)]> = unique();
+
+        assert!(rule.apply(&[(1, 2), (3, 4), (5, 6)]).is_empty());
+        assert!(!rule.apply(&[(1, 2), (3, 4), (1, 2)]).is_empty());
+    }
+
+    // Message format tests
+    #[test]
+    fn test_min_items_message_format() {
+        let rule: Rule<[i32]> = min_items(5);
+        let result = rule.apply(&[1, 2]);
+
+        assert_eq!(result.violations[0].message, "Must have at least 5 items");
+    }
+
+    #[test]
+    fn test_max_items_message_format() {
+        let rule: Rule<[i32]> = max_items(2);
+        let result = rule.apply(&[1, 2, 3, 4, 5]);
+
+        assert_eq!(result.violations[0].message, "Must have at most 2 items");
+    }
+
+    #[test]
+    fn test_unique_message_format() {
+        let rule: Rule<[i32]> = unique();
+        let result = rule.apply(&[1, 1, 2, 2]);
+
+        assert!(result.violations[0]
+            .message
+            .contains("found 2 duplicates"));
+    }
+
+    #[test]
+    fn test_non_empty_items_message_format() {
+        let rule = non_empty_items();
+        let tags = vec!["".to_string(), "".to_string()];
+        let result = rule.apply(&tags);
+
+        assert!(result.violations[0]
+            .message
+            .contains("found 2 empty items"));
+    }
+
+    // Whitespace strings are NOT empty (intentional behavior)
+    #[test]
+    fn test_non_empty_items_whitespace_is_valid() {
+        let rule = non_empty_items();
+
+        // Whitespace-only strings are not empty (they have length > 0)
+        let tags = vec!["  ".to_string(), "\t".to_string(), "\n".to_string()];
+        assert!(rule.apply(&tags).is_empty());
+    }
 }

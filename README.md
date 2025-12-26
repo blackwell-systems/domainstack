@@ -55,8 +55,12 @@ After domain validation succeeds, you can optionally run **async/context validat
 - [Installation](#installation)
 - [Key Features](#key-features)
 - [Examples](#examples)
-- [Documentation](#documentation)
+- [Framework Adapters](#framework-adapters)
+- [Running Examples](#running-examples)
 - [Crates](#-crates)
+- [Documentation](#-documentation)
+- [License](#license)
+- [Contributing](#contributing)
 
 ## Quick Start
 

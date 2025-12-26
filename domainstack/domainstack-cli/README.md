@@ -375,6 +375,11 @@ domainstack graphql --input src --output schema.graphql
 domainstack prisma --input src --output schema.prisma
 ```
 
+## Documentation
+
+- **[JSON_SCHEMA_CAPABILITIES.md](./JSON_SCHEMA_CAPABILITIES.md)** - Complete JSON Schema feature reference, validation rule mappings, and examples
+- **[examples/json_schema_demo.rs](./examples/json_schema_demo.rs)** - Example types demonstrating tuple structs, enums, and nested validation
+
 ## Contributing
 
 ### Adding a New Generator

@@ -1,3 +1,20 @@
+//! # domainstack-cli
+//!
+//! Code generation CLI for the domainstack validation ecosystem.
+//!
+//! Generate TypeScript/Zod schemas and JSON Schema from Rust `#[validate(...)]` attributes.
+//!
+//! ## Available Commands
+//!
+//! - `domainstack zod` - Generate TypeScript/Zod validation schemas
+//! - `domainstack json-schema` - Generate JSON Schema (Draft 2020-12)
+//!
+//! ## Documentation
+//!
+//! - See `JSON_SCHEMA_CAPABILITIES.md` for complete JSON Schema feature reference
+//! - See `README.md` for usage examples and CLI options
+//! - See `examples/json_schema_demo.rs` for example types
+
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 

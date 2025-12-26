@@ -12,7 +12,7 @@
 
 **Full-stack validation ecosystem for Rust web services**
 
-Define validation once. Get runtime checks, OpenAPI schemas, TypeScript types, and framework integration—from one source of truth.
+Define validation once. Get runtime checks, OpenAPI schemas, TypeScript types, browser validation via WASM, and framework integration—from one source of truth.
 
 ```
 Rust Domain                        Frontend
@@ -38,6 +38,7 @@ Structured errors (field-level, indexed paths)
 | + OpenAPI schemas | + `domainstack-schema` |
 | + Axum/Actix/Rocket | + framework adapter |
 | + TypeScript/Zod | + `domainstack-cli` |
+| + Browser (WASM) | + `domainstack-wasm` |
 
 ## Why domainstack?
 
@@ -233,6 +234,22 @@ export const bookingSchema = z.object({
   { message: "Check-out must be after check-in" }
 );
 ```
+
+**Or run the same Rust validation in the browser via WASM:**
+
+```typescript
+import init, { createValidator } from '@domainstack/wasm';
+
+await init();
+const validator = createValidator();
+
+const result = validator.validate('Booking', JSON.stringify(formData));
+if (!result.ok) {
+  result.errors.forEach(e => setFieldError(e.path, e.message));
+}
+```
+
+Server and browser return **identical error structures** (paths, codes, metadata)—UI rendering logic works unchanged. → [WASM Guide](./domainstack/domainstack/docs/WASM_VALIDATION.md)
 
 ## Installation
 

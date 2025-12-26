@@ -997,15 +997,39 @@ This project has **multiple README files** for different audiences:
 2. **[domainstack/README.md](./domainstack/README.md)** - Cargo/crates.io users
 3. **Individual crate READMEs** - Library implementers
 
-### Additional Documentation
+### Getting Started
+
+- **[Core Concepts](./domainstack/domainstack/docs/CORE_CONCEPTS.md)** - Valid-by-construction philosophy and fundamentals
+- **[Derive Macro Guide](./domainstack/domainstack/docs/DERIVE_MACRO.md)** - Complete `#[derive(Validate)]` reference
+- **[Rules Reference](./domainstack/domainstack/docs/RULES.md)** - All 37 built-in validation rules
+- **[Examples](./domainstack/domainstack-examples/)** - 9 runnable examples
+
+### User Guides
+
+- **[Collection Validation](./domainstack/domainstack/docs/COLLECTION_VALIDATION.md)** - Arrays, vectors, `each()` patterns, uniqueness
+- **[Cross-Field Validation](./domainstack/domainstack/docs/CROSS_FIELD_VALIDATION.md)** - Date ranges, password confirmation, field relationships
+- **[Manual Validation](./domainstack/domainstack/docs/MANUAL_VALIDATION.md)** - Implementing `Validate` trait manually
+- **[Error Handling](./domainstack/domainstack/docs/ERROR_HANDLING.md)** - Working with `ValidationError` and error paths
+
+### Advanced Guides
+
+- **[Advanced Patterns](./domainstack/domainstack/docs/ADVANCED_PATTERNS.md)** - Overview of advanced validation techniques
+- **[Async Validation](./domainstack/domainstack/docs/ASYNC_VALIDATION.md)** - Database checks, external APIs, rate limiting
+- **[Type-State Validation](./domainstack/domainstack/docs/TYPE_STATE.md)** - Compile-time guarantees with phantom types
+- **[Conditional Validation](./domainstack/domainstack/docs/CONDITIONAL_VALIDATION.md)** - Runtime-determined rules, `.when()` combinator
+
+### Integrations
+
+- **[HTTP Integration](./domainstack/domainstack/docs/HTTP_INTEGRATION.md)** - Axum, Actix-web, Rocket framework adapters
+- **[Serde Integration](./domainstack/domainstack/docs/SERDE_INTEGRATION.md)** - `ValidateOnDeserialize` for automatic validation
+- **[OpenAPI Schema](./domainstack/domainstack/docs/OPENAPI_SCHEMA.md)** - Auto-generate schemas from validation rules
+- **[OpenAPI Capabilities](./domainstack/domainstack-schema/OPENAPI_CAPABILITIES.md)** - Complete OpenAPI 3.0 schema generation
+
+### Reference
 
 - **[API Guide](./domainstack/domainstack/docs/api-guide.md)** - Complete API documentation
-- **[Rules Reference](./domainstack/domainstack/docs/RULES.md)** - All validation rules
 - **[Architecture](./domainstack/domainstack/docs/architecture.md)** - System design and data flow
-- **[OpenAPI Schema Derivation](./domainstack/domainstack/docs/SCHEMA_DERIVATION.md)** - OpenAPI 3.0 schema generation guide
-- **[Examples](./domainstack/domainstack-examples/)** - 9 runnable examples
-- **[API Documentation](https://docs.rs/domainstack)** - Generated API reference
-- **[Publishing Guide](./PUBLISHING.md)** - How to publish to crates.io
+- **[API Documentation](https://docs.rs/domainstack)** - Generated API reference (docs.rs)
 - **[Coverage Guide](./COVERAGE.md)** - Running coverage locally
 
 ## License

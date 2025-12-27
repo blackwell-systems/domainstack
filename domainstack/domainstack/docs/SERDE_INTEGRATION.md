@@ -2,11 +2,24 @@
 
 Complete guide to using domainstack with serde for automatic validation during deserialization.
 
-## Validate on Deserialize
+## Two Validation Gates
+
+domainstack offers two approaches for validating data:
+
+| Approach | When Validation Runs | Derive Macro |
+|----------|---------------------|--------------|
+| **Integrated** | During deserialization | `#[derive(ValidateOnDeserialize)]` |
+| **Separate** | Explicit `.validate()` call | `#[derive(Validate)]` |
+
+Both are valid patterns with different tradeoffs. Choose based on your use case.
+
+---
+
+## Gate 1: Validate on Deserialize (Integrated)
 
 **Feature flag:** `serde`
 
-Automatically validate during JSON/YAML/etc. deserialization:
+Validation runs automatically during deserialization:
 
 ```rust
 use domainstack::ValidateOnDeserialize;
@@ -15,71 +28,230 @@ use serde::Deserialize;
 #[derive(Deserialize, ValidateOnDeserialize)]
 struct User {
     #[validate(email)]
-    #[validate(max_len = 255)]
     email: String,
 
     #[validate(range(min = 18, max = 120))]
     age: u8,
-
-    #[validate(url)]
-    website: Option<String>,
 }
 
-// Single step: deserialize + validate automatically
+// Single step: deserialize + validate
 let user: User = serde_json::from_str(json)?;
-// ↑ Returns ValidationError if invalid, not serde::Error
+// If you have a User, it's guaranteed valid
 ```
 
-## Benefits
+### When to Use Integrated Validation
 
-- Eliminates `dto.validate()` boilerplate
-- Better error messages: "age must be between 18 and 120" vs "expected u8"
-- Type safety: if you have `User`, it's guaranteed valid
-- Works with all serde attributes: `#[serde(rename)]`, `#[serde(default)]`, etc.
-- ~5% overhead vs two-step approach
+**Best for:**
 
-## How it Works
+- **API boundaries** - Incoming requests should be validated immediately
+- **Type-safe guarantees** - "If I have a `User`, it's valid" invariant
+- **Reducing boilerplate** - No forgotten `.validate()` calls
+- **Fail-fast** - Reject bad data at the earliest possible point
 
-Two-phase deserialization:
-1. Deserialize into intermediate type (standard serde)
-2. Validate all fields
-3. Return validated type or ValidationError
+**Use cases:**
 
 ```rust
-// Before (two steps)
-let dto: UserDto = serde_json::from_str(json)?;  // Step 1: deserialize
-dto.validate()?;                                  // Step 2: validate
+// REST API handlers - validate on entry
+async fn create_user(Json(user): Json<User>) -> Response {
+    // user is guaranteed valid - no .validate() needed
+    db.insert(user).await
+}
 
-// After (one step)
-let user: User = serde_json::from_str(json)?;    // Deserialize + validate!
+// Config file loading - fail fast on startup
+let config: AppConfig = serde_json::from_str(&file)?;
+// Invalid config = immediate startup failure
+
+// Message queue consumers - reject malformed messages
+let event: OrderEvent = serde_json::from_slice(&payload)?;
+// Invalid event never enters your system
 ```
 
-## Example: API Request Handler
+---
+
+## Gate 2: Separate Validation Step
+
+Deserialize first, validate later:
 
 ```rust
+use domainstack::Validate;
+use serde::Deserialize;
+
+#[derive(Deserialize, Validate)]
+struct User {
+    #[validate(email)]
+    email: String,
+
+    #[validate(range(min = 18, max = 120))]
+    age: u8,
+}
+
+// Two steps: deserialize, then validate
+let user: User = serde_json::from_str(json)?;  // Step 1
+user.validate()?;                               // Step 2
+```
+
+### When to Use Separate Validation
+
+**Best for:**
+
+- **Partial/draft data** - Save incomplete forms, validate on submit
+- **Multi-stage validation** - Different rules at different stages
+- **Conditional validation** - Rules depend on runtime context
+- **Migration/import** - Log invalid records instead of failing
+- **Testing** - Create invalid instances for testing error paths
+
+**Use cases:**
+
+```rust
+// Draft documents - save now, validate on publish
+#[derive(Deserialize, Validate)]
+struct BlogPost {
+    #[validate(non_empty)]
+    title: String,
+    #[validate(length(min = 100))]
+    content: String,
+}
+
+fn save_draft(post: BlogPost) -> Result<(), Error> {
+    // Don't validate - drafts can be incomplete
+    db.save_draft(post)
+}
+
+fn publish(post: BlogPost) -> Result<(), Error> {
+    post.validate()?;  // NOW validate before publishing
+    db.publish(post)
+}
+
+// Batch import with error collection
+fn import_users(records: Vec<UserRecord>) -> ImportResult {
+    let mut valid = vec![];
+    let mut errors = vec![];
+
+    for (i, record) in records.into_iter().enumerate() {
+        match record.validate() {
+            Ok(()) => valid.push(record),
+            Err(e) => errors.push((i, e)),  // Log, don't fail
+        }
+    }
+    ImportResult { imported: valid.len(), errors }
+}
+
+// Context-dependent validation
+fn validate_order(order: Order, user: &User) -> Result<(), ValidationErrors> {
+    order.validate()?;  // Basic validation
+
+    // Additional context-aware checks
+    if order.total > user.credit_limit {
+        return Err(/* credit limit error */);
+    }
+    Ok(())
+}
+```
+
+---
+
+## Tradeoffs Comparison
+
+| Aspect | Integrated (`ValidateOnDeserialize`) | Separate (`Validate`) |
+|--------|--------------------------------------|----------------------|
+| **Guarantees** | Type = valid data | Type = parsed data |
+| **Boilerplate** | None | Must call `.validate()` |
+| **Flexibility** | Fixed rules | Context-aware rules |
+| **Partial data** | Not possible | Fully supported |
+| **Performance** | ~5% overhead | Zero overhead until called |
+| **Error type** | `serde::Error` wrapper | Native `ValidationErrors` |
+| **Testing** | Can't create invalid instances | Full control |
+
+### The Forgotten `.validate()` Problem
+
+Separate validation has one major risk:
+
+```rust
+// BUG: Forgot to validate!
+fn process_user(json: &str) -> Result<(), Error> {
+    let user: User = serde_json::from_str(json)?;
+    db.insert(user).await?;  // Invalid data in DB!
+    Ok(())
+}
+```
+
+Integrated validation eliminates this class of bugs entirely.
+
+### The Inflexibility Problem
+
+Integrated validation can be too strict:
+
+```rust
+// Can't save a draft with empty title
+#[derive(ValidateOnDeserialize)]
+struct Post {
+    #[validate(non_empty)]  // Always enforced!
+    title: String,
+}
+
+let draft: Post = serde_json::from_str(r#"{"title": ""}"#)?;
+// Error! But we wanted to save a draft...
+```
+
+---
+
+## Hybrid Approach
+
+Use both patterns where appropriate:
+
+```rust
+// Strict type for API boundaries
 #[derive(Deserialize, ValidateOnDeserialize)]
 struct CreateUserRequest {
     #[validate(email)]
     email: String,
-
-    #[validate(length(min = 3, max = 50))]
-    #[validate(alphanumeric)]
-    username: String,
-
-    #[validate(length(min = 8, max = 128))]
-    password: String,
 }
 
-// In your handler - guaranteed valid on successful deserialization
-async fn create_user(
-    Json(request): Json<CreateUserRequest>
-) -> Result<Json<User>, ErrorResponse> {
-    // request.email is guaranteed to be a valid email!
-    // No manual .validate() call needed
-    let user = db.insert_user(request).await?;
-    Ok(Json(user))
+// Flexible type for internal processing
+#[derive(Deserialize, Validate)]
+struct UserDraft {
+    #[validate(email)]
+    email: String,
+}
+
+// API handler uses strict type
+async fn create_user(Json(req): Json<CreateUserRequest>) -> Response {
+    // Guaranteed valid
+}
+
+// Internal tool uses flexible type
+fn import_from_csv(records: Vec<UserDraft>) -> ImportResult {
+    // Validate selectively
 }
 ```
+
+---
+
+## How ValidateOnDeserialize Works
+
+Two-phase deserialization:
+
+1. Deserialize into intermediate type (standard serde)
+2. Validate all fields
+3. Return validated type or error
+
+```rust
+// Conceptually equivalent to:
+impl<'de> Deserialize<'de> for User {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> {
+        // Phase 1: Standard deserialization
+        let intermediate = IntermediateUser::deserialize(deserializer)?;
+
+        // Phase 2: Validation
+        intermediate.validate()
+            .map_err(|e| serde::de::Error::custom(e))?;
+
+        Ok(intermediate.into())
+    }
+}
+```
+
+---
 
 ## Optional Field Handling
 
@@ -95,6 +267,8 @@ struct Profile {
     bio: Option<String>,  // Validates length if present
 }
 ```
+
+---
 
 ## See Also
 

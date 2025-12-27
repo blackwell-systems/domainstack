@@ -649,10 +649,7 @@ mod tests {
     fn test_finite_validation() {
         let mut schema = json!({ "type": "number" });
         apply_validation_rule(&mut schema, &ValidationRule::Finite, &FieldType::F64);
-        assert!(schema["description"]
-            .as_str()
-            .unwrap()
-            .contains("finite"));
+        assert!(schema["description"].as_str().unwrap().contains("finite"));
     }
 
     #[test]

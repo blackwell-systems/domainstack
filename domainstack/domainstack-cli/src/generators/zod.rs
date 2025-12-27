@@ -569,8 +569,7 @@ mod tests {
 
     #[test]
     fn test_nested_option_type() {
-        let nested =
-            FieldType::Option(Box::new(FieldType::Vec(Box::new(FieldType::String))));
+        let nested = FieldType::Option(Box::new(FieldType::Vec(Box::new(FieldType::String))));
         let result = generate_base_type(&nested);
         assert_eq!(result, "z.array(z.string())");
     }
@@ -650,8 +649,9 @@ mod tests {
 
     #[test]
     fn test_vec_with_custom_type() {
-        let result =
-            generate_base_type(&FieldType::Vec(Box::new(FieldType::Custom("Item".to_string()))));
+        let result = generate_base_type(&FieldType::Vec(Box::new(FieldType::Custom(
+            "Item".to_string(),
+        ))));
         assert_eq!(result, "z.array(ItemSchema /* Custom type */)");
     }
 

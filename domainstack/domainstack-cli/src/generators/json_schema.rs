@@ -572,10 +572,7 @@ mod tests {
         let mut schema = json!({ "type": "number" });
         apply_validation_rule(&mut schema, &ValidationRule::Finite, &FieldType::F64);
         assert!(schema["description"].as_str().is_some());
-        assert!(schema["description"]
-            .as_str()
-            .unwrap()
-            .contains("finite"));
+        assert!(schema["description"].as_str().unwrap().contains("finite"));
     }
 
     #[test]
@@ -619,15 +616,13 @@ mod tests {
 
     #[test]
     fn test_option_type_schema() {
-        let schema =
-            generate_base_type_schema(&FieldType::Option(Box::new(FieldType::String)));
+        let schema = generate_base_type_schema(&FieldType::Option(Box::new(FieldType::String)));
         assert_eq!(schema["type"], "string");
     }
 
     #[test]
     fn test_nested_array_type() {
-        let nested =
-            FieldType::Vec(Box::new(FieldType::Vec(Box::new(FieldType::I32))));
+        let nested = FieldType::Vec(Box::new(FieldType::Vec(Box::new(FieldType::I32))));
         let schema = generate_base_type_schema(&nested);
         assert_eq!(schema["type"], "array");
         assert_eq!(schema["items"]["type"], "array");

@@ -138,10 +138,10 @@ Validation overhead is **~0.001%** of a typical API request.
 ## Running the Benchmark
 
 ```bash
-cargo run --example serde_benchmark --release --features serde,regex
+cargo run --example serde_bench --release --features serde,regex
 ```
 
-The benchmark is located at: `domainstack/examples/serde_benchmark.rs`
+The benchmark source is: `benches/serde_validation.rs`
 
 ---
 

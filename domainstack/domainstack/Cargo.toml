@@ -53,6 +53,11 @@ required-features = ["regex"]
 name = "serde_validation"
 required-features = ["serde", "regex"]
 
+[[example]]
+name = "serde_bench"
+path = "benches/serde_validation.rs"
+required-features = ["serde", "regex"]
+
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
 # Disable default features to avoid pulling in unnecessary database drivers (mysql, postgres)

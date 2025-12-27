@@ -158,7 +158,7 @@ fn validate_order(order: Order, user: &User) -> Result<(), ValidationErrors> {
 | **Boilerplate** | None | Must call `.validate()` |
 | **Flexibility** | Fixed rules | Context-aware rules |
 | **Partial data** | Not possible | Fully supported |
-| **Performance** | <2% overhead ([benchmarked](./SERDE_BENCHMARK.md)) | Zero overhead until called |
+| **Performance** | <2% overhead ([benchmarked](../benches/README.md)) | Zero overhead until called |
 | **Error type** | `serde::Error` wrapper | Native `ValidationErrors` |
 | **Testing** | Can't create invalid instances | Full control |
 

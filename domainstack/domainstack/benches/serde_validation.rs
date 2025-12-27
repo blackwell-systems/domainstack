@@ -5,7 +5,7 @@
 //!
 //! Run with:
 //! ```sh
-//! cargo run --example serde_benchmark --release --features serde,regex
+//! cargo run --example serde_bench --release --features serde,regex
 //! ```
 
 use std::time::{Duration, Instant};

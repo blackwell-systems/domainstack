@@ -268,9 +268,9 @@ domainstack-schema = "1.0"  # OpenAPI generation
 
 - **37 Validation Rules** - String, numeric, collection, and date/time validation → [RULES.md](./domainstack/domainstack/docs/RULES.md)
 - **Derive Macros** - `#[derive(Validate)]` for declarative validation → [DERIVE_MACRO.md](./domainstack/domainstack/docs/DERIVE_MACRO.md)
-- **Composable Rules** - `.and()`, `.or()`, `.when()` combinators for complex logic
-- **Nested Validation** - Automatic path tracking for deeply nested structures
-- **Collection Validation** - Array indices in error paths (`items[0].field`)
+- **Composable Rules** - `.and()`, `.or()`, `.when()` combinators for complex logic → [RULES.md](./domainstack/domainstack/docs/RULES.md#rule-composition)
+- **Nested Validation** - Automatic path tracking for deeply nested structures → [DERIVE_MACRO.md](./domainstack/domainstack/docs/DERIVE_MACRO.md#nested-validation)
+- **Collection Validation** - Array indices in error paths (`items[0].field`) → [COLLECTION_VALIDATION.md](./domainstack/domainstack/docs/COLLECTION_VALIDATION.md)
 - **Serde Integration** - Validate during deserialization → [SERDE_INTEGRATION.md](./domainstack/domainstack/docs/SERDE_INTEGRATION.md)
 - **Async Validation** - Database/API checks with `AsyncValidate` → [ADVANCED_PATTERNS.md](./domainstack/domainstack/docs/ADVANCED_PATTERNS.md#async-validation)
 - **Cross-Field Validation** - Password confirmation, date ranges → [DERIVE_MACRO.md](./domainstack/domainstack/docs/DERIVE_MACRO.md#cross-field-validation)

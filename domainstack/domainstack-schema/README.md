@@ -336,7 +336,7 @@ domainstack zod --input src --output frontend/schemas.ts
 
 ## Documentation
 
-- **[JSON Schema Capabilities](../domainstack-cli/JSON_SCHEMA_CAPABILITIES.md)** - Complete JSON Schema feature reference
+- **[JSON Schema](../domainstack/docs/JSON_SCHEMA.md)** - Complete JSON Schema generation guide
 - **[CLI Guide](../domainstack/docs/CLI_GUIDE.md)** - CLI codegen for Zod, JSON Schema, OpenAPI
 - **[API Docs](https://docs.rs/domainstack-schema)** - Full API documentation
 

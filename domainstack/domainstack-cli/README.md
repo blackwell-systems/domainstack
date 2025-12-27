@@ -436,7 +436,7 @@ domainstack prisma --input src --output schema.prisma
 
 ## Documentation
 
-- **[JSON_SCHEMA_CAPABILITIES.md](./JSON_SCHEMA_CAPABILITIES.md)** - Complete JSON Schema feature reference, validation rule mappings, and examples
+- **[JSON_SCHEMA.md](../domainstack/docs/JSON_SCHEMA.md)** - Complete JSON Schema generation guide
 - **[examples/json_schema_demo.rs](./examples/json_schema_demo.rs)** - Example types demonstrating tuple structs, enums, and nested validation
 
 ## Contributing

@@ -12,9 +12,9 @@
 //!
 //! ## Documentation
 //!
-//! - See `JSON_SCHEMA_CAPABILITIES.md` for complete JSON Schema feature reference
-//! - See `README.md` for usage examples and CLI options
-//! - See `examples/json_schema_demo.rs` for example types
+//! - See `docs/JSON_SCHEMA.md` for JSON Schema generation guide
+//! - See `docs/CLI_GUIDE.md` for complete CLI documentation
+//! - See `README.md` for usage examples
 
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;

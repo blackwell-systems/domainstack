@@ -4,12 +4,12 @@ This document explains the methodology and results of benchmarking `ValidateOnDe
 
 ## TL;DR
 
-| Scenario | Overhead | Documented Claim |
-|----------|----------|------------------|
-| Valid input (success path) | **~1.6%** | ~5% |
-| Invalid input (error path) | **~17%** | N/A |
+| Scenario | Overhead |
+|----------|----------|
+| Valid input (success path) | **<2%** |
+| Invalid input (error path) | **~17%** |
 
-**Conclusion:** The documented "~5% overhead" is conservative. Actual overhead on the success path is ~1-2%. Error path has higher overhead due to error wrapping.
+**Conclusion:** Integrated validation adds <2% overhead on the success path. Error path has higher overhead (~17%) due to error wrapping in `serde::Error`.
 
 ---
 
@@ -145,11 +145,6 @@ The benchmark is located at: `domainstack/examples/serde_benchmark.rs`
 
 ---
 
-## Updating Documentation
+## Summary
 
-Based on these results, the "~5% overhead" claim in documentation is **conservative and accurate** as an upper bound. The actual overhead is typically 1-2% on the success path.
-
-No documentation changes needed - the ~5% claim remains valid as a safe estimate that accounts for:
-- Variance across different hardware
-- Different struct sizes and validation complexity
-- Potential future implementation changes
+The benchmark confirms <2% overhead for integrated validation on the success path. This is negligible for virtually all use cases - validation overhead is ~0.001% of a typical API request.

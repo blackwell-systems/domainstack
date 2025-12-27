@@ -452,7 +452,7 @@ This is the first stable release of domainstack, marking production readiness wi
     - Better error messages: "age must be between 18 and 120" vs "expected u8"
     - Type safety: if you have `User`, it's guaranteed valid
     - Works with all serde attributes: `#[serde(rename)]`, `#[serde(default)]`, etc.
-    - ~5% overhead vs two-step approach
+    - <2% overhead vs two-step approach (benchmarked)
   - **Feature flag**: `serde` (also enables `derive` automatically)
   - **Implementation**: Two-phase deserialization (intermediate struct → validate → final type)
   - **Example**: See `examples/serde_validation.rs`

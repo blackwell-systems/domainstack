@@ -146,12 +146,12 @@ fn main() {
 
         if overhead_pct < 0.0 {
             println!("\n[!] Integrated is FASTER than 2-step (likely measurement noise)");
+        } else if overhead_pct < 2.0 {
+            println!("\n[✓] Overhead is under 2% as documented");
         } else if overhead_pct < 5.0 {
-            println!("\n[✓] Overhead is under 5% as documented");
-        } else if overhead_pct < 10.0 {
-            println!("\n[~] Overhead is between 5-10%");
+            println!("\n[~] Overhead is between 2-5%");
         } else {
-            println!("\n[!] Overhead exceeds 10% - documentation may need update");
+            println!("\n[!] Overhead exceeds 5% - documentation may need update");
         }
     }
 

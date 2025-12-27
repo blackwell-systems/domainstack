@@ -187,7 +187,7 @@ fn main() {
     println!("   [ok] Type safety: if you have User, it's guaranteed valid");
     println!("   [ok] Serde attributes work: rename, default, etc.");
     println!("   [ok] Same validation rules as #[derive(Validate)]");
-    println!("   [ok] ~5% overhead vs two-step approach");
+    println!("   [ok] <2% overhead vs two-step approach (benchmarked)");
 
     println!("\n=============================================");
     println!("Example complete! ValidateOnDeserialize provides single-step validation during deserialization.");

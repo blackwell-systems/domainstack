@@ -39,10 +39,7 @@ pub struct Url(#[validate(url)] pub String);
 
 /// Phone number newtype - validates format
 #[derive(Debug, Validate)]
-pub struct PhoneNumber(
-    #[validate(matches_regex = r"^\+?[1-9]\d{1,14}$")]
-    pub String,
-);
+pub struct PhoneNumber(#[validate(matches_regex = r"^\+?[1-9]\d{1,14}$")] pub String);
 
 // =============================================================================
 // ENUMS

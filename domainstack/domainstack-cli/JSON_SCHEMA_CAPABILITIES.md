@@ -4,7 +4,53 @@
 **JSON Schema Version:** Draft 2020-12
 **Last Updated:** 2025-12-26
 
-This document provides a comprehensive reference of JSON Schema features supported by `domainstack json-schema`.
+This document provides a comprehensive reference of JSON Schema features supported by domainstack.
+
+---
+
+## Two Approaches
+
+domainstack provides **two ways** to generate JSON Schema:
+
+| Approach | Use Case | Location |
+|----------|----------|----------|
+| **CLI** (`domainstack json-schema`) | Build-time codegen, CI pipelines | This crate |
+| **Trait** (`ToJsonSchema`) | Runtime generation, programmatic composition | `domainstack-schema` |
+
+### CLI Approach
+
+```bash
+domainstack json-schema --input src --output schema.json
+```
+
+### Trait Approach
+
+```rust
+use domainstack_schema::{JsonSchemaBuilder, JsonSchema, ToJsonSchema};
+
+struct User {
+    email: String,
+    age: u8,
+}
+
+impl ToJsonSchema for User {
+    fn schema_name() -> &'static str { "User" }
+    fn json_schema() -> JsonSchema {
+        JsonSchema::object()
+            .property("email", JsonSchema::string().format("email"))
+            .property("age", JsonSchema::integer().minimum(0).maximum(150))
+            .required(&["email", "age"])
+    }
+}
+
+let doc = JsonSchemaBuilder::new()
+    .title("My Schema")
+    .register::<User>()
+    .build();
+```
+
+**Choose CLI** for static codegen and cross-language output.
+**Choose Trait** for type-safe composition and runtime generation.
 
 ---
 

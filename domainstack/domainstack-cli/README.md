@@ -4,7 +4,7 @@
 [![Crates.io](https://img.shields.io/crates/v/domainstack-cli.svg)](https://crates.io/crates/domainstack-cli)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-blue.svg)](https://github.com/blackwell-systems/domainstack/blob/main/LICENSE-MIT)
 
-Code generation CLI for the [domainstack](https://crates.io/crates/domainstack) full-stack validation ecosystem. Generate TypeScript/Zod schemas and JSON Schema from your Rust `#[validate(...)]` attributes.
+Code generation CLI for the [domainstack](https://crates.io/crates/domainstack) full-stack validation ecosystem. Generate TypeScript/Zod schemas, JSON Schema, and OpenAPI specs from your Rust `#[validate(...)]` attributes.
 
 ## Overview
 
@@ -27,6 +27,9 @@ domainstack zod --input src --output frontend/schemas.ts
 
 # Generate JSON Schema (Draft 2020-12)
 domainstack json-schema --input src --output schemas/types.json
+
+# Generate OpenAPI 3.0/3.1 specification
+domainstack openapi --input src --output api/openapi.json
 ```
 
 ## Installation
@@ -191,6 +194,59 @@ domainstack json-schema -i src -o schema.json -v --watch
 }
 ```
 
+### `domainstack openapi`
+
+Generate OpenAPI 3.0/3.1 specification from Rust types.
+
+```bash
+domainstack openapi [OPTIONS]
+```
+
+**Options:**
+
+- `-i, --input <PATH>` - Input directory containing Rust source files (default: `src`)
+- `-o, --output <PATH>` - Output JSON file (required)
+- `--openapi-31` - Use OpenAPI 3.1 (default is 3.0)
+- `-w, --watch` - Watch for changes and regenerate automatically
+- `-v, --verbose` - Enable verbose output
+- `-h, --help` - Print help information
+
+**Examples:**
+
+```bash
+# Generate OpenAPI 3.0 spec
+domainstack openapi --output openapi.json
+
+# Generate OpenAPI 3.1 spec
+domainstack openapi --output openapi.json --openapi-31
+
+# Watch mode
+domainstack openapi -i src -o openapi.json --watch
+```
+
+**Generated output:**
+
+```json
+{
+  "openapi": "3.0.3",
+  "info": { "title": "Generated API Schema", "version": "1.0.0" },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "User": {
+        "type": "object",
+        "properties": {
+          "email": { "type": "string", "format": "email", "maxLength": 255 },
+          "age": { "type": "integer", "minimum": 18, "maximum": 120 }
+        },
+        "required": ["email", "age"],
+        "additionalProperties": false
+      }
+    }
+  }
+}
+```
+
 ## Supported Validation Rules
 
 ### String Validations
@@ -325,6 +381,7 @@ export const PostSchema = z.object({
 domainstack
 ├── zod          ✅ Generate Zod schemas
 ├── json-schema  ✅ Generate JSON Schema (Draft 2020-12)
+├── openapi      ✅ Generate OpenAPI 3.0/3.1 specification
 ├── yup          📋 Generate Yup schemas (planned)
 ├── graphql      📋 Generate GraphQL schemas (planned)
 └── prisma       📋 Generate Prisma schemas (planned)
@@ -344,14 +401,16 @@ domainstack-cli/
 │   ├── main.rs              # CLI entry point with clap
 │   ├── commands/            # Subcommand implementations
 │   │   ├── zod.rs
-│   │   └── json_schema.rs
+│   │   ├── json_schema.rs
+│   │   └── openapi.rs
 │   ├── parser/              # Shared parsing infrastructure
 │   │   ├── mod.rs           # Directory walking
 │   │   ├── ast.rs           # Rust AST parsing
 │   │   └── validation.rs    # Validation rule extraction
 │   └── generators/          # Language-specific generators
 │       ├── zod.rs
-│       └── json_schema.rs
+│       ├── json_schema.rs
+│       └── openapi.rs
 ```
 
 The parser module (`parser/`) is shared across all generators, ensuring consistent interpretation of Rust validation rules. Each generator (`generators/`) contains language-specific transformation logic.

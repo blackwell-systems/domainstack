@@ -1,8 +1,34 @@
 # CLI Guide
 
-**Generate TypeScript/Zod schemas and JSON Schema from Rust validation rules**
+**Generate TypeScript/Zod, JSON Schema, and OpenAPI from Rust validation rules**
 
-The `domainstack-cli` tool generates frontend validation schemas from your Rust code, creating a single source of truth for validation across your entire stack.
+The `domainstack-cli` tool generates schemas from your Rust code, creating a single source of truth for validation across your entire stack.
+
+## CLI vs Trait Approaches
+
+domainstack provides **two ways** to generate schemas:
+
+| Approach | When to Use | Formats |
+|----------|-------------|---------|
+| **CLI** (this guide) | Build-time codegen, cross-language output | Zod, JSON Schema, OpenAPI |
+| **Trait** (`ToSchema`, `ToJsonSchema`) | Runtime generation, programmatic composition | OpenAPI, JSON Schema |
+
+**CLI approach** (source file parsing):
+```bash
+domainstack json-schema --input src --output schema.json
+domainstack openapi --input src --output openapi.json
+```
+
+**Trait approach** (programmatic):
+```rust
+use domainstack_schema::{JsonSchemaBuilder, ToJsonSchema};
+
+let doc = JsonSchemaBuilder::new()
+    .register::<User>()
+    .build();
+```
+
+Use CLI for build scripts and CI. Use traits for runtime API documentation.
 
 ## Table of Contents
 
@@ -10,6 +36,7 @@ The `domainstack-cli` tool generates frontend validation schemas from your Rust 
 - [Installation](#installation)
 - [TypeScript/Zod Generation](#typescriptzod-generation)
 - [JSON Schema Generation](#json-schema-generation)
+- [OpenAPI Generation](#openapi-generation)
 - [Watch Mode](#watch-mode)
 - [CLI Usage](#cli-usage)
 - [Integration](#integration)
@@ -368,9 +395,132 @@ Include generated schemas in your API documentation for language-agnostic valida
 
 ---
 
+## OpenAPI Generation
+
+Generate OpenAPI 3.0/3.1 specifications from your Rust validation rules. OpenAPI is the industry standard for API documentation and is supported by Swagger UI, Redoc, and thousands of other tools.
+
+### Quick Start
+
+```bash
+# Generate OpenAPI 3.0 spec
+domainstack openapi --input src --output api/openapi.json
+
+# Generate OpenAPI 3.1 spec
+domainstack openapi --input src --output api/openapi.json --openapi-31
+```
+
+**From this Rust code:**
+
+```rust
+#[derive(Validate)]
+struct User {
+    #[validate(email)]
+    #[validate(max_len = 255)]
+    email: String,
+
+    #[validate(range(min = 18, max = 120))]
+    age: u8,
+
+    #[validate(url)]
+    website: Option<String>,
+}
+```
+
+**Generates this OpenAPI spec:**
+
+```json
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Generated API Schema",
+    "version": "1.0.0"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "User": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 255
+          },
+          "age": {
+            "type": "integer",
+            "minimum": 18,
+            "maximum": 120
+          },
+          "website": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true
+          }
+        },
+        "required": ["email", "age"],
+        "additionalProperties": false
+      }
+    }
+  }
+}
+```
+
+### OpenAPI Command
+
+```bash
+domainstack openapi [OPTIONS]
+
+Options:
+  -i, --input <PATH>     Input directory containing Rust source files
+                         [default: src]
+
+  -o, --output <PATH>    Output JSON file path
+                         [required]
+
+  --openapi-31           Use OpenAPI 3.1 (default is 3.0)
+                         OpenAPI 3.1 uses oneOf for nullable types
+
+  -w, --watch            Watch for changes and regenerate automatically
+
+  -v, --verbose          Enable verbose output
+
+  -h, --help             Print help information
+```
+
+### OpenAPI 3.0 vs 3.1
+
+| Feature | OpenAPI 3.0 | OpenAPI 3.1 |
+|---------|-------------|-------------|
+| Nullable types | `nullable: true` | `oneOf: [type, null]` |
+| JSON Schema | Based on draft-05 | Full draft 2020-12 |
+| Compatibility | Wider tool support | Newer, fewer tools |
+
+**Recommendation:** Use 3.0 for maximum compatibility, 3.1 for JSON Schema alignment.
+
+### Use Cases
+
+**Swagger UI / Redoc:**
+```bash
+# Generate spec and serve with Swagger UI
+domainstack openapi --input src --output docs/openapi.json
+npx swagger-ui-serve docs/openapi.json
+```
+
+**API Gateway Integration:**
+Import the generated schema into AWS API Gateway, Kong, or other gateways.
+
+**Client SDK Generation:**
+Use with openapi-generator to create typed API clients:
+```bash
+domainstack openapi --input src --output api.json
+npx @openapitools/openapi-generator-cli generate -i api.json -g typescript-axios -o client/
+```
+
+---
+
 ## Watch Mode
 
-Both `zod` and `json-schema` commands support watch mode for automatic regeneration when files change.
+The `zod`, `json-schema`, and `openapi` commands all support watch mode for automatic regeneration when files change.
 
 ```bash
 # Watch mode with Zod
@@ -378,6 +528,9 @@ domainstack zod --input src --output schemas.ts --watch
 
 # Watch mode with JSON Schema
 domainstack json-schema --input src --output schema.json --watch
+
+# Watch mode with OpenAPI
+domainstack openapi --input src --output openapi.json --watch
 ```
 
 Watch mode:
@@ -770,9 +923,53 @@ domainstack zod --input backend/src --output schemas.ts
 |-----------|--------|-------------|
 | `domainstack zod` | ✅ Available | TypeScript/Zod schemas |
 | `domainstack json-schema` | ✅ Available | JSON Schema (Draft 2020-12) |
+| `domainstack openapi` | ✅ Available | OpenAPI 3.0/3.1 specification |
 | `domainstack yup` | 📋 Planned | Yup schemas for React ecosystem |
 | `domainstack graphql` | 📋 Planned | GraphQL SDL generation |
 | `domainstack prisma` | 📋 Planned | Prisma schemas with validation |
+
+## Alternative: Trait-Based Generation
+
+For programmatic schema generation (runtime, type-safe composition), use the trait approach:
+
+```rust
+use domainstack_schema::{
+    // OpenAPI
+    OpenApiBuilder, Schema, ToSchema,
+    // JSON Schema
+    JsonSchemaBuilder, JsonSchema, ToJsonSchema,
+};
+
+// Implement traits
+impl ToSchema for User {
+    fn schema_name() -> &'static str { "User" }
+    fn schema() -> Schema {
+        Schema::object()
+            .property("email", Schema::string().format("email"))
+            .required(&["email"])
+    }
+}
+
+impl ToJsonSchema for User {
+    fn schema_name() -> &'static str { "User" }
+    fn json_schema() -> JsonSchema {
+        JsonSchema::object()
+            .property("email", JsonSchema::string().format("email"))
+            .required(&["email"])
+    }
+}
+
+// Build documents
+let openapi = OpenApiBuilder::new("My API", "1.0.0")
+    .register::<User>()
+    .build();
+
+let json_schema = JsonSchemaBuilder::new()
+    .register::<User>()
+    .build();
+```
+
+See `domainstack-schema` crate documentation for full details.
 
 ## See Also
 

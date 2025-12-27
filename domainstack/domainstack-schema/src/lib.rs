@@ -1,4 +1,50 @@
-//! OpenAPI 3.0 schema generation for domainstack validation types.
+//! Schema generation for domainstack validation types.
+//!
+//! This crate provides both OpenAPI 3.0 and JSON Schema (Draft 2020-12) generation
+//! from Rust types with validation rules.
+//!
+//! # Two Approaches
+//!
+//! | Approach | OpenAPI | JSON Schema |
+//! |----------|---------|-------------|
+//! | **Trait** | `ToSchema` | `ToJsonSchema` |
+//! | **CLI** | `domainstack openapi` | `domainstack json-schema` |
+//!
+//! Use the **trait approach** for programmatic generation and type-safe composition.
+//! Use the **CLI approach** for build-time codegen from source files.
+//!
+//! # JSON Schema Quick Start
+//!
+//! ```rust
+//! use domainstack_schema::{JsonSchemaBuilder, JsonSchema, ToJsonSchema};
+//!
+//! struct User {
+//!     email: String,
+//!     age: u8,
+//! }
+//!
+//! impl ToJsonSchema for User {
+//!     fn schema_name() -> &'static str {
+//!         "User"
+//!     }
+//!
+//!     fn json_schema() -> JsonSchema {
+//!         JsonSchema::object()
+//!             .property("email", JsonSchema::string().format("email"))
+//!             .property("age", JsonSchema::integer().minimum(0).maximum(150))
+//!             .required(&["email", "age"])
+//!     }
+//! }
+//!
+//! let doc = JsonSchemaBuilder::new()
+//!     .title("My Schema")
+//!     .register::<User>()
+//!     .build();
+//! ```
+//!
+//! ---
+//!
+//! # OpenAPI Quick Start
 //!
 //! This crate provides tools to generate OpenAPI 3.0 component schemas from Rust types,
 //! with a focus on mapping validation rules to OpenAPI constraints.
@@ -183,10 +229,14 @@
 //! - Best practices
 //! - Performance characteristics
 
+mod json_schema;
 mod openapi;
 mod schema;
 mod traits;
 
+pub use json_schema::{
+    AdditionalProperties, JsonSchema, JsonSchemaBuilder, JsonSchemaType, ToJsonSchema,
+};
 pub use openapi::{OpenApiBuilder, OpenApiSpec};
 pub use schema::{Schema, SchemaType};
 pub use traits::ToSchema;

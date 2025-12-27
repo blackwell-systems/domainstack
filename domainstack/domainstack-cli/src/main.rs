@@ -2,12 +2,13 @@
 //!
 //! Code generation CLI for the domainstack validation ecosystem.
 //!
-//! Generate TypeScript/Zod schemas and JSON Schema from Rust `#[validate(...)]` attributes.
+//! Generate TypeScript/Zod schemas, JSON Schema, and OpenAPI specs from Rust `#[validate(...)]` attributes.
 //!
 //! ## Available Commands
 //!
 //! - `domainstack zod` - Generate TypeScript/Zod validation schemas
 //! - `domainstack json-schema` - Generate JSON Schema (Draft 2020-12)
+//! - `domainstack openapi` - Generate OpenAPI 3.0/3.1 specification
 //!
 //! ## Documentation
 //!
@@ -43,6 +44,10 @@ enum Commands {
     /// Generate JSON Schema (Draft 2020-12)
     #[command(about = "Generate JSON Schema from Rust types")]
     JsonSchema(JsonSchemaArgs),
+
+    /// Generate OpenAPI specification (3.0/3.1)
+    #[command(about = "Generate OpenAPI spec from Rust types")]
+    Openapi(OpenApiArgs),
 }
 
 #[derive(Parser)]
@@ -83,12 +88,36 @@ pub struct JsonSchemaArgs {
     pub verbose: bool,
 }
 
+#[derive(Parser)]
+pub struct OpenApiArgs {
+    /// Input directory containing Rust source files
+    #[arg(short, long, default_value = "src")]
+    pub input: PathBuf,
+
+    /// Output JSON file
+    #[arg(short, long)]
+    pub output: PathBuf,
+
+    /// Use OpenAPI 3.1 (default is 3.0)
+    #[arg(long)]
+    pub openapi_31: bool,
+
+    /// Watch for changes and regenerate automatically
+    #[arg(short, long)]
+    pub watch: bool,
+
+    /// Verbose output
+    #[arg(short, long)]
+    pub verbose: bool,
+}
+
 fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
         Commands::Zod(args) => commands::zod::run(args)?,
         Commands::JsonSchema(args) => commands::json_schema::run(args)?,
+        Commands::Openapi(args) => commands::openapi::run(args)?,
     }
 
     Ok(())

@@ -229,27 +229,37 @@ fn import_from_csv(records: Vec<UserDraft>) -> ImportResult {
 
 ## How ValidateOnDeserialize Works
 
-Two-phase deserialization:
+Three-phase deserialization:
 
 1. Deserialize into intermediate type (standard serde)
-2. Validate all fields
-3. Return validated type or error
+2. Construct the final struct
+3. Validate and return, or return error
 
 ```rust
 // Conceptually equivalent to:
 impl<'de> Deserialize<'de> for User {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> {
-        // Phase 1: Standard deserialization
-        let intermediate = IntermediateUser::deserialize(deserializer)?;
+        // Phase 1: Deserialize into hidden intermediate struct
+        let intermediate = UserIntermediate::deserialize(deserializer)?;
 
-        // Phase 2: Validation
-        intermediate.validate()
-            .map_err(|e| serde::de::Error::custom(e))?;
+        // Phase 2: Construct final struct
+        let user = User {
+            email: intermediate.email,
+            age: intermediate.age,
+        };
 
-        Ok(intermediate.into())
+        // Phase 3: Validate
+        user.validate()
+            .map_err(|e| serde::de::Error::custom(
+                format!("Validation failed: {}", e)
+            ))?;
+
+        Ok(user)
     }
 }
 ```
+
+The macro also generates a `Validate` impl, so you can still call `.validate()` manually if needed.
 
 ---
 

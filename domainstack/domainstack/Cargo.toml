@@ -10,6 +10,7 @@ repository = "https://github.com/blackwell-systems/domainstack"
 documentation = "https://docs.rs/domainstack"
 keywords = ["validation", "domain", "ddd", "dto", "api"]
 categories = ["web-programming", "data-structures"]
+autobenches = false
 
 [dependencies]
 smallvec = "1.13"

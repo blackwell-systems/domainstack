@@ -52,6 +52,7 @@ struct UserSeparate {
 
 // Baseline: No validation at all
 #[derive(Deserialize, Debug)]
+#[allow(dead_code)]
 struct UserNoValidation {
     email: String,
     age: u8,
@@ -86,7 +87,11 @@ where
     let per_op = median / iterations;
     println!(
         "{:30} {:>8.2?}/op  (median of {} runs, range: {:.2?}-{:.2?})",
-        name, per_op, RUNS, min / iterations, max / iterations
+        name,
+        per_op,
+        RUNS,
+        min / iterations,
+        max / iterations
     );
 
     median
@@ -138,7 +143,8 @@ fn main() {
     );
 
     if two_step.as_nanos() > 0 {
-        let overhead_pct = (integrated.as_nanos() as f64 / two_step.as_nanos() as f64 - 1.0) * 100.0;
+        let overhead_pct =
+            (integrated.as_nanos() as f64 / two_step.as_nanos() as f64 - 1.0) * 100.0;
         println!(
             "\nIntegrated overhead vs 2-step:           {:>10.1}%",
             overhead_pct

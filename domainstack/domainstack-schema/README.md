@@ -5,11 +5,21 @@
 [![Documentation](https://docs.rs/domainstack-schema/badge.svg)](https://docs.rs/domainstack-schema)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-blue.svg)](https://github.com/blackwell-systems/domainstack/blob/main/LICENSE-MIT)
 
-OpenAPI schema generation for the [domainstack](https://crates.io/crates/domainstack) full-stack validation ecosystem.
+OpenAPI and JSON Schema generation for the [domainstack](https://crates.io/crates/domainstack) full-stack validation ecosystem.
 
 ## Overview
 
-`domainstack-schema` provides tools to generate OpenAPI 3.0 schemas from your domainstack domain types. This enables automatic API documentation that stays in sync with your validation rules.
+`domainstack-schema` provides tools to generate **OpenAPI 3.0 schemas** and **JSON Schema (Draft 2020-12)** from your domainstack domain types. This enables automatic API documentation and validation schemas that stay in sync with your validation rules.
+
+## Two Approaches
+
+| Approach | OpenAPI | JSON Schema |
+|----------|---------|-------------|
+| **Trait** | `ToSchema` | `ToJsonSchema` |
+| **CLI** | `domainstack openapi` | `domainstack json-schema` |
+
+Use the **trait approach** for programmatic generation and type-safe composition.
+Use the **CLI approach** for build-time codegen from source files.
 
 ## Installation
 
@@ -18,7 +28,7 @@ OpenAPI schema generation for the [domainstack](https://crates.io/crates/domains
 domainstack-schema = "1.0.0"
 ```
 
-## Quick Start
+## Quick Start: OpenAPI
 
 ```rust
 use domainstack_schema::{OpenApiBuilder, Schema, ToSchema};
@@ -48,6 +58,40 @@ fn main() {
         .build();
 
     let json = spec.to_json().expect("Failed to serialize");
+    println!("{}", json);
+}
+```
+
+## Quick Start: JSON Schema
+
+```rust
+use domainstack_schema::{JsonSchema, JsonSchemaBuilder, ToJsonSchema};
+
+struct User {
+    email: String,
+    age: u8,
+}
+
+impl ToJsonSchema for User {
+    fn schema_name() -> &'static str {
+        "User"
+    }
+
+    fn json_schema() -> JsonSchema {
+        JsonSchema::object()
+            .property("email", JsonSchema::string().format("email"))
+            .property("age", JsonSchema::integer().minimum(0).maximum(150))
+            .required(&["email", "age"])
+    }
+}
+
+fn main() {
+    let doc = JsonSchemaBuilder::new()
+        .title("My Schema")
+        .register::<User>()
+        .build();
+
+    let json = serde_json::to_string_pretty(&doc).expect("Failed to serialize");
     println!("{}", json);
 }
 ```
@@ -190,9 +234,10 @@ println!("{}", json);
 
 ## Features
 
-- **Type-safe schema generation**: Implement `ToSchema` trait for your types
+- **Type-safe schema generation**: Implement `ToSchema` or `ToJsonSchema` traits
 - **Fluent API**: Chainable methods for building schemas
 - **OpenAPI 3.0 compliant**: Generates valid OpenAPI specifications
+- **JSON Schema Draft 2020-12**: Standards-compliant JSON Schema generation
 - **No runtime overhead**: Schema generation happens at build time
 - **Framework agnostic**: Works with any Rust web framework
 
@@ -225,8 +270,9 @@ cargo run --example v08_features
 ## Scope & Positioning
 
 **What this crate does:**
-- Generates OpenAPI 3.0 **component schemas** for domain types
-- Maps field-level validations to OpenAPI constraints
+- Generates **OpenAPI 3.0 component schemas** for domain types
+- Generates **JSON Schema (Draft 2020-12)** documents
+- Maps field-level validations to schema constraints
 - Provides type-safe schema builders
 - Exports to JSON/YAML
 
@@ -271,19 +317,28 @@ This maintains a single source of truth while acknowledging OpenAPI's expressive
 |-------|---------|
 | [`domainstack`](https://crates.io/crates/domainstack) | Core validation library |
 | [`domainstack-derive`](https://crates.io/crates/domainstack-derive) | `#[derive(Validate, ToSchema)]` macros |
-| [`domainstack-cli`](https://crates.io/crates/domainstack-cli) | CLI for Zod/JSON Schema generation |
+| [`domainstack-cli`](https://crates.io/crates/domainstack-cli) | CLI for Zod, JSON Schema, OpenAPI generation |
 
-**Note:** For generating **JSON Schema** (Draft 2020-12) for frontend validation or API gateways, use the `domainstack-cli` tool:
+## CLI Alternative
+
+For build-time codegen from source files (without implementing traits), use `domainstack-cli`:
 
 ```bash
+# Generate JSON Schema from Rust source files
 domainstack json-schema --input src --output schemas/types.json
-```
 
-This crate (`domainstack-schema`) generates **OpenAPI 3.0 schemas** for API documentation.
+# Generate OpenAPI spec from Rust source files
+domainstack openapi --input src --output api/openapi.json
+
+# Generate Zod schemas for TypeScript
+domainstack zod --input src --output frontend/schemas.ts
+```
 
 ## Documentation
 
-For more details, see the [main domainstack documentation](https://docs.rs/domainstack).
+- **[JSON Schema Capabilities](../domainstack-cli/JSON_SCHEMA_CAPABILITIES.md)** - Complete JSON Schema feature reference
+- **[CLI Guide](../domainstack/docs/CLI_GUIDE.md)** - CLI codegen for Zod, JSON Schema, OpenAPI
+- **[API Docs](https://docs.rs/domainstack-schema)** - Full API documentation
 
 ## License
 

@@ -37,7 +37,7 @@ Structured errors (field-level, indexed paths)
 | + derive macros | + `domainstack-derive` |
 | + OpenAPI schemas | + `domainstack-schema` |
 | + Axum/Actix/Rocket | + framework adapter |
-| + TypeScript/Zod | + `domainstack-cli` |
+| + TypeScript/Zod/JSON Schema | + `domainstack-cli` |
 | + Browser (WASM) | + `domainstack-wasm` |
 
 ## Why domainstack?
@@ -361,7 +361,7 @@ See **[examples/README.md](./examples/README.md)** for instructions on running a
 | **Advanced** | |
 | [Async Validation](./domainstack/domainstack/docs/ADVANCED_PATTERNS.md) | DB/API checks, context |
 | [OpenAPI Schema](./domainstack/domainstack/docs/OPENAPI_SCHEMA.md) | Generate from rules |
-| [CLI / Zod](./domainstack/domainstack/docs/CLI_GUIDE.md) | TypeScript codegen |
+| [CLI Codegen](./domainstack/domainstack/docs/CLI_GUIDE.md) | Zod, JSON Schema, OpenAPI |
 | [Serde Integration](./domainstack/domainstack/docs/SERDE_INTEGRATION.md) | Validate on deserialize |
 | [WASM Browser](./domainstack/domainstack/docs/WASM_VALIDATION.md) | Same validation in browser |
 

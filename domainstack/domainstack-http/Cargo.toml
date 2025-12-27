@@ -12,10 +12,10 @@ keywords = ["validation", "http", "api", "boundary", "ddd"]
 categories = ["web-programming", "web-programming::http-server"]
 
 [dependencies]
-domainstack = { workspace = true }
-domainstack-envelope = { workspace = true }
-error-envelope = { workspace = true }
+domainstack = { version = "1.0.0", default-features = false }
+domainstack-envelope = "1.0.0"
+error-envelope = "0.2.1"
 
 [dev-dependencies]
-domainstack = { workspace = true, features = ["derive"] }
-domainstack-derive = { workspace = true }
+domainstack = { version = "1.0.0", features = ["derive"] }
+domainstack-derive = "1.0.0"

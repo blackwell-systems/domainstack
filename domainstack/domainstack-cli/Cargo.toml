@@ -29,5 +29,5 @@ notify = "6.1"
 notify-debouncer-mini = "0.4"
 
 [dev-dependencies]
-domainstack = { path = "../domainstack", features = ["derive", "regex"] }
-domainstack-derive = { path = "../domainstack-derive" }
+domainstack = { version = "1.0.0", features = ["derive", "regex"] }
+domainstack-derive = "1.0.0"

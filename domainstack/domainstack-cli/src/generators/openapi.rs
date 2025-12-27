@@ -359,4 +359,557 @@ mod tests {
             "#/components/schemas/Customer"
         );
     }
+
+    #[test]
+    fn test_base_type_string() {
+        let schema = generate_base_type_schema(&FieldType::String, OpenApiVersion::V3_0);
+        assert_eq!(schema["type"], "string");
+    }
+
+    #[test]
+    fn test_base_type_boolean() {
+        let schema = generate_base_type_schema(&FieldType::Bool, OpenApiVersion::V3_0);
+        assert_eq!(schema["type"], "boolean");
+    }
+
+    #[test]
+    fn test_base_type_integers() {
+        let schema = generate_base_type_schema(&FieldType::U8, OpenApiVersion::V3_0);
+        assert_eq!(schema["type"], "integer");
+
+        let schema = generate_base_type_schema(&FieldType::I32, OpenApiVersion::V3_0);
+        assert_eq!(schema["type"], "integer");
+    }
+
+    #[test]
+    fn test_base_type_large_integers() {
+        let schema = generate_base_type_schema(&FieldType::U64, OpenApiVersion::V3_0);
+        assert_eq!(schema["type"], "integer");
+        assert_eq!(schema["format"], "int64");
+
+        let schema = generate_base_type_schema(&FieldType::I128, OpenApiVersion::V3_0);
+        assert_eq!(schema["type"], "integer");
+        assert_eq!(schema["format"], "int64");
+    }
+
+    #[test]
+    fn test_base_type_floats() {
+        let schema = generate_base_type_schema(&FieldType::F32, OpenApiVersion::V3_0);
+        assert_eq!(schema["type"], "number");
+        assert_eq!(schema["format"], "float");
+
+        let schema = generate_base_type_schema(&FieldType::F64, OpenApiVersion::V3_0);
+        assert_eq!(schema["type"], "number");
+        assert_eq!(schema["format"], "double");
+    }
+
+    #[test]
+    fn test_base_type_array() {
+        let schema = generate_base_type_schema(
+            &FieldType::Vec(Box::new(FieldType::String)),
+            OpenApiVersion::V3_0,
+        );
+        assert_eq!(schema["type"], "array");
+        assert_eq!(schema["items"]["type"], "string");
+    }
+
+    #[test]
+    fn test_nested_array() {
+        let nested = FieldType::Vec(Box::new(FieldType::Vec(Box::new(FieldType::I32))));
+        let schema = generate_base_type_schema(&nested, OpenApiVersion::V3_0);
+        assert_eq!(schema["type"], "array");
+        assert_eq!(schema["items"]["type"], "array");
+        assert_eq!(schema["items"]["items"]["type"], "integer");
+    }
+
+    #[test]
+    fn test_email_validation() {
+        let mut schema = json!({ "type": "string" });
+        apply_validation_rule(&mut schema, &ValidationRule::Email, &FieldType::String);
+        assert_eq!(schema["format"], "email");
+    }
+
+    #[test]
+    fn test_url_validation() {
+        let mut schema = json!({ "type": "string" });
+        apply_validation_rule(&mut schema, &ValidationRule::Url, &FieldType::String);
+        assert_eq!(schema["format"], "uri");
+    }
+
+    #[test]
+    fn test_min_len_validation() {
+        let mut schema = json!({ "type": "string" });
+        apply_validation_rule(&mut schema, &ValidationRule::MinLen(5), &FieldType::String);
+        assert_eq!(schema["minLength"], 5);
+    }
+
+    #[test]
+    fn test_max_len_validation() {
+        let mut schema = json!({ "type": "string" });
+        apply_validation_rule(
+            &mut schema,
+            &ValidationRule::MaxLen(100),
+            &FieldType::String,
+        );
+        assert_eq!(schema["maxLength"], 100);
+    }
+
+    #[test]
+    fn test_length_validation() {
+        let mut schema = json!({ "type": "string" });
+        apply_validation_rule(
+            &mut schema,
+            &ValidationRule::Length { min: 3, max: 20 },
+            &FieldType::String,
+        );
+        assert_eq!(schema["minLength"], 3);
+        assert_eq!(schema["maxLength"], 20);
+    }
+
+    #[test]
+    fn test_non_empty_validation() {
+        let mut schema = json!({ "type": "string" });
+        apply_validation_rule(&mut schema, &ValidationRule::NonEmpty, &FieldType::String);
+        assert_eq!(schema["minLength"], 1);
+    }
+
+    #[test]
+    fn test_non_blank_validation() {
+        let mut schema = json!({ "type": "string" });
+        apply_validation_rule(&mut schema, &ValidationRule::NonBlank, &FieldType::String);
+        assert_eq!(schema["minLength"], 1);
+        assert!(schema["pattern"].as_str().is_some());
+    }
+
+    #[test]
+    fn test_alphanumeric_validation() {
+        let mut schema = json!({ "type": "string" });
+        apply_validation_rule(
+            &mut schema,
+            &ValidationRule::Alphanumeric,
+            &FieldType::String,
+        );
+        assert_eq!(schema["pattern"], "^[a-zA-Z0-9]*$");
+    }
+
+    #[test]
+    fn test_alpha_only_validation() {
+        let mut schema = json!({ "type": "string" });
+        apply_validation_rule(&mut schema, &ValidationRule::AlphaOnly, &FieldType::String);
+        assert_eq!(schema["pattern"], "^[a-zA-Z]*$");
+    }
+
+    #[test]
+    fn test_numeric_string_validation() {
+        let mut schema = json!({ "type": "string" });
+        apply_validation_rule(
+            &mut schema,
+            &ValidationRule::NumericString,
+            &FieldType::String,
+        );
+        assert_eq!(schema["pattern"], "^[0-9]*$");
+    }
+
+    #[test]
+    fn test_ascii_validation() {
+        let mut schema = json!({ "type": "string" });
+        apply_validation_rule(&mut schema, &ValidationRule::Ascii, &FieldType::String);
+        assert!(schema["pattern"].as_str().unwrap().contains("\\x00-\\x7F"));
+    }
+
+    #[test]
+    fn test_no_whitespace_validation() {
+        let mut schema = json!({ "type": "string" });
+        apply_validation_rule(
+            &mut schema,
+            &ValidationRule::NoWhitespace,
+            &FieldType::String,
+        );
+        assert_eq!(schema["pattern"], r"^\S*$");
+    }
+
+    #[test]
+    fn test_starts_with_validation() {
+        let mut schema = json!({ "type": "string" });
+        apply_validation_rule(
+            &mut schema,
+            &ValidationRule::StartsWith("https://".to_string()),
+            &FieldType::String,
+        );
+        assert!(schema["pattern"].as_str().unwrap().starts_with('^'));
+    }
+
+    #[test]
+    fn test_ends_with_validation() {
+        let mut schema = json!({ "type": "string" });
+        apply_validation_rule(
+            &mut schema,
+            &ValidationRule::EndsWith(".com".to_string()),
+            &FieldType::String,
+        );
+        assert!(schema["pattern"].as_str().unwrap().ends_with('$'));
+    }
+
+    #[test]
+    fn test_contains_validation() {
+        let mut schema = json!({ "type": "string" });
+        apply_validation_rule(
+            &mut schema,
+            &ValidationRule::Contains("example".to_string()),
+            &FieldType::String,
+        );
+        assert!(schema["pattern"].as_str().unwrap().contains("example"));
+    }
+
+    #[test]
+    fn test_matches_regex_validation() {
+        let mut schema = json!({ "type": "string" });
+        apply_validation_rule(
+            &mut schema,
+            &ValidationRule::MatchesRegex("^[a-z]+$".to_string()),
+            &FieldType::String,
+        );
+        assert_eq!(schema["pattern"], "^[a-z]+$");
+    }
+
+    #[test]
+    fn test_range_validation() {
+        let mut schema = json!({ "type": "integer" });
+        apply_validation_rule(
+            &mut schema,
+            &ValidationRule::Range {
+                min: "18".to_string(),
+                max: "120".to_string(),
+            },
+            &FieldType::U8,
+        );
+        assert_eq!(schema["minimum"], 18.0);
+        assert_eq!(schema["maximum"], 120.0);
+    }
+
+    #[test]
+    fn test_min_validation() {
+        let mut schema = json!({ "type": "integer" });
+        apply_validation_rule(
+            &mut schema,
+            &ValidationRule::Min("0".to_string()),
+            &FieldType::I32,
+        );
+        assert_eq!(schema["minimum"], 0.0);
+    }
+
+    #[test]
+    fn test_max_validation() {
+        let mut schema = json!({ "type": "integer" });
+        apply_validation_rule(
+            &mut schema,
+            &ValidationRule::Max("1000".to_string()),
+            &FieldType::I32,
+        );
+        assert_eq!(schema["maximum"], 1000.0);
+    }
+
+    #[test]
+    fn test_positive_validation() {
+        let mut schema = json!({ "type": "integer" });
+        apply_validation_rule(&mut schema, &ValidationRule::Positive, &FieldType::I32);
+        assert_eq!(schema["exclusiveMinimum"], 0);
+    }
+
+    #[test]
+    fn test_negative_validation() {
+        let mut schema = json!({ "type": "integer" });
+        apply_validation_rule(&mut schema, &ValidationRule::Negative, &FieldType::I32);
+        assert_eq!(schema["exclusiveMaximum"], 0);
+    }
+
+    #[test]
+    fn test_non_zero_validation() {
+        let mut schema = json!({ "type": "integer" });
+        apply_validation_rule(&mut schema, &ValidationRule::NonZero, &FieldType::I32);
+        assert!(schema["x-domainstack-validations"].is_array());
+        assert!(schema["x-domainstack-validations"]
+            .as_array()
+            .unwrap()
+            .contains(&json!("non_zero")));
+    }
+
+    #[test]
+    fn test_multiple_of_validation() {
+        let mut schema = json!({ "type": "integer" });
+        apply_validation_rule(
+            &mut schema,
+            &ValidationRule::MultipleOf("5".to_string()),
+            &FieldType::I32,
+        );
+        assert_eq!(schema["multipleOf"], 5.0);
+    }
+
+    #[test]
+    fn test_finite_validation() {
+        let mut schema = json!({ "type": "number" });
+        apply_validation_rule(&mut schema, &ValidationRule::Finite, &FieldType::F64);
+        assert!(schema["description"]
+            .as_str()
+            .unwrap()
+            .contains("finite"));
+    }
+
+    #[test]
+    fn test_custom_validation() {
+        let mut schema = json!({ "type": "string" });
+        apply_validation_rule(
+            &mut schema,
+            &ValidationRule::Custom("my_validator".to_string()),
+            &FieldType::String,
+        );
+        assert_eq!(schema["x-custom-validation"], "my_validator");
+    }
+
+    #[test]
+    fn test_regex_escape() {
+        assert_eq!(regex_escape("test.com"), r"test\.com");
+        assert_eq!(regex_escape("a+b"), r"a\+b");
+        assert_eq!(regex_escape("foo*bar"), r"foo\*bar");
+        assert_eq!(regex_escape("(group)"), r"\(group\)");
+        assert_eq!(regex_escape("[chars]"), r"\[chars\]");
+    }
+
+    #[test]
+    fn test_generate_multiple_types() {
+        let types = vec![
+            ParsedType {
+                name: "User".to_string(),
+                fields: vec![ParsedField {
+                    name: "name".to_string(),
+                    ty: FieldType::String,
+                    validation_rules: vec![],
+                }],
+            },
+            ParsedType {
+                name: "Order".to_string(),
+                fields: vec![ParsedField {
+                    name: "total".to_string(),
+                    ty: FieldType::F64,
+                    validation_rules: vec![],
+                }],
+            },
+        ];
+
+        let output = generate(&types, OpenApiVersion::V3_0).unwrap();
+        let parsed: Value = serde_json::from_str(&output).unwrap();
+
+        assert!(parsed["components"]["schemas"]["User"].is_object());
+        assert!(parsed["components"]["schemas"]["Order"].is_object());
+    }
+
+    #[test]
+    fn test_empty_types() {
+        let types: Vec<ParsedType> = vec![];
+        let output = generate(&types, OpenApiVersion::V3_0).unwrap();
+        let parsed: Value = serde_json::from_str(&output).unwrap();
+
+        assert_eq!(parsed["openapi"], "3.0.3");
+        assert!(parsed["components"]["schemas"]
+            .as_object()
+            .unwrap()
+            .is_empty());
+    }
+
+    #[test]
+    fn test_type_with_required_fields() {
+        let parsed_type = ParsedType {
+            name: "User".to_string(),
+            fields: vec![
+                ParsedField {
+                    name: "email".to_string(),
+                    ty: FieldType::String,
+                    validation_rules: vec![],
+                },
+                ParsedField {
+                    name: "age".to_string(),
+                    ty: FieldType::U8,
+                    validation_rules: vec![],
+                },
+            ],
+        };
+
+        let schema = generate_type_schema(&parsed_type, OpenApiVersion::V3_0).unwrap();
+        let required = schema["required"].as_array().unwrap();
+        assert_eq!(required.len(), 2);
+        assert!(required.contains(&json!("email")));
+        assert!(required.contains(&json!("age")));
+    }
+
+    #[test]
+    fn test_type_with_optional_fields() {
+        let parsed_type = ParsedType {
+            name: "Profile".to_string(),
+            fields: vec![
+                ParsedField {
+                    name: "name".to_string(),
+                    ty: FieldType::String,
+                    validation_rules: vec![],
+                },
+                ParsedField {
+                    name: "bio".to_string(),
+                    ty: FieldType::Option(Box::new(FieldType::String)),
+                    validation_rules: vec![],
+                },
+            ],
+        };
+
+        let schema = generate_type_schema(&parsed_type, OpenApiVersion::V3_0).unwrap();
+        let required = schema["required"].as_array().unwrap();
+        assert!(required.contains(&json!("name")));
+        assert!(!required.contains(&json!("bio")));
+    }
+
+    #[test]
+    fn test_additional_properties_false() {
+        let parsed_type = ParsedType {
+            name: "Strict".to_string(),
+            fields: vec![],
+        };
+
+        let schema = generate_type_schema(&parsed_type, OpenApiVersion::V3_0).unwrap();
+        assert_eq!(schema["additionalProperties"], false);
+    }
+
+    #[test]
+    fn test_openapi_version_default() {
+        let version = OpenApiVersion::default();
+        assert!(matches!(version, OpenApiVersion::V3_0));
+    }
+
+    #[test]
+    fn test_openapi_31_version_string() {
+        let types = vec![ParsedType {
+            name: "Test".to_string(),
+            fields: vec![],
+        }];
+
+        let output = generate(&types, OpenApiVersion::V3_1).unwrap();
+        let parsed: Value = serde_json::from_str(&output).unwrap();
+
+        assert_eq!(parsed["openapi"], "3.1.0");
+    }
+
+    #[test]
+    fn test_info_section() {
+        let types = vec![];
+        let output = generate(&types, OpenApiVersion::V3_0).unwrap();
+        let parsed: Value = serde_json::from_str(&output).unwrap();
+
+        assert_eq!(parsed["info"]["title"], "Generated API Schema");
+        assert_eq!(parsed["info"]["version"], "1.0.0");
+        assert!(parsed["info"]["description"].as_str().is_some());
+    }
+
+    #[test]
+    fn test_paths_empty() {
+        let types = vec![];
+        let output = generate(&types, OpenApiVersion::V3_0).unwrap();
+        let parsed: Value = serde_json::from_str(&output).unwrap();
+
+        assert!(parsed["paths"].as_object().unwrap().is_empty());
+    }
+
+    #[test]
+    fn test_field_schema_with_validations() {
+        let field = ParsedField {
+            name: "email".to_string(),
+            ty: FieldType::String,
+            validation_rules: vec![ValidationRule::Email, ValidationRule::MaxLen(255)],
+        };
+
+        let schema = generate_field_schema(&field, OpenApiVersion::V3_0).unwrap();
+        assert_eq!(schema["type"], "string");
+        assert_eq!(schema["format"], "email");
+        assert_eq!(schema["maxLength"], 255);
+    }
+
+    #[test]
+    fn test_range_with_invalid_min() {
+        let mut schema = json!({ "type": "integer" });
+        apply_validation_rule(
+            &mut schema,
+            &ValidationRule::Range {
+                min: "invalid".to_string(),
+                max: "100".to_string(),
+            },
+            &FieldType::I32,
+        );
+        assert!(schema.get("minimum").is_none());
+        assert_eq!(schema["maximum"], 100.0);
+    }
+
+    #[test]
+    fn test_range_with_invalid_max() {
+        let mut schema = json!({ "type": "integer" });
+        apply_validation_rule(
+            &mut schema,
+            &ValidationRule::Range {
+                min: "0".to_string(),
+                max: "invalid".to_string(),
+            },
+            &FieldType::I32,
+        );
+        assert_eq!(schema["minimum"], 0.0);
+        assert!(schema.get("maximum").is_none());
+    }
+
+    #[test]
+    fn test_multiple_of_invalid_value() {
+        let mut schema = json!({ "type": "integer" });
+        apply_validation_rule(
+            &mut schema,
+            &ValidationRule::MultipleOf("invalid".to_string()),
+            &FieldType::I32,
+        );
+        assert!(schema.get("multipleOf").is_none());
+    }
+
+    #[test]
+    fn test_option_with_validation_v30() {
+        let field = ParsedField {
+            name: "website".to_string(),
+            ty: FieldType::Option(Box::new(FieldType::String)),
+            validation_rules: vec![ValidationRule::Url],
+        };
+
+        let schema = generate_field_schema(&field, OpenApiVersion::V3_0).unwrap();
+        assert_eq!(schema["nullable"], true);
+        assert_eq!(schema["format"], "uri");
+    }
+
+    #[test]
+    fn test_option_with_validation_v31() {
+        let field = ParsedField {
+            name: "website".to_string(),
+            ty: FieldType::Option(Box::new(FieldType::String)),
+            validation_rules: vec![ValidationRule::Url],
+        };
+
+        let schema = generate_field_schema(&field, OpenApiVersion::V3_1).unwrap();
+        assert!(schema["oneOf"].is_array());
+        // Note: validations are applied to the base schema, not the oneOf
+    }
+
+    #[test]
+    fn test_all_primitive_types() {
+        let types = vec![
+            FieldType::U8,
+            FieldType::U16,
+            FieldType::U32,
+            FieldType::I8,
+            FieldType::I16,
+            FieldType::I32,
+        ];
+
+        for ty in types {
+            let schema = generate_base_type_schema(&ty, OpenApiVersion::V3_0);
+            assert_eq!(schema["type"], "integer");
+        }
+    }
 }

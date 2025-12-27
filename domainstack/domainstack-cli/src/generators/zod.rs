@@ -517,4 +517,217 @@ mod tests {
         // Check type export
         assert!(result.contains("export type User = z.infer<typeof UserSchema>"));
     }
+
+    #[test]
+    fn test_non_empty_validation() {
+        let mut output = String::new();
+        generate_validation_rule(&mut output, &ValidationRule::NonEmpty, &FieldType::String)
+            .unwrap();
+        assert_eq!(output, ".min(1)");
+    }
+
+    #[test]
+    fn test_non_blank_validation() {
+        let mut output = String::new();
+        generate_validation_rule(&mut output, &ValidationRule::NonBlank, &FieldType::String)
+            .unwrap();
+        assert_eq!(output, ".trim().min(1)");
+    }
+
+    #[test]
+    fn test_ascii_validation() {
+        let mut output = String::new();
+        generate_validation_rule(&mut output, &ValidationRule::Ascii, &FieldType::String).unwrap();
+        assert!(output.contains(".regex"));
+        assert!(output.contains("\\x00-\\x7F"));
+    }
+
+    #[test]
+    fn test_no_whitespace_validation() {
+        let mut output = String::new();
+        generate_validation_rule(
+            &mut output,
+            &ValidationRule::NoWhitespace,
+            &FieldType::String,
+        )
+        .unwrap();
+        assert!(output.contains(".regex"));
+        assert!(output.contains("\\S"));
+    }
+
+    #[test]
+    fn test_matches_regex_validation() {
+        let mut output = String::new();
+        generate_validation_rule(
+            &mut output,
+            &ValidationRule::MatchesRegex("^[a-z]+$".to_string()),
+            &FieldType::String,
+        )
+        .unwrap();
+        assert!(output.contains(".regex(/[a-z]+/)"));
+    }
+
+    #[test]
+    fn test_nested_option_type() {
+        let nested =
+            FieldType::Option(Box::new(FieldType::Vec(Box::new(FieldType::String))));
+        let result = generate_base_type(&nested);
+        assert_eq!(result, "z.array(z.string())");
+    }
+
+    #[test]
+    fn test_nested_vec_type() {
+        let nested = FieldType::Vec(Box::new(FieldType::Vec(Box::new(FieldType::U32))));
+        let result = generate_base_type(&nested);
+        assert_eq!(result, "z.array(z.array(z.number()))");
+    }
+
+    #[test]
+    fn test_generate_multiple_types() {
+        let types = vec![
+            ParsedType {
+                name: "User".to_string(),
+                fields: vec![ParsedField {
+                    name: "id".to_string(),
+                    ty: FieldType::U32,
+                    validation_rules: vec![],
+                }],
+            },
+            ParsedType {
+                name: "Order".to_string(),
+                fields: vec![ParsedField {
+                    name: "total".to_string(),
+                    ty: FieldType::F64,
+                    validation_rules: vec![],
+                }],
+            },
+        ];
+
+        let result = generate(&types).unwrap();
+        assert!(result.contains("export const UserSchema"));
+        assert!(result.contains("export const OrderSchema"));
+        assert!(result.contains("export type User"));
+        assert!(result.contains("export type Order"));
+    }
+
+    #[test]
+    fn test_all_integer_types() {
+        assert_eq!(generate_base_type(&FieldType::U8), "z.number()");
+        assert_eq!(generate_base_type(&FieldType::U16), "z.number()");
+        assert_eq!(generate_base_type(&FieldType::U32), "z.number()");
+        assert_eq!(generate_base_type(&FieldType::I8), "z.number()");
+        assert_eq!(generate_base_type(&FieldType::I16), "z.number()");
+        assert_eq!(generate_base_type(&FieldType::I32), "z.number()");
+        assert_eq!(generate_base_type(&FieldType::F32), "z.number()");
+    }
+
+    #[test]
+    fn test_large_integer_u128() {
+        let result = generate_base_type(&FieldType::U128);
+        assert!(result.contains("z.number()"));
+        assert!(result.contains("Warning"));
+    }
+
+    #[test]
+    fn test_large_integer_i64() {
+        let result = generate_base_type(&FieldType::I64);
+        assert!(result.contains("z.number()"));
+        assert!(result.contains("precision"));
+    }
+
+    #[test]
+    fn test_escape_string_carriage_return() {
+        assert_eq!(escape_string("hello\rworld"), "hello\\rworld");
+    }
+
+    #[test]
+    fn test_escape_string_combined() {
+        assert_eq!(
+            escape_string("line1\nline2\ttab\"quote\\slash"),
+            "line1\\nline2\\ttab\\\"quote\\\\slash"
+        );
+    }
+
+    #[test]
+    fn test_vec_with_custom_type() {
+        let result =
+            generate_base_type(&FieldType::Vec(Box::new(FieldType::Custom("Item".to_string()))));
+        assert_eq!(result, "z.array(ItemSchema /* Custom type */)");
+    }
+
+    #[test]
+    fn test_option_with_custom_type() {
+        let result = generate_base_type(&FieldType::Option(Box::new(FieldType::Custom(
+            "Address".to_string(),
+        ))));
+        assert_eq!(result, "AddressSchema /* Custom type */");
+    }
+
+    #[test]
+    fn test_min_validation_numeric() {
+        let mut output = String::new();
+        generate_validation_rule(
+            &mut output,
+            &ValidationRule::Min("-10".to_string()),
+            &FieldType::I32,
+        )
+        .unwrap();
+        assert_eq!(output, ".min(-10)");
+    }
+
+    #[test]
+    fn test_max_validation_numeric() {
+        let mut output = String::new();
+        generate_validation_rule(
+            &mut output,
+            &ValidationRule::Max("999".to_string()),
+            &FieldType::U32,
+        )
+        .unwrap();
+        assert_eq!(output, ".max(999)");
+    }
+
+    #[test]
+    fn test_field_schema_array_with_validation() {
+        let mut output = String::new();
+        let field = ParsedField {
+            name: "tags".to_string(),
+            ty: FieldType::Vec(Box::new(FieldType::String)),
+            validation_rules: vec![],
+        };
+
+        generate_field_schema(&mut output, &field).unwrap();
+        assert_eq!(output, "z.array(z.string())");
+    }
+
+    #[test]
+    fn test_empty_types_generate() {
+        let types: Vec<ParsedType> = vec![];
+        let result = generate(&types).unwrap();
+        assert!(result.contains("import { z } from \"zod\""));
+        assert!(result.contains("AUTO-GENERATED"));
+    }
+
+    #[test]
+    fn test_type_with_no_fields() {
+        let types = vec![ParsedType {
+            name: "Empty".to_string(),
+            fields: vec![],
+        }];
+        let result = generate(&types).unwrap();
+        assert!(result.contains("export const EmptySchema = z.object({"));
+        assert!(result.contains("});"));
+    }
+
+    #[test]
+    fn test_field_with_no_validations() {
+        let mut output = String::new();
+        let field = ParsedField {
+            name: "plain".to_string(),
+            ty: FieldType::String,
+            validation_rules: vec![],
+        };
+        generate_field_schema(&mut output, &field).unwrap();
+        assert_eq!(output, "z.string()");
+    }
 }

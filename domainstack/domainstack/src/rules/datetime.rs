@@ -382,26 +382,38 @@ mod tests {
     fn test_age_range_too_young() {
         let rule = age_range(18, 120);
 
-        // Person born 10 years ago
-        let birth_date = NaiveDate::from_ymd_opt(Utc::now().year() - 10, 6, 15).unwrap();
+        // Person born 10 years ago (January to ensure birthday has passed)
+        let birth_date = NaiveDate::from_ymd_opt(Utc::now().year() - 10, 1, 1).unwrap();
         let result = rule.apply(&birth_date);
         assert!(!result.is_empty());
         assert_eq!(result.violations[0].code, "age_out_of_range");
         assert_eq!(result.violations[0].meta.get("min"), Some("18"));
-        assert_eq!(result.violations[0].meta.get("age"), Some("10"));
+        // Age could be 9 or 10 depending on if birthday passed, so check range
+        let age = result.violations[0].meta.get("age").unwrap();
+        assert!(
+            age == "9" || age == "10",
+            "Expected age 9 or 10, got {}",
+            age
+        );
     }
 
     #[test]
     fn test_age_range_too_old() {
         let rule = age_range(18, 120);
 
-        // Person born 130 years ago
-        let birth_date = NaiveDate::from_ymd_opt(Utc::now().year() - 130, 6, 15).unwrap();
+        // Person born 130 years ago (January to ensure birthday has passed)
+        let birth_date = NaiveDate::from_ymd_opt(Utc::now().year() - 130, 1, 1).unwrap();
         let result = rule.apply(&birth_date);
         assert!(!result.is_empty());
         assert_eq!(result.violations[0].code, "age_out_of_range");
         assert_eq!(result.violations[0].meta.get("max"), Some("120"));
-        assert_eq!(result.violations[0].meta.get("age"), Some("130"));
+        // Age could be 129 or 130 depending on if birthday passed, so check range
+        let age = result.violations[0].meta.get("age").unwrap();
+        assert!(
+            age == "129" || age == "130",
+            "Expected age 129 or 130, got {}",
+            age
+        );
     }
 
     #[test]

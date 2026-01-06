@@ -17,5 +17,5 @@ domainstack-envelope = "1.0.0"
 error-envelope = "0.2.1"
 
 [dev-dependencies]
-domainstack = { version = "1.0.0", features = ["derive"] }
+domainstack = { version = "1.0.1", features = ["derive"] }
 domainstack-derive = "1.0.0"

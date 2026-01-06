@@ -26,6 +26,6 @@ serde = ["dep:serde"]
 
 [dev-dependencies]
 trybuild = "1.0"
-domainstack = { version = "1.0.0", features = ["regex"] }
+domainstack = { version = "1.0.1", features = ["regex"] }
 domainstack-schema = "1.0.0"
 serde_json = "1.0"

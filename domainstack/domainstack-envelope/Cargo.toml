@@ -20,5 +20,5 @@ serde_json = "1"
 default = []
 
 [dev-dependencies]
-domainstack = { version = "1.0.0", features = ["derive"] }
+domainstack = { version = "1.0.1", features = ["derive"] }
 domainstack-derive = "1.0.0"

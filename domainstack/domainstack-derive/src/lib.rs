@@ -16,7 +16,8 @@
 //! ### Structs with Named Fields
 //!
 //! ```rust
-//! use domainstack::Validate;
+//! use domainstack::prelude::*;
+//! use domainstack_derive::Validate;
 //!
 //! #[derive(Debug, Validate)]
 //! struct User {
@@ -36,7 +37,8 @@
 //! Perfect for type-safe wrappers with validation:
 //!
 //! ```rust
-//! use domainstack::Validate;
+//! use domainstack::prelude::*;
+//! use domainstack_derive::Validate;
 //!
 //! #[derive(Debug, Validate)]
 //! struct Email(#[validate(email)] String);
@@ -56,7 +58,8 @@
 //! Supports unit, tuple, and struct variants:
 //!
 //! ```rust
-//! use domainstack::Validate;
+//! use domainstack::prelude::*;
+//! use domainstack_derive::Validate;
 //!
 //! #[derive(Debug, Validate)]
 //! enum PaymentMethod {

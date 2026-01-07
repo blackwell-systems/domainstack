@@ -1,6 +1,7 @@
 //! Tests for tuple struct (newtype) and enum validation derive support
 
-use domainstack::Validate;
+use domainstack::prelude::*;
+use domainstack_derive::Validate;
 
 // =============================================================================
 // Tuple Struct (Newtype) Tests

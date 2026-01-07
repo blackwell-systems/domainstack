@@ -905,7 +905,7 @@ dependencies = [
 
 [[package]]
 name = "domainstack"
-version = "1.1.0"
+version = "1.1.1"
 dependencies = [
  "async-trait",
  "chrono",
@@ -956,7 +956,7 @@ dependencies = [
 
 [[package]]
 name = "domainstack-cli"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "anyhow",
  "chrono",
@@ -975,7 +975,7 @@ dependencies = [
 
 [[package]]
 name = "domainstack-derive"
-version = "1.1.0"
+version = "1.1.1"
 dependencies = [
  "domainstack",
  "domainstack-schema",

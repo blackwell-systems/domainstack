@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-01-07
+
+### Changed
+
+#### Improved crates.io Discoverability
+
+**Metadata improvements across the ecosystem:**
+
+- **domainstack**: Updated description to emphasize "write once, use everywhere" value proposition with auto-generation of JSON Schema, OpenAPI, and TypeScript/Zod schemas. Updated categories to include `development-tools` and `wasm`.
+- **domainstack-derive**: Enhanced description to mention `ToJsonSchema` derive macro and schema generation capabilities.
+- **domainstack-cli**: Improved description to lead with concrete outputs (TypeScript/Zod, JSON Schema, GraphQL).
+
+**GitHub Actions workflow improvements:**
+- Removed automatic crates.io publishing from release workflow - manual publishing now required for better release control.
+- Fixed CI to run tests with `--all-features` flag to properly test the `schema` feature.
+
 ## [1.1.0] - 2026-01-07
 
 ### Added

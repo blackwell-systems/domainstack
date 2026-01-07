@@ -571,6 +571,26 @@ struct Tags {
 3. Struct-level `#[validate(check = "...")]` attributes run last
 4. All violations accumulate (fail-slow by default)
 
+## Related Derive Macros
+
+The `domainstack-derive` crate provides additional derive macros:
+
+| Macro | Purpose | Feature |
+|-------|---------|---------|
+| `#[derive(Validate)]` | Runtime validation | `derive` |
+| `#[derive(ToSchema)]` | OpenAPI 3.0 schema generation | `schema` |
+| `#[derive(ToJsonSchema)]` | JSON Schema (Draft 2020-12) generation | `schema` |
+| `#[derive(ValidateOnDeserialize)]` | Validate during serde deserialization | `serde` |
+
+```rust
+// Use all together for complete type-safe validation with schema generation
+#[derive(Validate, ToSchema, ToJsonSchema)]
+struct User {
+    #[validate(email)]
+    email: String,
+}
+```
+
 ## See Also
 
 **Specialized Guides:**
@@ -578,9 +598,12 @@ struct Tags {
 - [Collection Validation](COLLECTION_VALIDATION.md) - Arrays, vectors, `each()` patterns
 - [Conditional Validation](CONDITIONAL_VALIDATION.md) - Runtime-determined validation rules
 
+**Schema Generation:**
+- [JSON Schema Generation](JSON_SCHEMA.md) - Auto-generate JSON Schema from validation rules
+- [OpenAPI Schema Generation](OPENAPI_SCHEMA.md) - Auto-generate OpenAPI schemas from validation rules
+
 **Integration:**
 - [Serde Integration](SERDE_INTEGRATION.md) - Validate on deserialize with `ValidateOnDeserialize`
-- [OpenAPI Schema Generation](OPENAPI_SCHEMA.md) - Auto-generate schemas from validation rules
 - [HTTP Integration](HTTP_INTEGRATION.md) - Framework adapters for Axum, Actix-web, Rocket
 
 **Reference:**

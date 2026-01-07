@@ -206,22 +206,23 @@ let user: User = serde_json::from_str(json)?;  // Validates!
 
 ## Companion Crates
 
-### domainstack-schema - OpenAPI Generation
+### domainstack-schema - Schema Generation
 
-Generate OpenAPI 3.0 schemas from validation rules:
+Generate OpenAPI 3.0 and JSON Schema (Draft 2020-12) from validation rules:
 
 ```toml
 [dependencies]
 domainstack = { version = "1.0", features = ["derive"] }
+domainstack-derive = { version = "1.0", features = ["schema"] }  # For derive macros
 domainstack-schema = "1.0"
 ```
 
-**Usage:**
+**Usage - OpenAPI:**
 
 ```rust
-use domainstack_schema::ToSchema;
+use domainstack_derive::{Validate, ToSchema};
 
-#[derive(ToSchema)]
+#[derive(Validate, ToSchema)]
 struct User {
     #[validate(email, max_len = 255)]
     email: String,
@@ -231,16 +232,40 @@ struct User {
 }
 
 let schema = User::schema();
-// Generates OpenAPI schema with validation constraints
+// Generates OpenAPI 3.0 schema with validation constraints
+```
+
+**Usage - JSON Schema:**
+
+```rust
+use domainstack_derive::{Validate, ToJsonSchema};
+use domainstack_schema::JsonSchemaBuilder;
+
+#[derive(Validate, ToJsonSchema)]
+struct User {
+    #[validate(email, max_len = 255)]
+    email: String,
+
+    #[validate(range(min = 18, max = 120))]
+    age: u8,
+}
+
+let doc = JsonSchemaBuilder::new()
+    .title("My API")
+    .register::<User>()
+    .build();
+// Generates JSON Schema (Draft 2020-12) with validation constraints
 ```
 
 **Features:**
 - Automatic schema generation from `#[validate(...)]` attributes
-- Rule → OpenAPI constraint mapping
-- Nested type support
+- Rule → schema constraint mapping (OpenAPI and JSON Schema)
+- Nested type support with `$ref` references
 - Collection and optional field handling
 
-**See:** [OPENAPI_SCHEMA.md](OPENAPI_SCHEMA.md) for complete documentation
+**See:**
+- [OPENAPI_SCHEMA.md](OPENAPI_SCHEMA.md) - OpenAPI generation guide
+- [JSON_SCHEMA.md](JSON_SCHEMA.md) - JSON Schema generation guide
 
 ### domainstack-envelope - HTTP Error Envelopes
 
@@ -523,5 +548,6 @@ domainstack = "1.0"
 - **[Core Concepts](CORE_CONCEPTS.md)** - Understanding domainstack fundamentals
 - **[Derive Macro](DERIVE_MACRO.md)** - Using `#[derive(Validate)]`
 - **[HTTP Integration](HTTP_INTEGRATION.md)** - Framework adapters guide
-- **[OpenAPI Schema](OPENAPI_SCHEMA.md)** - Schema generation guide
+- **[OpenAPI Schema](OPENAPI_SCHEMA.md)** - OpenAPI 3.0 schema generation
+- **[JSON Schema](JSON_SCHEMA.md)** - JSON Schema (Draft 2020-12) generation
 - **[WASM Validation](WASM_VALIDATION.md)** - Browser validation guide

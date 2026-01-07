@@ -4,9 +4,18 @@
 
 Generate JSON Schema automatically from your validation rules, enabling frontend validation, API gateway validation, and cross-language schema sharing.
 
+## Three Approaches
+
+| Approach | Use Case | Requires |
+|----------|----------|----------|
+| **Derive Macro** | Compile-time schema generation with type safety | `domainstack-derive` with `schema` feature |
+| **Trait** | Manual implementation for complex schemas | `domainstack-schema` |
+| **CLI** | Build-time codegen from source files | `domainstack-cli` |
+
 ## Table of Contents
 
 - [Quick Start](#quick-start)
+- [Installation](#installation)
 - [Why Auto-Derivation](#why-auto-derivation)
 - [Rule Mapping Reference](#rule-mapping-reference)
 - [Nested Types](#nested-types)
@@ -15,6 +24,7 @@ Generate JSON Schema automatically from your validation rules, enabling frontend
 - [Custom Validators](#custom-validators)
 - [Schema Hints](#schema-hints)
 - [Advanced Usage](#advanced-usage)
+- [Trait Implementation](#trait-implementation)
 - [CLI Alternative](#cli-alternative)
 
 ## Quick Start
@@ -54,6 +64,20 @@ let doc = JsonSchemaBuilder::new()
 
 let json = serde_json::to_string_pretty(&doc)?;
 ```
+
+## Installation
+
+Add the required dependencies to your `Cargo.toml`:
+
+```toml
+[dependencies]
+domainstack = "1.0"
+domainstack-derive = { version = "1.0", features = ["schema"] }
+domainstack-schema = "1.0"
+serde_json = "1.0"  # For serializing schemas
+```
+
+The `schema` feature in `domainstack-derive` enables the `#[derive(ToJsonSchema)]` macro.
 
 ## Why Auto-Derivation
 
@@ -441,6 +465,53 @@ with open('schema.json') as f:
 user_schema = schema['$defs']['User']
 validate(instance=user_data, schema=user_schema)
 ```
+
+## Trait Implementation
+
+For complex schemas or types that can't use the derive macro, implement `ToJsonSchema` manually:
+
+```rust
+use domainstack_schema::{JsonSchema, JsonSchemaBuilder, ToJsonSchema};
+
+struct PaymentMethod {
+    method_type: String,
+    card_number: Option<String>,
+    bank_account: Option<String>,
+}
+
+impl ToJsonSchema for PaymentMethod {
+    fn schema_name() -> &'static str {
+        "PaymentMethod"
+    }
+
+    fn json_schema() -> JsonSchema {
+        JsonSchema::object()
+            .title("PaymentMethod")
+            .description("Payment method with conditional fields")
+            .property("method_type", JsonSchema::string()
+                .enum_values(&["card", "bank", "cash"]))
+            .property("card_number", JsonSchema::string()
+                .min_length(13)
+                .max_length(19)
+                .pattern("^[0-9]+$"))
+            .property("bank_account", JsonSchema::string()
+                .pattern("^[A-Z]{2}[0-9]{2}[A-Z0-9]+$"))
+            .required(&["method_type"])
+    }
+}
+
+// Register in schema document
+let doc = JsonSchemaBuilder::new()
+    .title("Payment API")
+    .register::<PaymentMethod>()
+    .build();
+```
+
+**When to use manual implementation:**
+- Complex conditional schemas (oneOf, anyOf, allOf)
+- Schemas with custom vendor extensions
+- Types from external crates without derive support
+- Dynamic schema generation
 
 ## CLI Alternative
 

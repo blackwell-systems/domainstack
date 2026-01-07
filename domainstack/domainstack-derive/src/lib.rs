@@ -6,6 +6,7 @@
 //!
 //! - **`#[derive(Validate)]`** - Automatic validation implementation with `#[validate(...)]` attributes
 //! - **`#[derive(ToSchema)]`** - OpenAPI 3.0 schema generation from validation rules
+//! - **`#[derive(ToJsonSchema)]`** - JSON Schema (Draft 2020-12) generation from validation rules
 //! - **`#[derive(ValidateOnDeserialize)]`** - Validate automatically during serde deserialization (requires `serde` feature)
 //!
 //! ## `#[derive(Validate)]`
@@ -103,6 +104,29 @@
 //! // → age: { type: "integer", minimum: 18, maximum: 120 }
 //! ```
 //!
+//! ## `#[derive(ToJsonSchema)]`
+//!
+//! Generates a `ToJsonSchema` trait implementation that produces JSON Schema (Draft 2020-12) from validation rules.
+//! Requires the `schema` feature.
+//!
+//! ```rust,ignore
+//! use domainstack_derive::{Validate, ToJsonSchema};
+//!
+//! #[derive(Validate, ToJsonSchema)]
+//! struct User {
+//!     #[validate(email)]
+//!     #[validate(max_len = 255)]
+//!     email: String,
+//!
+//!     #[validate(range(min = 18, max = 120))]
+//!     age: u8,
+//! }
+//!
+//! let schema = User::json_schema();
+//! // → email: { type: "string", format: "email", maxLength: 255 }
+//! // → age: { type: "integer", minimum: 18, maximum: 120 }
+//! ```
+//!
 //! ## `#[derive(ValidateOnDeserialize)]`
 //!
 //! Validates during serde deserialization, returning validation errors instead of serde errors.
@@ -128,6 +152,8 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, Attribute, Data, DeriveInput, Expr, Field, Fields, Lit, Meta};
 
+#[cfg(feature = "schema")]
+mod json_schema;
 mod schema;
 
 #[proc_macro_derive(Validate, attributes(validate))]
@@ -145,6 +171,17 @@ pub fn derive_to_schema(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
 
     match schema::derive_to_schema_impl(input) {
+        Ok(tokens) => tokens.into(),
+        Err(err) => err.to_compile_error().into(),
+    }
+}
+
+#[cfg(feature = "schema")]
+#[proc_macro_derive(ToJsonSchema, attributes(schema, validate))]
+pub fn derive_to_json_schema(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+
+    match json_schema::derive_to_json_schema_impl(input) {
         Ok(tokens) => tokens.into(),
         Err(err) => err.to_compile_error().into(),
     }

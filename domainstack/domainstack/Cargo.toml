@@ -9,7 +9,7 @@ description = "Write validation once, use everywhere: Rust rules auto-generate J
 repository = "https://github.com/blackwell-systems/domainstack"
 documentation = "https://docs.rs/domainstack"
 keywords = ["validation", "domain", "ddd", "dto", "api"]
-categories = ["web-programming", "data-structures"]
+categories = ["web-programming", "development-tools", "wasm"]
 autobenches = false
 
 [dependencies]

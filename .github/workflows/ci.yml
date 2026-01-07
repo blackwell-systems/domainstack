@@ -51,7 +51,7 @@ jobs:
           key: ${{ runner.os }}-cargo-build-target-${{ matrix.rust }}-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Run tests (all crates)
-        run: cargo test --all --verbose
+        run: cargo test --all --all-features --verbose
 
       - name: Run tests (no default features)
         run: cargo test -p domainstack --no-default-features --verbose

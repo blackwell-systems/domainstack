@@ -9,6 +9,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### ToJsonSchema Derive Macro
+
+**FEATURE: `#[derive(ToJsonSchema)]` for automatic JSON Schema generation**
+
+Generate JSON Schema (Draft 2020-12) from validation rules automatically, achieving full parity with the existing `ToSchema` derive for OpenAPI:
+
+```rust
+use domainstack_derive::{Validate, ToJsonSchema};
+use domainstack_schema::JsonSchemaBuilder;
+
+#[derive(Validate, ToJsonSchema)]
+struct User {
+    #[validate(email)]
+    #[validate(max_len = 255)]
+    email: String,
+
+    #[validate(range(min = 18, max = 120))]
+    age: u8,
+}
+
+// Generate JSON Schema
+let schema = User::json_schema();
+// Outputs: email with format="email", maxLength=255
+//          age with minimum=18, maximum=120
+
+// Build complete document
+let doc = JsonSchemaBuilder::new()
+    .title("My Schema")
+    .register::<User>()
+    .build();
+```
+
+**Features:**
+- Maps 20+ validation rules to JSON Schema constraints
+- Supports nested types via `#[validate(nested)]`
+- Supports collections with `#[validate(each(nested))]`
+- Handles optional fields (`Option<T>` excluded from required)
+- Integrates with `JsonSchemaBuilder` for document generation
+- Full parity with `ToSchema` derive for OpenAPI
+
+**Requires:** `domainstack-derive` with `schema` feature enabled.
+
+**Documentation:** See [JSON_SCHEMA.md](./domainstack/domainstack/docs/JSON_SCHEMA.md)
+
+---
+
 #### JSON Schema Generator (Draft 2020-12)
 
 **FEATURE: `domainstack json-schema` command for generating JSON Schema**
